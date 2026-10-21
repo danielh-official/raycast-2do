@@ -25,7 +25,8 @@
   ],
   "scripts": {
     "build": "ray build",
-    "dev": "ray develop"
+    "dev": "ray develop",
+    "test": "vitest run"
   },
   "dependencies": {
     "@raycast/api": "2.7.3",
@@ -34,6 +35,7 @@
   "devDependencies": {
     "@types/node": "26.6.5",
     "@types/react": "19.3.0",
-    "typescript": "7.0.2"
+    "typescript": "7.0.2",
+    "vitest": "5.0.4"
   }
 }

@@ -1,7 +1,7 @@
 import { Action, ActionPanel, Color, Icon, List, showToast, Toast } from "@raycast/api";
 import { showFailureToast, useCachedPromise } from "@raycast/utils";
 import { useState } from "react";
-import { List as TwoDoList, SmartList, Task, twoDo } from "./2do";
+import { List as TwoDoList, scopeArgs, SmartList, Task, twoDo } from "./2do";
 import { TaskForm } from "./task-form";
 
 const FOCUSES = [
@@ -13,14 +13,6 @@ const FOCUSES = [
 ] as const;
 
 const PRIORITY_COLORS = { high: Color.Red, medium: Color.Orange, low: Color.Blue };
-
-// Scope values are 2Do collection ids ("list:<id>", "smart-list:<id>") or "focus:<name>".
-function scopeArgs(scope: string) {
-  const [kind, id] = scope.split(":");
-  if (kind === "list") return { list_id: id, include_completed: false };
-  if (kind === "smart-list") return { smart_list_id: id, include_completed: false };
-  return { focus: id, include_completed: id === "done" };
-}
 
 export default function Command() {
   const [scope, setScope] = useState<string>();

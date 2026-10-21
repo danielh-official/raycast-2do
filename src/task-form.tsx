@@ -1,36 +1,6 @@
 import { Action, ActionPanel, Form, showHUD, showToast, Toast, useNavigation } from "@raycast/api";
 import { FormValidation, showFailureToast, useCachedPromise, useForm } from "@raycast/utils";
-import { List, Tag, Task, twoDo } from "./2do";
-
-type Values = {
-  title: string;
-  notes: string;
-  list_id: string;
-  start: Date | null;
-  due: Date | null;
-  priority: string;
-  starred: boolean;
-  tag_ids: string[];
-};
-
-const pad = (n: number) => String(n).padStart(2, "0");
-
-// 2Do takes floating local "yyyy-MM-dd" dates and optional "HH:mm" times. null clears (edit only).
-function dateFields(prefix: "start" | "due", d: Date | null, clear: boolean) {
-  const empty = clear ? { [`${prefix}_date`]: null, [`${prefix}_time`]: null } : {};
-  if (!d) return empty;
-  // ponytail: midnight counts as "no time" so untimed 2Do dates round-trip; a task timed at exactly 00:00 loses its time
-  const fullDay = Form.DatePicker.isFullDay(d) || (d.getHours() === 0 && d.getMinutes() === 0);
-  return {
-    ...empty,
-    [`${prefix}_date`]: `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`,
-    ...(!fullDay && { [`${prefix}_time`]: `${pad(d.getHours())}:${pad(d.getMinutes())}` }),
-  };
-}
-
-function toDate(date?: string, time?: string) {
-  return date ? new Date(`${date}T${time ?? "00:00"}`) : null;
-}
+import { List, saveTask, Tag, Task, taskToValues, TaskValues, twoDo } from "./2do";
 
 // Creates a task, or edits `task` when given.
 export function TaskForm({ task, onSaved }: { task?: Task; onSaved?: () => void }) {
@@ -38,45 +8,17 @@ export function TaskForm({ task, onSaved }: { task?: Task; onSaved?: () => void 
   const lists = useCachedPromise(() => twoDo<{ list: List[] }>("list_lists").then((r) => r.list));
   const tags = useCachedPromise(() => twoDo<{ tags: Tag[] }>("list_tags").then((r) => r.tags));
 
-  const { handleSubmit, itemProps } = useForm<Values>({
-    initialValues: task && {
-      title: task.title,
-      notes: task.notes,
-      list_id: task.list_id,
-      start: toDate(task.start_date, task.start_time),
-      due: toDate(task.due_date, task.due_time),
-      priority: task.priority,
-      starred: task.starred,
-      tag_ids: task.tags.map((t) => t.tag_id),
-    },
+  const { handleSubmit, itemProps } = useForm<TaskValues>({
+    initialValues: task && taskToValues(task),
     validation: { title: FormValidation.Required },
     async onSubmit(v) {
-      const fields = {
-        title: v.title,
-        priority: v.priority,
-        starred: v.starred,
-        ...dateFields("start", v.start, !!task),
-        ...dateFields("due", v.due, !!task),
-      };
       try {
+        await saveTask(v, task);
         if (task) {
-          await twoDo("update_task", {
-            ...fields,
-            task_id: task.task_id,
-            notes: v.notes,
-            tag_update: { operation: "set", tag_ids: v.tag_ids },
-          });
-          if (v.list_id !== task.list_id) await twoDo("move_task", { task_id: task.task_id, list_id: v.list_id });
           await showToast({ style: Toast.Style.Success, title: "Task updated" });
           onSaved?.();
           pop();
         } else {
-          await twoDo("create_task", {
-            ...fields,
-            list_id: v.list_id,
-            notes: v.notes || undefined,
-            ...(v.tag_ids.length > 0 && { tag_update: { operation: "set", tag_ids: v.tag_ids } }),
-          });
           await showHUD(`Added "${v.title}" to 2Do`);
         }
       } catch (error) {
