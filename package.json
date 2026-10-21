@@ -1,0 +1,39 @@
+{
+  "$schema": "https://www.raycast.com/schemas/extension.json",
+  "name": "2do",
+  "title": "2Do",
+  "description": "Add, view, and edit 2Do tasks.",
+  "icon": "icon.png",
+  "author": "danielh",
+  "categories": [
+    "Productivity"
+  ],
+  "license": "MIT",
+  "commands": [
+    {
+      "name": "add-task",
+      "title": "Add Task",
+      "description": "Add a task to 2Do.",
+      "mode": "view"
+    },
+    {
+      "name": "view-tasks",
+      "title": "View Tasks",
+      "description": "Browse 2Do tasks by scope, list, or smart list, and edit, complete, or open them.",
+      "mode": "view"
+    }
+  ],
+  "scripts": {
+    "build": "ray build",
+    "dev": "ray develop"
+  },
+  "dependencies": {
+    "@raycast/api": "2.7.3",
+    "@raycast/utils": "2.3.2"
+  },
+  "devDependencies": {
+    "@types/node": "26.6.5",
+    "@types/react": "19.3.0",
+    "typescript": "7.0.2"
+  }
+}
