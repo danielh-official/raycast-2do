@@ -1,6 +1,6 @@
 import { Action, ActionPanel, Form, showHUD, showToast, Toast, useNavigation } from "@raycast/api";
 import { FormValidation, showFailureToast, useCachedPromise, useForm } from "@raycast/utils";
-import { List, saveTask, Tag, Task, taskToValues, TaskValues, twoDo } from "./2do";
+import { List, saveTask, Tag, tagOptions, Task, taskToValues, TaskValues, twoDo } from "./2do";
 
 // Creates a task, or edits `task` when given.
 export function TaskForm({ task, onSaved }: { task?: Task; onSaved?: () => void }) {
@@ -53,7 +53,7 @@ export function TaskForm({ task, onSaved }: { task?: Task; onSaved?: () => void 
       </Form.Dropdown>
       <Form.Checkbox label="Starred" {...itemProps.starred} />
       <Form.TagPicker title="Tags" {...itemProps.tag_ids}>
-        {tags.data?.map((t) => (
+        {tagOptions(tags.data, task).map((t) => (
           <Form.TagPicker.Item key={t.tag_id} value={t.tag_id} title={t.title} />
         ))}
       </Form.TagPicker>

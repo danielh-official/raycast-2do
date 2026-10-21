@@ -62,6 +62,13 @@ export function toDate(date?: string, time?: string) {
   return date ? new Date(`${date}T${time ?? "00:00"}`) : null;
 }
 
+// Tag picker choices: all tags plus the task's own. 2Do can leave a task's tag out of list_tags,
+// and a picker value with no matching item is dropped on save, which would remove the tag.
+export function tagOptions(tags: Tag[] = [], task?: Task): Tag[] {
+  const known = new Set(tags.map((t) => t.tag_id));
+  return [...tags, ...(task?.tags ?? []).filter((t) => !known.has(t.tag_id))];
+}
+
 export function taskToValues(task: Task): TaskValues {
   return {
     title: task.title,

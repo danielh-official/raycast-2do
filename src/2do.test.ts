@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { dateFields, saveTask, scopeArgs, Task, taskToValues, toDate, twoDo } from "./2do";
+import { dateFields, saveTask, scopeArgs, tagOptions, Task, taskToValues, toDate, twoDo } from "./2do";
 
 const { runAppleScript, isFullDay } = vi.hoisted(() => ({
   runAppleScript: vi.fn(),
@@ -145,5 +145,26 @@ describe("scopeArgs", () => {
     expect(scopeArgs("focus:done")).toEqual({ focus: "done", include_completed: true });
     expect(scopeArgs("list:abc")).toEqual({ list_id: "abc", include_completed: false });
     expect(scopeArgs("smart-list:xyz")).toEqual({ smart_list_id: "xyz", include_completed: false });
+  });
+});
+
+describe("tagOptions", () => {
+  const all = [
+    { tag_id: "tag1", title: "Family" },
+    { tag_id: "tag2", title: "Work" },
+  ];
+
+  it("lists all tags when creating", () => {
+    expect(tagOptions(all)).toEqual(all);
+    expect(tagOptions(undefined)).toEqual([]);
+  });
+
+  it("adds the task's tags that 2Do's tag list leaves out, without duplicates", () => {
+    const hidden = { tag_id: "tag3", title: "Marketing" };
+    expect(tagOptions(all, { ...task, tags: [all[0], hidden] })).toEqual([...all, hidden]);
+  });
+
+  it("offers the task's tags before the tag list has loaded", () => {
+    expect(tagOptions(undefined, task)).toEqual(task.tags);
   });
 });
