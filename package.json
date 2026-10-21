@@ -8,7 +8,18 @@
   "categories": [
     "Productivity"
   ],
+  "keywords": [
+    "2do",
+    "todo",
+    "tasks",
+    "task manager",
+    "reminders",
+    "gtd"
+  ],
   "license": "MIT",
+  "platforms": [
+    "macOS"
+  ],
   "commands": [
     {
       "name": "add-task",
@@ -26,16 +37,22 @@
   "scripts": {
     "build": "ray build",
     "dev": "ray develop",
-    "test": "vitest run"
+    "lint": "ray lint",
+    "fix-lint": "ray lint --fix",
+    "test": "vitest run",
+    "publish": "npx @raycast/api@latest publish"
   },
   "dependencies": {
     "@raycast/api": "2.7.3",
     "@raycast/utils": "2.3.2"
   },
   "devDependencies": {
+    "@raycast/eslint-config": "2.2.0",
     "@types/node": "26.6.5",
     "@types/react": "19.3.0",
-    "typescript": "7.0.2",
+    "eslint": "10.12.0",
+    "prettier": "3.9.10",
+    "typescript": "6.0.3",
     "vitest": "5.0.4"
   }
 }

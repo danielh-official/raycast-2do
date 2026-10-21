@@ -1,4 +1,4 @@
-import { Action, ActionPanel, Color, Icon, List, showToast, Toast } from "@raycast/api";
+import { Action, ActionPanel, Color, Icon, Keyboard, List, showToast, Toast } from "@raycast/api";
 import { showFailureToast, useCachedPromise } from "@raycast/utils";
 import { useState } from "react";
 import { List as TwoDoList, scopeArgs, SmartList, Task, twoDo } from "./2do";
@@ -22,7 +22,8 @@ export default function Command() {
   );
   const tasks = useCachedPromise(
     // ponytail: capped at 200 (matters for Done); paginate with offset/total_count if that gets hit
-    (scope: string) => twoDo<{ tasks: Task[] }>("query_tasks", { ...scopeArgs(scope), limit: 200 }).then((r) => r.tasks),
+    (scope: string) =>
+      twoDo<{ tasks: Task[] }>("query_tasks", { ...scopeArgs(scope), limit: 200 }).then((r) => r.tasks),
     [scope ?? ""],
     { execute: !!scope },
   );
@@ -49,7 +50,9 @@ export default function Command() {
             ))}
           </List.Dropdown.Section>
           <List.Dropdown.Section title="Lists">
-            {lists.data?.map((l) => <List.Dropdown.Item key={l.collection_id} value={l.collection_id} title={l.title} />)}
+            {lists.data?.map((l) => (
+              <List.Dropdown.Item key={l.collection_id} value={l.collection_id} title={l.title} />
+            ))}
           </List.Dropdown.Section>
           <List.Dropdown.Section title="Smart Lists">
             {smartLists.data?.map((l) => (
@@ -70,7 +73,14 @@ export default function Command() {
             ...t.tags.map((tag) => ({ tag: tag.title })),
             ...(t.priority !== "none" ? [{ tag: { value: t.priority, color: PRIORITY_COLORS[t.priority] } }] : []),
             ...(t.presentation.due_date_formatted
-              ? [{ text: { value: t.presentation.due_date_formatted, color: t.presentation.is_overdue ? Color.Red : undefined } }]
+              ? [
+                  {
+                    text: {
+                      value: t.presentation.due_date_formatted,
+                      color: t.presentation.is_overdue ? Color.Red : undefined,
+                    },
+                  },
+                ]
               : []),
             ...(t.starred ? [{ icon: { source: Icon.Star, tintColor: Color.Yellow } }] : []),
           ]}
@@ -86,15 +96,19 @@ export default function Command() {
                 icon={t.completed ? Icon.Circle : Icon.CheckCircle}
                 shortcut={{ modifiers: ["cmd"], key: "d" }}
                 onAction={() =>
-                  run(t.completed ? "Marked not done" : "Completed", t.completed ? "uncomplete_task" : "complete_task", {
-                    task_id: t.task_id,
-                  })
+                  run(
+                    t.completed ? "Marked not done" : "Completed",
+                    t.completed ? "uncomplete_task" : "complete_task",
+                    {
+                      task_id: t.task_id,
+                    },
+                  )
                 }
               />
               <Action
                 title={t.starred ? "Unstar" : "Star"}
                 icon={Icon.Star}
-                shortcut={{ modifiers: ["cmd"], key: "s" }}
+                shortcut={Keyboard.Shortcut.Common.Pin}
                 onAction={() =>
                   run(t.starred ? "Unstarred" : "Starred", "update_task", { task_id: t.task_id, starred: !t.starred })
                 }
@@ -102,7 +116,7 @@ export default function Command() {
               <Action
                 title="Open in 2Do"
                 icon={Icon.AppWindow}
-                shortcut={{ modifiers: ["cmd"], key: "o" }}
+                shortcut={Keyboard.Shortcut.Common.Open}
                 onAction={() => twoDo("open_task", { task_id: t.task_id }).catch((e) => showFailureToast(e))}
               />
             </ActionPanel>

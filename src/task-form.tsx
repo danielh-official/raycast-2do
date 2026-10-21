@@ -39,7 +39,9 @@ export function TaskForm({ task, onSaved }: { task?: Task; onSaved?: () => void 
       <Form.TextField title="Title" placeholder="Task" {...itemProps.title} />
       <Form.TextArea title="Notes" {...itemProps.notes} />
       <Form.Dropdown title="List" storeValue={!task} {...itemProps.list_id}>
-        {lists.data?.map((l) => <Form.Dropdown.Item key={l.list_id} value={l.list_id} title={l.title} />)}
+        {lists.data?.map((l) => (
+          <Form.Dropdown.Item key={l.list_id} value={l.list_id} title={l.title} />
+        ))}
       </Form.Dropdown>
       <Form.DatePicker title="Start" {...itemProps.start} />
       <Form.DatePicker title="Due" {...itemProps.due} />
@@ -51,7 +53,9 @@ export function TaskForm({ task, onSaved }: { task?: Task; onSaved?: () => void 
       </Form.Dropdown>
       <Form.Checkbox label="Starred" {...itemProps.starred} />
       <Form.TagPicker title="Tags" {...itemProps.tag_ids}>
-        {tags.data?.map((t) => <Form.TagPicker.Item key={t.tag_id} value={t.tag_id} title={t.title} />)}
+        {tags.data?.map((t) => (
+          <Form.TagPicker.Item key={t.tag_id} value={t.tag_id} title={t.title} />
+        ))}
       </Form.TagPicker>
     </Form>
   );

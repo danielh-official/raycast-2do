@@ -50,7 +50,10 @@ describe("twoDo", () => {
 
 describe("dateFields", () => {
   it("sends date and time for a timed date", () => {
-    expect(dateFields("due", new Date(2026, 9, 5, 9, 30), false)).toEqual({ due_date: "2026-10-05", due_time: "09:30" });
+    expect(dateFields("due", new Date(2026, 9, 5, 9, 30), false)).toEqual({
+      due_date: "2026-10-05",
+      due_time: "09:30",
+    });
   });
 
   it("sends only the date for a full-day pick", () => {
@@ -75,7 +78,10 @@ describe("dateFields", () => {
 describe("toDate", () => {
   it("round-trips 2Do dates through dateFields", () => {
     expect(toDate()).toBeNull();
-    expect(dateFields("due", toDate("2026-10-25", "14:00"), false)).toEqual({ due_date: "2026-10-25", due_time: "14:00" });
+    expect(dateFields("due", toDate("2026-10-25", "14:00"), false)).toEqual({
+      due_date: "2026-10-25",
+      due_time: "14:00",
+    });
     expect(dateFields("due", toDate("2026-10-25"), false)).toEqual({ due_date: "2026-10-25" });
   });
 });
