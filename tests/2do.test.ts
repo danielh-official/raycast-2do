@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { dateFields, saveTask, scopeArgs, tagOptions, Task, taskToValues, toDate, twoDo } from "./2do";
+import { dateFields, saveTask, scopeArgs, tagOptions, Task, taskToValues, toDate, twoDo } from "../extension/src/2do";
 
 const { runAppleScript } = vi.hoisted(() => ({ runAppleScript: vi.fn() }));
 vi.mock("@raycast/utils", () => ({ runAppleScript }));
