@@ -2,9 +2,11 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import {
   actionURL,
   actionValueError,
+  applyGoal,
   CancelPrefs,
   cancelTask,
   dateFields,
+  ensureTag,
   hasStarted,
   isCancelled,
   saveTask,
@@ -17,8 +19,16 @@ import {
   twoDo,
 } from "../extension/src/2do";
 
-const { runAppleScript } = vi.hoisted(() => ({ runAppleScript: vi.fn() }));
+const { runAppleScript, openURL } = vi.hoisted(() => ({ runAppleScript: vi.fn(), openURL: vi.fn() }));
 vi.mock("@raycast/utils", () => ({ runAppleScript }));
+// ensureTag opens 2Do's URL scheme with `open` and polls; tests must never reach the real 2Do.
+vi.mock("node:child_process", () => ({
+  execFile: (command: string, args: string[], callback: (error: null) => void) => {
+    openURL(command, args);
+    callback(null);
+  },
+}));
+vi.mock("node:timers/promises", () => ({ setTimeout: async () => {} }));
 // Same check as Raycast's runtime: full-day dates carry exactly 1 millisecond.
 vi.mock("@raycast/api", () => ({
   Form: { DatePicker: { isFullDay: (d?: Date | null) => !!d && d.getMilliseconds() === 1 } },
@@ -49,6 +59,7 @@ const task: Task = {
 
 beforeEach(() => {
   runAppleScript.mockReset().mockResolvedValue("{}");
+  openURL.mockReset();
 });
 
 describe("twoDo", () => {
@@ -280,17 +291,97 @@ describe("cancelTask", () => {
     expect(sent()).toEqual([["delete_task", { task_id: "t1" }]]);
   });
 
-  it("names the preference when the tag or list is missing, without changing the task", async () => {
-    await expect(cancelTask(task, { ...prefs, cancelTag: "Dropped" })).rejects.toThrow(
-      'No 2Do tag named "Dropped". Create it in 2Do or check the Cancel Tag preference.',
-    );
+  it("names the preference when the list is missing, without changing the task", async () => {
     await expect(cancelTask(task, { ...prefs, cancelBehavior: "move", cancelList: "Nope" })).rejects.toThrow(
       'No 2Do list named "Nope"',
     );
     await expect(cancelTask(task, { ...prefs, cancelBehavior: "move" })).rejects.toThrow(
       "Set the Cancel List preference",
     );
-    expect(sent().map(([command]) => command)).toEqual(["list_tags", "list_lists"]);
+    expect(sent().map(([command]) => command)).toEqual(["list_lists"]);
+  });
+});
+
+describe("ensureTag", () => {
+  // list_tags has no "Goal" until 2Do's URL scheme has been opened; the placeholder task then
+  // shows up under its own title.
+  function fake2Do({ creates = true } = {}) {
+    runAppleScript.mockImplementation(async (_script: string, [command, json]: string[]) => {
+      const args = JSON.parse(json);
+      const opened = openURL.mock.calls.length > 0 && creates;
+      if (command === "list_tags") return JSON.stringify({ tags: opened ? [{ tag_id: "g1", title: "Goal" }] : [] });
+      if (command === "query_tasks")
+        return JSON.stringify({ tasks: opened ? [{ task_id: "p1", title: args.search }] : [] });
+      return "{}";
+    });
+  }
+
+  it("returns an existing tag without opening 2Do", async () => {
+    runAppleScript.mockResolvedValue(JSON.stringify({ tags: [{ tag_id: "g1", title: "goal" }] }));
+    await expect(ensureTag("Goal")).resolves.toEqual({ tag_id: "g1", title: "goal" });
+    expect(openURL).not.toHaveBeenCalled();
+  });
+
+  it("creates a missing tag through 2Do's URL scheme, then deletes the placeholder task", async () => {
+    fake2Do();
+    await expect(ensureTag("Goal")).resolves.toEqual({ tag_id: "g1", title: "Goal" });
+    const [command, [flag, url]] = openURL.mock.calls[0];
+    expect([command, flag]).toEqual(["open", "-g"]);
+    expect(url).toMatch(
+      /^twodo:\/\/x-callback-url\/add\?task=Raycast%20is%20creating%20the%20Goal%20tag%20\(\d+\)&tags=Goal/,
+    );
+    expect(sent().filter(([c]) => c === "delete_task")).toEqual([["delete_task", { task_id: "p1" }]]);
+  });
+
+  it("gives up when the tag never appears", async () => {
+    fake2Do({ creates: false });
+    await expect(ensureTag("Goal")).rejects.toThrow('Couldn\'t create the 2Do tag "Goal"');
+  });
+});
+
+describe("applyGoal", () => {
+  const base = { ...taskToValues(task), notes: "Read it.", tag_ids: ["tag1"] };
+  beforeEach(() => {
+    runAppleScript.mockResolvedValue(JSON.stringify({ tags: [{ tag_id: "g1", title: "Goal" }] }));
+  });
+
+  it("adds a goal block with today's or the given date for Current, and the goal tag", async () => {
+    const v = await applyGoal(
+      {
+        ...base,
+        is_goal: true,
+        goal_total: "32",
+        goal_unit: " pages ",
+        goal_current: "10",
+        goal_last: new Date(2026, 10, 5),
+      },
+      "Goal",
+    );
+    expect(v.notes).toBe("Read it.\n\n@goal: 32 pages\n\n2026-11-05: 10\n\n@endgoal");
+    expect(v.tag_ids).toEqual(["tag1", "g1"]);
+  });
+
+  it("starts with no entries when Current is empty or 0", async () => {
+    const v = await applyGoal({ ...base, is_goal: true, goal_total: "5", goal_unit: "", goal_current: "0" }, "Goal");
+    expect(v.notes).toBe("Read it.\n\n@goal: 5\n\n@endgoal");
+  });
+
+  it("updates the total and unit in place, keeping entries", async () => {
+    const notes = "Before\n\n@goal: 10 pages\n\n2026-11-06: 4\n\n@endgoal\n\nAfter";
+    const v = await applyGoal({ ...base, notes, is_goal: true, goal_total: "12", goal_unit: "chapters" }, "Goal");
+    expect(v.notes).toBe("Before\n\n@goal: 12 chapters\n\n2026-11-06: 4\n\n@endgoal\n\nAfter");
+  });
+
+  it("removes the block and the goal tag when unchecked", async () => {
+    const notes = "Read it.\n\n@goal: 10\n\n@endgoal";
+    const v = await applyGoal({ ...base, notes, tag_ids: ["tag1", "g1"], is_goal: false }, "Goal");
+    expect(v).toMatchObject({ notes: "Read it.", tag_ids: ["tag1"] });
+  });
+
+  it("leaves values alone when the goal fields weren't shown or nothing is a goal", async () => {
+    expect(await applyGoal({ ...base, is_goal: undefined }, "Goal")).toEqual({ ...base, is_goal: undefined });
+    expect(await applyGoal({ ...base, is_goal: false }, "Goal")).toEqual({ ...base, is_goal: false });
+    expect(runAppleScript).not.toHaveBeenCalled();
   });
 });
 

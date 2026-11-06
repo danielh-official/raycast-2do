@@ -5,7 +5,7 @@ Five features for the 2Do Raycast extension:
 1. [x] Add a link
 2. [ ] Bulk add links (tabled for now)
 3. [x] Cancel a task**,** with a preference for what cancelling does
-4. [ ] Track goal progress on a task, driven by syntax in the notes, with a history of each bit of progress
+4. [x] Track goal progress on a task, driven by syntax in the notes, with a history of each bit of progress
 5. [ ] Add dated notes to a task, driven by syntax in the notes
 
 Ship them in that order, one commit (or PR) per feature. Each feature lands with its tests, a README section, and a CHANGELOG line.
@@ -20,14 +20,18 @@ The Automation Suite was checked against 2Do 2026.4.3 with read-only calls and c
   - `none` must have no `value`; `{ type: "none" }` clears the action.
 - **There's no batch create.** Bulk adding means one `create_task` call per link.
 - **Cancelled tasks are completed tasks with a "Cancelled" tag.** That's 2Do's convention, and 18 tasks in the current database follow it. `complete_task` on a project or checklist also completes its subtasks (`recursive` defaults to true).
-- **The automation can't create tags.** The suite has `list_tags` but no `create_tag`. If the cancel tag doesn't exist, the extension has to say so instead of creating it.
+- **The automation can't create tags, but 2Do's URL scheme can.**
+  - The suite has `list_tags` but no `create_tag`, and `tag_update` takes only tag IDs. Its operations are `set`, `append` and `remove`.
+  - Writing a tag name into the notes doesn't create the tag. 2Do's "detect details" only runs as you type in Quick Entry or the task editor.
+  - `twodo://x-callback-url/add?task=…&tags=Name&ignoredefaults=1`, opened with `open -g`, does create a missing tag. This was confirmed by creating the Goal tag, with 2Do staying in the background.
+  - `ensureTag` uses this: it adds a placeholder task carrying the tag, waits for the tag to appear, then deletes the placeholder.
 - **Notes are plain text.** Whatever syntax we use has to read well in 2Do on Mac and iOS, because the 2Do app won't render or understand it.
 
 ## Code layout
 
 - `extension/src/2do.ts`: 2Do calls and task logic (exists).
 - `extension/src/link.ts`: reads a web page's title and description, from an open browser tab or a direct fetch (exists, added for Add Link).
-- `extension/src/notes.ts` (new): pure functions that parse and rewrite the progress and dated-note syntax. They don't call 2Do, so they're easy to unit test.
+- `extension/src/goal.ts`: pure functions that parse and rewrite the goal block. They don't call 2Do, so they're easy to unit test. Dated notes should get a sibling module built the same way.
 - `tests/2do.test.ts` (exists) and `tests/notes.test.ts` (new).
 - Pull a `ymd(date)` helper (local `yyyy-MM-dd`) out of `dateFields` so the notes code formats dates the same way.
 
@@ -146,41 +150,43 @@ Details:
   - Raycast allows one search-bar dropdown, so the tag would need another control.
   - The likely approach: a "Filter by Paused Tag" action (⌘T) sets the tag, the navigation title shows it, and the dropdown offers only lists with tasks under that tag.
 
-## Notes syntax (shared by features 4 and 5)
+## Notes convention (set by goals, the template for dated notes)
 
-Both features use **sections** in the notes. A section is a header line followed by `-`  bullet lines, and it ends at the first blank line or the first line that isn't a bullet. Everything else in the notes is left exactly as it was. Headers are matched case-insensitively at the start of a line, and a task has at most one section of each kind (the first one wins).
+Goals aren't a 2Do feature, so the extension stores them in the notes, staying as close to 2Do as possible:
 
-Dates are local `yyyy-MM-dd`, which sorts correctly and reads the same everywhere.
+- **A tag mirrors the feature**, so it's visible and filterable in 2Do itself. The default is "Goal", and the name is set in preferences. A missing tag is created on first use through `ensureTag`, as Cancel Task now does too.
+- **The data is a block in the notes:** an `@name:` header line through an `@endname` line. Text outside the block is left alone. Lines inside it that aren't entries are ignored. A missing end line means the block runs to the end of the notes.
+- **One line per date, newest first**, as local `yyyy-MM-dd`. Dates only, no times, to keep the notes short. A second entry on the same day merges into that day's line.
+- **Read-modify-write:** actions that change the block call `get_task` first and write back from that fresh copy.
+- **Forms:** the Add and Edit forms carry the feature's fields behind a checkbox. Unchecking removes the block and the tag, after a confirmation, because the history goes with it.
 
-### 4. Goal progress
-
-**Syntax.** A `Goal:` line starts tracking. Progress entries follow it:
+### 4. Goal progress (done)
 
 ```
-Goal: 10 pages
-- 2026-11-04 +3
-- 2026-11-06 +2 Chapter 4 done
+@goal: 32 pages
+
+2026-11-06: 10
+2026-11-05: -1
+2026-11-04: 4
+
+@endgoal
 ```
 
-- Header: `Goal: <target> [unit]`. The target is a positive number, and the unit is optional free text.
-- Entry: `- <yyyy-MM-dd> +<amount> [comment]`. The amount is a positive number. A `-<amount>` entry corrects a mistake.
-- Current progress is the sum of the entries. Entries are appended in chronological order, so the section is the history.
-
-**In Raycast:**
-
-- View Tasks shows a progress accessory such as `5/10 pages`, with the icon from `getProgressIcon` in `@raycast/utils`, plus a tooltip with the last entry's date.
-- **Log Progress** action (⌘P) pushes a small form with Amount (default 1), Date (default today), and Comment (optional). It appends an entry, using the read-modify-write rule.
-- **Start Goal** action, shown only when the notes have no `Goal:` line, inserts the header (Target and Unit fields) at the top of the notes. Typing the syntax in 2Do or in Edit Task works just as well.
-- When a logged entry reaches the target, show a toast with a **Complete Task** button. Don't complete the task automatically.
-- **Show Progress** pushes a `Detail` view with a progress summary and the entry history as a Markdown table (date, amount, running total, comment).
-
-`notes.ts` **API:** `parseGoal(notes) → { target, unit, entries, total } | null` and `appendProgress(notes, entry) → notes`.
-
-**Tests:** parsing (units, decimals, negative corrections, comments, sections in the middle of other text, a malformed bullet ending the section), appending (to an empty section and to one with text after it), and a round trip that leaves the rest of the notes unchanged.
+- [x] `goal.ts`: `parseGoal`, `formatGoal`, `writeGoal` (replace in place, append, or remove), `logProgress` (merge into the day's line; drop a day that nets to 0) and `goalProgress` (done, and today's share).
+- [x] **Add a goal** checkbox in Add Task and Edit Task:
+  - It reveals **Total** (required, above 0) and **Units**.
+  - When the task isn't a goal yet, it also reveals **Current**, plus **Last Completed** (default today) when Current is above 0.
+  - Editing a goal changes the header in place and keeps its history (`applyGoal` in `2do.ts`).
+- [x] **Log Progress** (⌘G; ⌘P is reserved by Raycast): Amount and Date. When the total is reached, a toast offers **Complete Task**.
+- [x] Task rows show a progress ring as the icon: earlier progress in green, today's share in blue. It's built like `getProgressIcon`'s SVG, with "13/32 pages" as an accessory.
+- [x] **View Tasks: Goals:** open tasks with a goal block, with the usual list and smart-list dropdown.
+- [x] Tests in `tests/goal.test.ts`, plus `ensureTag` and `applyGoal` tests that mock `open`, so tests never reach 2Do.
 
 ### 5. Dated notes
 
-**Syntax.** A `Log:` line starts the section:
+**To revisit:** the syntax below predates the goal convention. Redo it as a tagged `@name:` … `@endname` block with one line per date, newest first.
+
+**Original syntax.** A `Log:` line starts the section:
 
 ```
 Log:
@@ -211,13 +217,13 @@ The plan assumes the answer in bold for each question. Change these before start
 1. ~~**"Add a link"**: a link on any task, or a "save this URL as a task" command?~~ Answered: both. The Add Link command is built, and the link on any task is the rest of section 1.
 2. **Bulk titles:** **an optional checkbox, the same as Add Link** (reading pages, or using the URL as the title)?
 3. **Cancel default:** **Complete and tag "Cancelled"**, which matches the existing `cancel-2do-task` skill and the 18 existing cancelled tasks?
-4. **Goal reached:** **offer to complete the task**, complete it automatically, or do nothing?
-5. **Syntax keywords:** are `Goal:` and `Log:` the right words? Other candidates are `Progress:` and `Notes:`/`Journal:`.
-6. **Entry order:** **oldest first** in the notes (append-only, readable as history) or newest first?
-7. **Recurring tasks:** when a repeating task completes, 2Do creates the next instance. Should its notes, and with them the progress and log history, carry over? This needs checking in 2Do before features 4 and 5 ship.
+4. ~~**Goal reached:**~~ Answered: a toast offers to complete the task.
+5. ~~**Syntax keywords:**~~ Answered for goals: `@goal:` … `@endgoal`. Dated notes still need a name.
+6. ~~**Entry order:**~~ Answered: newest first, one line per date.
+7. **Recurring tasks:** when a repeating task completes, 2Do creates the next instance. Should its notes, and with them the goal history, carry over? This is still unchecked.
 
 ## Verify before building
 
-- Which operations `tag_update` accepts besides `set` and `append` (`remove`?). Validation only happens after the task is found, so check it on a scratch task. This is needed if "Uncancel" is added later.
+- ~~Which operations `tag_update` accepts besides `set` and `append`.~~ The 2Do binary lists `set`, `append` and `remove`, so an "Uncancel" action is possible.
 - That `create_task` with `action.type: "url"` accepts custom schemes (`readdle-spark://`, `x-apple-health://`), since existing tasks use them.
 - ~~That `move_task` returns the new `task_id` in the shape documented in the sdef.~~ Confirmed: it returns `{ task: { task_id } }`, and the ID changes.

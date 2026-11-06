@@ -45,22 +45,45 @@ Browse tasks by scope: All, Today, Starred, Scheduled, Done, any list, or any sm
 | Choose Link (2 or more)             | ⇧⌘L      |
 | Complete / Mark as Not Done         | ⌘D       |
 | Cancel Task                         | ⇧⌘D      |
+| Log Progress (goals)                | ⌘G       |
 | Star / Unstar                       | ⌘.       |
 | Open in 2Do                         | ⌘O       |
 
-### View Tasks: Today, Now, Later Today, Starred, Scheduled, Paused, Done
+### Goals
+
+Track progress toward a number on any task, like pages read or kilometers run. 2Do has no goals of its own, so the extension keeps them in the task's notes, readable in 2Do on any device:
+
+```
+@goal: 32 pages
+
+2026-11-06: 10
+2026-11-05: -1
+2026-11-04: 4
+
+@endgoal
+```
+
+Each line is one day's progress, newest first, and a negative number corrects a mistake. The rest of the notes are left alone.
+
+- **Make a goal:** check **Add a goal** in Add Task or Edit Task, and fill in **Total**, **Units** and, optionally, **Current**. When Current is above 0, **Last Completed** sets its date (today by default). The task also gets the **Goal** tag, which is created in 2Do if needed. Its name is set in the extension's preferences.
+- **Change a goal:** Edit Task changes Total and Units, keeping its history. Unchecking **Add a goal** removes the goal and its history, after asking.
+- **Log Progress (⌘G):** add an amount for a day (today by default). Logging twice on one day adds to that day's line. When the total is reached, a toast offers to complete the task.
+- **In task lists:** a goal task shows a progress ring, with today's share in a second color, and "13/32 pages".
+
+### View Tasks: Today, Now, Later Today, Starred, Scheduled, Paused, Goals, Done
 
 One command per scope, so you can open it straight from Raycast's root search or give it a hotkey. Each has the same task actions as View Tasks. Its dropdown narrows the scope to one list or smart list, and only offers those that contain at least one of the scope's tasks.
 
 - **Now** is today's tasks that have started: no start time, or a start time that has passed. **Later Today** is the rest of today's tasks.
 - **Paused** is the tasks hidden by paused tags. Its dropdown can also narrow to one paused tag.
+- **Goals** is the open tasks with a goal in their notes.
 
 ### Cancel Task
 
 By default, Cancel Task follows 2Do's convention: it adds the **Cancelled** tag and completes the task, so it shows in Done with an ✕ instead of a check. Change what it does in the extension's preferences:
 
 - **Cancel Task:** Complete and Tag (default), Tag Only, Move to List and Complete, or Delete. Delete always asks first.
-- **Cancel Tag:** the tag to add (default "Cancelled"). It must already exist in 2Do.
+- **Cancel Tag:** the tag to add (default "Cancelled"). If it doesn't exist yet, it's created in 2Do the first time a task is cancelled.
 - **Cancel List:** the list to move cancelled tasks to, for Move to List and Complete.
 
 Cancelling a project or checklist that still has open subtasks asks first, because completing it completes them too.
