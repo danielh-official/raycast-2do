@@ -165,9 +165,9 @@ Goals aren't a 2Do feature, so the extension stores them in the notes, staying a
 ```
 @goal: 32 pages
 
-Nov 6, 2026: 10
+November 6, 2026: 10
 2026-11-05 2 pm - -1
-Nov 4, 2026: 4
+November 4, 2026: 4
 
 @endgoal
 ```
@@ -192,7 +192,7 @@ Nov 4, 2026: 4
 - [x] The extension never rewrites lines it didn't write:
   - Logging adds to the day's date-only line, keeping its format, or inserts a new one before the first older entry.
   - Editing a goal only changes the header line.
-- [x] The **Goal Date Format** preference sets how the extension writes dates: Nov 6, 2026 (default), 6 Nov 2026, or 2026-11-06.
+- [x] The **Goal Date Format** preference sets how the extension writes dates: November 6, 2026 (default), Nov 6, 2026, 6 Nov 2026, or 2026-11-06. The journal should default to the same long month name.
 
 ### 5. Dated notes
 
