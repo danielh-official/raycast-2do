@@ -15,6 +15,8 @@ import {
 import { showFailureToast } from "@raycast/utils";
 import { actionURL, CancelPrefs, cancelTask, isCancelled, Task, taskLinks, twoDo, ymd } from "./2do";
 import { goalProgress, parseGoal } from "./goal";
+import { parseJournal } from "./journal";
+import { AddJournalEntryForm, JournalView } from "./journal-view";
 import { LogProgressForm } from "./log-progress";
 import { TaskForm } from "./task-form";
 
@@ -60,6 +62,7 @@ export function TaskItem({ task: t, onChange }: { task: Task; onChange: () => vo
     : links[0] && { ...RUN_ACTION.url, target: links[0], value: links[0] };
   const goal = parseGoal(t.notes);
   const progress = goal && goalProgress(goal, ymd(new Date()));
+  const journal = parseJournal(t.notes);
 
   async function run(title: string, command: string, args: object) {
     try {
@@ -138,6 +141,9 @@ export function TaskItem({ task: t, onChange }: { task: Task; onChange: () => vo
             ]
           : []),
         ...(primary ? [{ icon: primary.icon, tooltip: `${primary.title}: ${primary.value}` }] : []),
+        ...(journal?.length
+          ? [{ icon: Icon.Book, tooltip: `${journal.length} journal ${journal.length === 1 ? "entry" : "entries"}` }]
+          : []),
         ...(t.starred ? [{ icon: { source: Icon.Star, tintColor: Color.Yellow } }] : []),
       ]}
       actions={
@@ -151,6 +157,20 @@ export function TaskItem({ task: t, onChange }: { task: Task; onChange: () => vo
               target={<LogProgressForm task={t} onLogged={onChange} />}
             />
           )}
+          <Action.Push
+            title="Add Journal Entry"
+            icon={Icon.Book}
+            shortcut={{ modifiers: ["cmd"], key: "j" }}
+            target={<AddJournalEntryForm task={t} onAdded={onChange} />}
+          />
+          {journal?.length ? (
+            <Action.Push
+              title="Show Journal"
+              icon={Icon.List}
+              shortcut={{ modifiers: ["cmd", "shift"], key: "j" }}
+              target={<JournalView task={t} onChange={onChange} />}
+            />
+          ) : null}
           {primary && (
             <Action.Open
               title={primary.title}

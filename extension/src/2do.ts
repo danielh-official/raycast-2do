@@ -3,7 +3,7 @@ import { runAppleScript } from "@raycast/utils";
 import { execFile } from "node:child_process";
 import { setTimeout as sleep } from "node:timers/promises";
 import { promisify } from "node:util";
-import { DayFormat } from "./dates";
+import { DayFormat, ymd } from "./dates";
 import { appendGoal, formatGoal, parseGoal, removeGoal, setGoalHeader } from "./goal";
 
 export type List = { list_id: string; collection_id: string; title: string };
@@ -97,8 +97,7 @@ export async function twoDo<T>(command: string, args: object = {}): Promise<T> {
 
 const pad = (n: number) => String(n).padStart(2, "0");
 
-// Local "yyyy-MM-dd".
-export const ymd = (d: Date) => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+export { ymd };
 
 // 2Do takes floating local "yyyy-MM-dd" dates and optional "HH:mm" times. null clears (edit only).
 export function dateFields(prefix: "start" | "due", d: Date | null, clear: boolean) {

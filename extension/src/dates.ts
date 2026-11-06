@@ -1,10 +1,14 @@
 import * as chrono from "chrono-node";
 import { execFileSync } from "node:child_process";
 
-export type Timestamp = { day: string; hasTime: boolean };
+// `at` orders timestamps: milliseconds, at the start of the day for a date without a time.
+export type Timestamp = { day: string; hasTime: boolean; at: number };
 export type DayFormat = "MMMM d, yyyy" | "MMM d, yyyy" | "d MMM yyyy" | "yyyy-MM-dd";
 
 const pad = (n: number) => String(n).padStart(2, "0");
+
+// Local "yyyy-MM-dd".
+export const ymd = (d: Date) => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
 const MONTHS = [
   "January",
   "February",
@@ -47,10 +51,18 @@ export function parseTimestamp(text: string, dayFirst = (regionDayFirst ??= regi
   const [result] = parsers.get(dayFirst)!.parse(trimmed);
   if (!result || result.index !== 0 || result.text.length !== trimmed.length) return;
   const d = result.start.date();
+  const hasTime = result.start.isCertain("hour");
   return {
-    day: `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`,
-    hasTime: result.start.isCertain("hour"),
+    day: ymd(d),
+    hasTime,
+    at: hasTime ? d.getTime() : new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime(),
   };
+}
+
+// "2:05 pm".
+export function formatTime(d: Date) {
+  const h = d.getHours() % 12 || 12;
+  return `${h}:${pad(d.getMinutes())} ${d.getHours() < 12 ? "am" : "pm"}`;
 }
 
 // `day` is "yyyy-MM-dd".

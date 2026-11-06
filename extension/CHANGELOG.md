@@ -11,5 +11,6 @@
 - Goals: track progress on a task in its notes, log progress, see a progress ring, and browse them with View Tasks: Goals
 - Goal entries can use any common date format, with or without times, and the date format the extension writes is a preference
 - Missing Goal and Cancel tags are created in 2Do on first use
+- Journal: timestamped entries in a task's notes, added with Add Journal Entry and read with Show Journal
 - View Tasks command with All, Today, Starred, Scheduled, Done, list, and smart list scopes
 - Edit, complete, star, and open tasks from the list
