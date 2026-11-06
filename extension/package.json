@@ -118,7 +118,7 @@
     {
       "name": "cancelTag",
       "title": "Cancel Tag",
-      "description": "The 2Do tag that marks a cancelled task. It's created in 2Do the first time it's needed.",
+      "description": "The 2Do tag that marks a cancelled task. It must already exist in 2Do.",
       "type": "textfield",
       "required": false,
       "default": "Cancelled"
@@ -132,21 +132,12 @@
       "default": ""
     },
     {
-      "name": "goalTagEnabled",
-      "title": "Goals",
-      "label": "Tag goals",
-      "description": "Adds the Goal Tag when a task becomes a goal or a goal is edited, so goals show up as tagged in 2Do. Goals work without it.",
-      "type": "checkbox",
-      "required": false,
-      "default": true
-    },
-    {
       "name": "goalTag",
       "title": "Goal Tag",
-      "description": "The 2Do tag that marks a goal task, when Tag goals is on. It's created in 2Do the first time it's needed.",
+      "description": "Optional. A 2Do tag to add to goal tasks, so they're tagged in 2Do too. It must already exist in 2Do. Leave empty to not tag goals.",
       "type": "textfield",
       "required": false,
-      "default": "Goal"
+      "default": ""
     },
     {
       "name": "goalDateFormat",
