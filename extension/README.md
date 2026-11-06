@@ -62,16 +62,16 @@ Track progress toward a number on any task, like pages read or kilometers run. 2
 ```
 @goal: 32 pages
 
-Nov 6, 2026: 10
+November 6, 2026: 10
 2026-11-05 2 pm - -1
-Nov 4, 2026: 4
+November 4, 2026: 4
 
 @endgoal
 ```
 
 Each line is a date, then `:` or `-`, then an amount; a negative number corrects a mistake. Dates can be in any common format, like `2026-11-05`, `Nov 6, 2026` or `6 Nov 2026`, with or without a time. Ambiguous dates like `05/11/2026` follow your Mac's region. Lines with times count toward their day.
 
-The extension writes one date-only line per day, newest first, in the **Goal Date Format** preference ("Nov 6, 2026" by default). It never rewrites lines you typed: logging adds to that day's date-only line, or adds one. The rest of the notes are left alone.
+The extension writes one date-only line per day, newest first, in the **Goal Date Format** preference ("November 6, 2026" by default). It never rewrites lines you typed: logging adds to that day's date-only line, or adds one. The rest of the notes are left alone.
 
 - **Make a goal:** check **Add a goal** in Add Task or Edit Task, and fill in **Total**, **Units** and, optionally, **Current**. When Current is above 0, **Last Completed** sets its date (today by default). The task also gets the **Goal** tag, which is created in 2Do if needed. Its name is set in the extension's preferences.
 - **Change a goal:** Edit Task changes Total and Units, keeping its history. Unchecking **Add a goal** removes the goal and its history, after asking.

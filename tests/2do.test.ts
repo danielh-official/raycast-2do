@@ -368,7 +368,7 @@ describe("ensureTag", () => {
 
 describe("applyGoal", () => {
   const base = { ...taskToValues(task), notes: "Read it.", tag_ids: ["tag1"] };
-  const prefs: GoalPrefs = { goalTag: "Goal", goalDateFormat: "MMM d, yyyy" };
+  const prefs: GoalPrefs = { goalTag: "Goal", goalDateFormat: "MMMM d, yyyy" };
   beforeEach(() => {
     runAppleScript.mockResolvedValue(JSON.stringify({ tags: [{ tag_id: "g1", title: "Goal" }] }));
   });
@@ -385,7 +385,7 @@ describe("applyGoal", () => {
       },
       prefs,
     );
-    expect(v.notes).toBe("Read it.\n\n@goal: 32 pages\n\nNov 5, 2026: 10\n\n@endgoal");
+    expect(v.notes).toBe("Read it.\n\n@goal: 32 pages\n\nNovember 5, 2026: 10\n\n@endgoal");
     expect(v.tag_ids).toEqual(["tag1", "g1"]);
   });
 

@@ -145,8 +145,12 @@
       "description": "How the extension writes dates in a goal's notes. Goals read any common format either way.",
       "type": "dropdown",
       "required": false,
-      "default": "MMM d, yyyy",
+      "default": "MMMM d, yyyy",
       "data": [
+        {
+          "title": "November 6, 2026",
+          "value": "MMMM d, yyyy"
+        },
         {
           "title": "Nov 6, 2026",
           "value": "MMM d, yyyy"
