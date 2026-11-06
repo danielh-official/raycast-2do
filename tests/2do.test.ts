@@ -63,6 +63,13 @@ describe("twoDo", () => {
     expect(options).toEqual({ language: "JavaScript" });
   });
 
+  it("says to update 2Do when its automation is missing, or to install it", async () => {
+    runAppleScript.mockRejectedValue(new Error("Error: Error: Message not understood. (-1708)"));
+    await expect(twoDo("query_tasks")).rejects.toThrow("Update 2Do to the latest version");
+    runAppleScript.mockRejectedValue(new Error("Error: Application can't be found. (-2700)"));
+    await expect(twoDo("query_tasks")).rejects.toThrow("2Do isn't installed");
+  });
+
   it("passes 2Do errors through", async () => {
     runAppleScript.mockRejectedValue(new Error("not_found: Task 'x' was not found."));
     await expect(twoDo("get_task", { task_id: "x" })).rejects.toThrow("not_found");

@@ -85,12 +85,30 @@ export function actionURL({ type, value = "" }: Task["action"]) {
 // Calls a command from 2Do's AppleScript "Automation Suite" (same commands and arguments as 2Do's MCP server).
 // 2Do errors are thrown as script errors, e.g. "not_found: Task 'x' was not found."
 export async function twoDo<T>(command: string, args: object = {}): Promise<T> {
-  const out = await runAppleScript(
-    `function run(argv) { return JSON.stringify(Application("2Do")[argv[0]]({ arguments: JSON.parse(argv[1]) })); }`,
-    [command, JSON.stringify(args)],
-    { language: "JavaScript" },
-  );
+  let out: string;
+  try {
+    out = await runAppleScript(
+      `function run(argv) { return JSON.stringify(Application("2Do")[argv[0]]({ arguments: JSON.parse(argv[1]) })); }`,
+      [command, JSON.stringify(args)],
+      { language: "JavaScript" },
+    );
+  } catch (error) {
+    throw friendlyError(error);
+  }
   return JSON.parse(out);
+}
+
+// AppleScript's errors for a 2Do without the Automation Suite (-1708) or no 2Do at all (-2700),
+// reworded to say what to do. Other errors, like 2Do's own "not_found: …", pass through.
+export function friendlyError(error: unknown) {
+  const message = error instanceof Error ? error.message : String(error);
+  if (/Message not understood|-1708/.test(message))
+    return new Error(
+      "This 2Do version doesn't have the automation this extension uses. Update 2Do to the latest version, then try again.",
+    );
+  if (/Application can.t be found|-2700|-10814/.test(message))
+    return new Error("2Do isn't installed. Install 2Do for Mac, then try again.");
+  return error;
 }
 
 const pad = (n: number) => String(n).padStart(2, "0");

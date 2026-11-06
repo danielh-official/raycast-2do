@@ -8,7 +8,7 @@ Add, browse, and edit [2Do](https://www.2doapp.com) tasks from Raycast.
 ## Requirements
 
 - macOS with the 2Do Mac app installed (direct download or Setapp).
-- A 2Do version that includes the AppleScript Automation Suite. Tested with 2Do 2026.4.3.
+- A 2Do version that includes the AppleScript Automation Suite. Tested with 2Do 2026.4.3. With an older 2Do, commands say to update it.
 
 ## Setup
 
