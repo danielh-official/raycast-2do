@@ -59,6 +59,54 @@ export function parseJournal(notes: string, dayFirst?: boolean): JournalEntry[] 
   return entries.map(({ body, ...entry }) => ({ ...entry, text: body.join("\n").trim() }));
 }
 
+// What makes part of a journal be ignored. Only a missing @endjournal can be fixed (closeJournal).
+export function checkJournal(notes: string, dayFirst?: boolean): { message: string; fixable: boolean }[] {
+  const lines = notes.split("\n");
+  const block = findBlock(lines);
+  if (!block) {
+    const broken = lines.find((l) => /^@journal\b/i.test(l.trim()));
+    return broken
+      ? [
+          {
+            message: `"${broken.trim()}" should be "@journal" alone on its line, so it isn't a journal.`,
+            fixable: false,
+          },
+        ]
+      : [];
+  }
+  const issues: { message: string; fixable: boolean }[] = [];
+  if (!block.closed)
+    issues.push({
+      message: "The journal has no @endjournal line, so the rest of the notes counts as part of its last entry.",
+      fixable: true,
+    });
+  const first = parseJournal(notes, dayFirst)![0]?.start ?? block.end;
+  const stray = lines.slice(block.start + 1, first).filter((l) => l.trim());
+  if (stray.length)
+    issues.push({
+      message: `Text before the journal's first entry isn't shown: "${stray[0].trim()}".`,
+      fixable: false,
+    });
+  return issues;
+}
+
+// Adds a missing @endjournal after the last entry's own paragraph: its line plus following lines up
+// to a blank line, or for a timestamp alone on its line, the paragraph below it. Text after that is
+// the notes' again.
+export function closeJournal(notes: string, dayFirst?: boolean) {
+  const lines = notes.split("\n");
+  const block = findBlock(lines);
+  if (!block || block.closed) return notes;
+  const last = parseJournal(notes, dayFirst)!.at(-1);
+  let i = last?.start ?? block.start;
+  if (last && !readEntryStart(lines[i].trim(), dayFirst)?.text) {
+    while (i + 1 < lines.length && !lines[i + 1].trim()) i++;
+  }
+  while (last && i + 1 < lines.length && lines[i + 1].trim()) i++;
+  lines.splice(i + 1, 0, "", "@endjournal", ...(lines[i + 1]?.trim() ? [""] : []));
+  return lines.join("\n");
+}
+
 // The entry's lines: one line, or the timestamp, a blank line, and the text when it has several lines.
 export function formatEntry(when: Date, hasTime: boolean, text: string, format: DayFormat) {
   const day = formatDay(ymd(when), format);

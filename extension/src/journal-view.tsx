@@ -12,8 +12,9 @@ import {
 import { showFailureToast, useCachedPromise, useForm } from "@raycast/utils";
 import { Task, twoDo } from "./2do";
 import { DayFormat, DisplayFormat, formatDisplay } from "./dates";
-import { addJournalEntry, parseJournal } from "./journal";
+import { addJournalEntry, checkJournal, parseJournal } from "./journal";
 import { dayFirst } from "./preferences";
+import { remediate } from "./remediate";
 
 // Adds an entry to a task's journal. Reads the task fresh before writing so edits made in 2Do since
 // the list loaded aren't lost. A date picked without a time writes a date-only entry.
@@ -25,10 +26,12 @@ export function AddJournalEntryForm({ task, onAdded }: { task: Task; onAdded: ()
     async onSubmit({ text, when }) {
       try {
         const { task: fresh } = await twoDo<{ task: Task }>("get_task", { task_id: task.task_id });
+        const current = await remediate(fresh.notes, "add the entry");
+        if (current === undefined) return;
         const date = when ?? new Date();
         const { journalDateFormat } = getPreferenceValues<{ journalDateFormat: DayFormat }>();
         const notes = addJournalEntry(
-          fresh.notes,
+          current,
           date,
           !Form.DatePicker.isFullDay(date),
           text,
@@ -74,8 +77,10 @@ export function JournalView({ task: initial, onChange }: { task: Task; onChange:
     journalDisplayFormat: DisplayFormat;
     journalRelativeTime: boolean;
   }>();
+  const issues = checkJournal(task.notes, dayFirst());
   const markdown = [
     `# ${task.title}`,
+    ...issues.map((i) => `> ⚠️ ${i.message}`),
     ...entries.map(
       (e) => `### ${formatDisplay(e, journalDisplayFormat, journalRelativeTime)}\n\n${e.text.replace(/\n/g, "  \n")}`,
     ),

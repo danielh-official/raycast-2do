@@ -113,6 +113,49 @@ export function logProgress(notes: string, day: string, amount: number, format: 
   return lines.join("\n");
 }
 
+export type NotesIssue = { message: string; fixable: boolean };
+
+// What makes part of a goal be ignored. Only a missing @endgoal can be fixed (closeGoal).
+export function checkGoal(notes: string, dayFirst?: boolean): NotesIssue[] {
+  const lines = notes.split("\n");
+  const block = findBlock(lines);
+  if (!block) {
+    const broken = lines.find((l) => /^@goal\b/i.test(l.trim()));
+    return broken
+      ? [{ message: `"${broken.trim()}" needs a total, like "@goal: 32 pages", so it isn't a goal.`, fixable: false }]
+      : [];
+  }
+  const goal = parseGoal(notes, dayFirst)!;
+  const issues: NotesIssue[] = [];
+  if (!block.closed)
+    issues.push({
+      message: "The goal has no @endgoal line, so the rest of the notes counts as part of it.",
+      fixable: true,
+    });
+  // Without @endgoal, only lines up to the last entry are the goal's.
+  const end = block.closed ? block.end - 1 : (goal.entries.at(-1)?.line ?? block.start);
+  const entryLines = new Set(goal.entries.map((e) => e.line));
+  const skipped = lines
+    .slice(block.start + 1, end + 1)
+    .filter((l, i) => l.trim() && !entryLines.has(block.start + 1 + i));
+  if (skipped.length)
+    issues.push({
+      message: `${skipped.length === 1 ? "A line" : `${skipped.length} lines`} in the goal can't be read as a date and amount, so ${skipped.length === 1 ? "it's" : "they're"} ignored: "${skipped[0].trim()}".`,
+      fixable: false,
+    });
+  return issues;
+}
+
+// Adds a missing @endgoal after the goal's last entry (or its header), so text after it is the notes' again.
+export function closeGoal(notes: string, dayFirst?: boolean) {
+  const lines = notes.split("\n");
+  const block = findBlock(lines);
+  if (!block || block.closed) return notes;
+  const after = parseGoal(notes, dayFirst)!.entries.at(-1)?.line ?? block.start;
+  lines.splice(after + 1, 0, "", "@endgoal", ...(lines[after + 1]?.trim() ? [""] : []));
+  return lines.join("\n");
+}
+
 export function goalProgress(goal: Goal, today: string) {
   const sum = (entries: GoalEntry[]) => round(entries.reduce((n, e) => n + e.amount, 0));
   return { done: sum(goal.entries), today: sum(goal.entries.filter((e) => e.day === today)) };
