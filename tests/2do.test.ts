@@ -7,6 +7,7 @@ import {
   cancelTask,
   dateFields,
   ensureTag,
+  GoalPrefs,
   hasStarted,
   isCancelled,
   saveTask,
@@ -341,11 +342,12 @@ describe("ensureTag", () => {
 
 describe("applyGoal", () => {
   const base = { ...taskToValues(task), notes: "Read it.", tag_ids: ["tag1"] };
+  const prefs: GoalPrefs = { goalTag: "Goal", goalDateFormat: "MMM d, yyyy" };
   beforeEach(() => {
     runAppleScript.mockResolvedValue(JSON.stringify({ tags: [{ tag_id: "g1", title: "Goal" }] }));
   });
 
-  it("adds a goal block with today's or the given date for Current, and the goal tag", async () => {
+  it("adds a goal block with Current on the Last Completed date, and the goal tag", async () => {
     const v = await applyGoal(
       {
         ...base,
@@ -355,32 +357,40 @@ describe("applyGoal", () => {
         goal_current: "10",
         goal_last: new Date(2026, 10, 5),
       },
-      "Goal",
+      prefs,
     );
-    expect(v.notes).toBe("Read it.\n\n@goal: 32 pages\n\n2026-11-05: 10\n\n@endgoal");
+    expect(v.notes).toBe("Read it.\n\n@goal: 32 pages\n\nNov 5, 2026: 10\n\n@endgoal");
     expect(v.tag_ids).toEqual(["tag1", "g1"]);
   });
 
+  it("writes dates in the preferred format", async () => {
+    const v = await applyGoal(
+      { ...base, is_goal: true, goal_total: "3", goal_current: "1", goal_last: new Date(2026, 10, 5) },
+      { ...prefs, goalDateFormat: "yyyy-MM-dd" },
+    );
+    expect(v.notes).toContain("2026-11-05: 1");
+  });
+
   it("starts with no entries when Current is empty or 0", async () => {
-    const v = await applyGoal({ ...base, is_goal: true, goal_total: "5", goal_unit: "", goal_current: "0" }, "Goal");
+    const v = await applyGoal({ ...base, is_goal: true, goal_total: "5", goal_unit: "", goal_current: "0" }, prefs);
     expect(v.notes).toBe("Read it.\n\n@goal: 5\n\n@endgoal");
   });
 
-  it("updates the total and unit in place, keeping entries", async () => {
-    const notes = "Before\n\n@goal: 10 pages\n\n2026-11-06: 4\n\n@endgoal\n\nAfter";
-    const v = await applyGoal({ ...base, notes, is_goal: true, goal_total: "12", goal_unit: "chapters" }, "Goal");
-    expect(v.notes).toBe("Before\n\n@goal: 12 chapters\n\n2026-11-06: 4\n\n@endgoal\n\nAfter");
+  it("changes only the header of an existing goal, keeping entries as typed", async () => {
+    const notes = "Before\n\n@goal: 10 pages\n\n2026-11-06 2 pm - 4\n\n@endgoal\n\nAfter";
+    const v = await applyGoal({ ...base, notes, is_goal: true, goal_total: "12", goal_unit: "chapters" }, prefs);
+    expect(v.notes).toBe("Before\n\n@goal: 12 chapters\n\n2026-11-06 2 pm - 4\n\n@endgoal\n\nAfter");
   });
 
   it("removes the block and the goal tag when unchecked", async () => {
     const notes = "Read it.\n\n@goal: 10\n\n@endgoal";
-    const v = await applyGoal({ ...base, notes, tag_ids: ["tag1", "g1"], is_goal: false }, "Goal");
+    const v = await applyGoal({ ...base, notes, tag_ids: ["tag1", "g1"], is_goal: false }, prefs);
     expect(v).toMatchObject({ notes: "Read it.", tag_ids: ["tag1"] });
   });
 
   it("leaves values alone when the goal fields weren't shown or nothing is a goal", async () => {
-    expect(await applyGoal({ ...base, is_goal: undefined }, "Goal")).toEqual({ ...base, is_goal: undefined });
-    expect(await applyGoal({ ...base, is_goal: false }, "Goal")).toEqual({ ...base, is_goal: false });
+    expect(await applyGoal({ ...base, is_goal: undefined }, prefs)).toEqual({ ...base, is_goal: undefined });
+    expect(await applyGoal({ ...base, is_goal: false }, prefs)).toEqual({ ...base, is_goal: false });
     expect(runAppleScript).not.toHaveBeenCalled();
   });
 });
