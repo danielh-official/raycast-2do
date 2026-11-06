@@ -7,5 +7,6 @@
 - Set a task's 2Do action (link, call, message, email, visit, or Google search) when adding or editing it
 - Run a task's action, or choose from all of its links
 - Cancel Task action, with preferences for what cancelling does
+- View Tasks: Today, Now, Later Today, Starred, Scheduled, Paused, and Done commands, each narrowed by the lists and smart lists (and, for Paused, paused tags) that have tasks in that scope
 - View Tasks command with All, Today, Starred, Scheduled, Done, list, and smart list scopes
 - Edit, complete, star, and open tasks from the list

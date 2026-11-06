@@ -48,6 +48,13 @@ Browse tasks by scope: All, Today, Starred, Scheduled, Done, any list, or any sm
 | Star / Unstar                       | ⌘.       |
 | Open in 2Do                         | ⌘O       |
 
+### View Tasks: Today, Now, Later Today, Starred, Scheduled, Paused, Done
+
+One command per scope, so you can open it straight from Raycast's root search or give it a hotkey. Each has the same task actions as View Tasks. Its dropdown narrows the scope to one list or smart list, and only offers those that contain at least one of the scope's tasks.
+
+- **Now** is today's tasks that have started: no start time, or a start time that has passed. **Later Today** is the rest of today's tasks.
+- **Paused** is the tasks hidden by paused tags. Its dropdown can also narrow to one paused tag.
+
 ### Cancel Task
 
 By default, Cancel Task follows 2Do's convention: it adds the **Cancelled** tag and completes the task, so it shows in Done with an ✕ instead of a check. Change what it does in the extension's preferences:
