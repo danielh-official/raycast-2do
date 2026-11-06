@@ -23,6 +23,14 @@ describe("splitNotes", () => {
     });
   });
 
+  it("hides only the topmost block of each kind, leaving later ones in the text", () => {
+    const second = "@goal: 99\n\n@endgoal";
+    expect(splitNotes(`${goal}\n\n${journal}\n\nNotes\n\n${second}`)).toEqual({
+      text: `Notes\n\n${second}`,
+      blocks: [goal, journal],
+    });
+  });
+
   it("leaves notes without blocks alone, and ignores a malformed goal header", () => {
     expect(splitNotes("Just notes\n@goal: lots")).toEqual({ text: "Just notes\n@goal: lots", blocks: [] });
   });

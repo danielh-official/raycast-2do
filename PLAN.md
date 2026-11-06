@@ -154,7 +154,7 @@ Details:
 
 Goals aren't a 2Do feature, so the extension stores them in the notes, staying as close to 2Do as possible:
 
-- **A tag mirrors the feature**, so it's visible and filterable in 2Do itself. The default is "Goal", and the name is set in preferences. A missing tag is created on first use through `ensureTag`, as Cancel Task now does too.
+- **A tag can mirror the feature**, so it's visible and filterable in 2Do itself. For goals, it's on by default and can be turned off. The default name is "Goal", set in preferences. A missing tag is created on first use through `ensureTag`, as Cancel Task now does too. The journal has no tag.
 - **The data is a block in the notes:** an `@name:` header line through an `@endname` line. Text outside the block is left alone. Lines inside it that aren't entries are ignored. A missing end line means the block runs to the end of the notes.
 - **One line per date, newest first**, as local `yyyy-MM-dd`. Dates only, no times, to keep the notes short. A second entry on the same day merges into that day's line.
 - **Read-modify-write:** actions that change the block call `get_task` first and write back from that fresh copy.
@@ -232,6 +232,12 @@ Called again, discussed policy.
   - **Show relative time** preference, a checkbox that's on by default, adds `relativeTime`. That's minutes and hours for timed entries, then calendar days ("today", "yesterday"), weeks, months and years, using `Intl.RelativeTimeFormat`.
   - Times show as "3 pm", or "3:05 pm" when there are minutes.
   - The year is left out when it's the current one, in every style except `iso` and `written`.
+
+**Follow-up: nitpicks.**
+
+- [x] **Multiple blocks:** only the topmost goal and topmost journal count, everywhere: parsing, logging, adding entries, header edits, removal, and Edit Task's hidden blocks (`splitNotes`). Later blocks are ordinary notes text. Removing the topmost goal promotes the next one.
+- [x] **Tag goals** preference, a checkbox that's on by default. When it's off, `applyGoal` neither adds nor creates the Goal tag. Removing a goal still removes an existing tag, as cleanup.
+- [x] `removeGoal` removes the blank line after a block at the top of the notes, so no blank line is left at the start.
 
 ---
 
