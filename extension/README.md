@@ -24,7 +24,11 @@ Create a task with a title, notes, list, start and due dates (with optional time
 
 ### Add Link
 
-Enter a web address and the extension reads the page. The task form then opens with the page title as the task title and the page's description (if it has one) in the notes. The address is saved as the task's link, so 2Do can open it.
+Enter a web address and continue to the task form, with the address as the title. Check **Read page title and description** to read the page first: the task form then opens with the page title as the task title and the page's description (if it has one) in the notes. The checkbox remembers its last setting.
+
+Some sites (Goodreads, for example) block automated reading. Keep a browser open with the [Raycast browser extension](https://www.raycast.com/browser-extension) (Raycast Companion) installed and enabled to get past those blocks. If reading fails, a toast says why.
+
+Either way, the address is saved as the task's link, so 2Do can open it.
 
 ### View Tasks
 
