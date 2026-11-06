@@ -1,5 +1,9 @@
 import { Form } from "@raycast/api";
 import { runAppleScript } from "@raycast/utils";
+import { execFile } from "node:child_process";
+import { setTimeout as sleep } from "node:timers/promises";
+import { promisify } from "node:util";
+import { parseGoal, writeGoal } from "./goal";
 
 export type List = { list_id: string; collection_id: string; title: string };
 export type SmartList = { smart_list_id: string; collection_id: string; title: string };
@@ -57,97 +61,19 @@ export type TaskValues = {
   // Undefined when the form leaves the task's action alone (a type missing from ACTIONS).
   action_type?: string;
   action_value?: string;
-  // The Repeat checkbox. When it's off, saving clears the repeat.
-  is_repeating?: boolean;
-  // A REPEATS frequency. Undefined when the form leaves the repeat alone (one it can't show).
-  repeat?: string;
-  repeat_interval?: string;
-  repeat_unit?: string;
-  repeat_days?: string[];
-  // Monthly: "" for the same day of the month, or "1"–"5" or "-1" (last) with repeat_weekday.
-  repeat_ordinal?: string;
-  repeat_weekday?: string;
-  repeat_from?: string;
-  repeat_end?: string;
-  repeat_count?: string;
-  repeat_until?: Date | null;
+  // Undefined when the form leaves the goal alone. Current and Last Completed only apply when a
+  // task first becomes a goal; after that, progress is logged.
+  is_goal?: boolean;
+  goal_total?: string;
+  goal_unit?: string;
+  goal_current?: string;
+  goal_last?: Date | null;
 };
 
-export const REPEATS = ["daily", "weekdays", "weekly", "monthly", "yearly", "custom"];
-export const WEEKDAYS = ["monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday"] as const;
-export type Weekday = (typeof WEEKDAYS)[number];
-const isWeekday = (d?: string): d is Weekday => WEEKDAYS.includes(d as Weekday);
-const UNITS = ["day", "week", "month", "year"];
-
-// 2Do's limits for a repeat's numbers. Undefined when the value is fine or not used.
-export function repeatValueError(field: "interval" | "count", value?: string) {
+export function goalValueError(field: "total" | "current", value?: string) {
   const n = Number(value);
-  const max = field === "interval" ? 999 : 99;
-  if (!(Number.isInteger(n) && n >= 1 && n <= max)) return `Enter a whole number from 1 to ${max}`;
-}
-
-// A task's recurrence with 2Do's misnamed keys read and its weekdays narrowed to WEEKDAYS. A weekday
-// name 2Do reports that isn't in WEEKDAYS is dropped.
-export function recurrenceOf(task: Task): Recurrence | undefined {
-  const r = task.recurrence;
-  if (!r) return;
-  const { weekdays, weekday, wkdy, end_rule: end, ...rest } = r;
-  const day = weekday ?? wkdy;
-  return {
-    ...rest,
-    ...(weekdays && { weekdays: weekdays.filter(isWeekday) }),
-    ...(isWeekday(day) && { weekday: day }),
-    ...(end && { end_rule: { ...end, date: end.date ?? end["ldt "] } }),
-  };
-}
-
-// The recurrence to send for the form's repeat fields, or { frequency: "none" } to clear it.
-export function recurrenceArgs(v: Partial<TaskValues>): Recurrence {
-  if (!v.is_repeating || !v.repeat || v.repeat === "none") return { frequency: "none" };
-  const days = WEEKDAYS.filter((d) => v.repeat_days?.includes(d));
-  return {
-    frequency: v.repeat,
-    based_on: v.repeat_from || "due_date",
-    ...(v.repeat === "custom" && { interval: Number(v.repeat_interval), unit: v.repeat_unit || "day" }),
-    ...(v.repeat === "weekly" && days.length > 0 && { weekdays: days }),
-    ...(v.repeat === "monthly" &&
-      v.repeat_ordinal && {
-        weekday: isWeekday(v.repeat_weekday) ? v.repeat_weekday : "monday",
-        ordinal: Number(v.repeat_ordinal),
-      }),
-    end_rule:
-      v.repeat_end === "after_count"
-        ? { type: "after_count", occurrence_count: Number(v.repeat_count) }
-        : v.repeat_end === "on_date" && v.repeat_until
-          ? { type: "on_date", date: ymd(v.repeat_until) }
-          : { type: "never" },
-  };
-}
-
-// The form's repeat fields for a task, with defaults for the fields its repeat doesn't use. A repeat
-// the form can't show leaves `repeat` undefined, so saving leaves it alone.
-export function repeatValues(task?: Task) {
-  const r = task && recurrenceOf(task);
-  const known =
-    !r?.frequency ||
-    r.frequency === "none" ||
-    (REPEATS.includes(r.frequency) &&
-      (!r.unit || UNITS.includes(r.unit)) &&
-      ["never", "after_count", "on_date"].includes(r.end_rule?.type ?? "never"));
-  const on = !!r?.frequency && r.frequency !== "none";
-  return {
-    is_repeating: on,
-    repeat: known ? (on ? r.frequency : "daily") : undefined,
-    repeat_interval: String(r?.interval ?? 2),
-    repeat_unit: r?.unit ?? "day",
-    repeat_days: r?.weekdays ?? [],
-    repeat_ordinal: r?.ordinal !== undefined && r.weekday ? String(r.ordinal) : "",
-    repeat_weekday: r?.weekday ?? "monday",
-    repeat_from: r?.based_on ?? "due_date",
-    repeat_end: r?.end_rule?.type ?? "never",
-    repeat_count: String(r?.end_rule?.occurrence_count ?? ""),
-    repeat_until: r?.end_rule?.date ? toDate(r.end_rule.date) : null,
-  };
+  if (field === "total" && !(value?.trim() && n > 0)) return "Enter a number above 0";
+  if (field === "current" && value?.trim() && !(n >= 0)) return "Enter a number, 0 or more";
 }
 
 // 2Do's task action types besides "none", with how the form asks for each one's value.
@@ -257,7 +183,17 @@ export function taskToValues(task: Task): TaskValues {
     tag_ids: task.tags.map((t) => t.tag_id),
     action_type: task.action.type === "none" || task.action.type in ACTIONS ? task.action.type : undefined,
     action_value: task.action.value ?? "",
-    ...repeatValues(task),
+    ...goalValues(task),
+  };
+}
+
+function goalValues(task: Task) {
+  const goal = parseGoal(task.notes);
+  return {
+    is_goal: !!goal,
+    goal_total: goal ? String(goal.total) : "",
+    goal_unit: goal?.unit ?? "",
+    goal_last: new Date(),
   };
 }
 
@@ -269,6 +205,23 @@ export function taskLinks(task: Task): string[] {
   });
   const link = task.action.type === "url" ? task.action.value : undefined;
   return [...new Set([link, ...inNotes].filter((u): u is string => !!u))];
+}
+
+// The notes and tags to save once the goal fields are applied: the goal block in the notes is added,
+// updated in place (keeping its entries), or removed, and the goal tag follows it.
+export async function applyGoal(v: TaskValues, goalTag: string): Promise<TaskValues> {
+  if (v.is_goal === undefined) return v;
+  const existing = parseGoal(v.notes);
+  if (!v.is_goal) {
+    if (!existing) return v;
+    const tag = await findTag(goalTag);
+    return { ...v, notes: writeGoal(v.notes), tag_ids: v.tag_ids.filter((id) => id !== tag?.tag_id) };
+  }
+  const current = Number(v.goal_current);
+  const entries = existing?.entries ?? (current > 0 ? [{ date: ymd(v.goal_last ?? new Date()), amount: current }] : []);
+  const goal = { total: Number(v.goal_total), unit: v.goal_unit?.trim() ?? "", entries };
+  const tag = await ensureTag(goalTag);
+  return { ...v, notes: writeGoal(v.notes, goal), tag_ids: [...new Set([...v.tag_ids, tag.tag_id])] };
 }
 
 // Creates a task, or updates `task` (moving it if the list changed).
@@ -325,8 +278,34 @@ export type CancelPrefs = {
 
 const sameTitle = (a: string, b: string) => a.trim().toLowerCase() === b.trim().toLowerCase();
 
-// 2Do's own convention is a completed task carrying a "Cancelled" tag. 2Do automation can't create
-// tags or lists, so a missing one is an error naming the preference to fix.
+export async function findTag(title: string) {
+  const { tags } = await twoDo<{ tags: Tag[] }>("list_tags");
+  return tags.find((t) => sameTitle(t.title, title));
+}
+
+// 2Do automation can't create tags, but 2Do's URL scheme creates missing tags when it adds a task.
+// So a missing tag is made by adding a placeholder task carrying it (2Do stays in the background),
+// then deleting the placeholder once the tag shows up.
+export async function ensureTag(title: string): Promise<Tag> {
+  const existing = await findTag(title);
+  if (existing) return existing;
+  const placeholder = `Raycast is creating the ${title.trim()} tag (${Date.now()})`;
+  const url = `twodo://x-callback-url/add?task=${encodeURIComponent(placeholder)}&tags=${encodeURIComponent(title.trim())}&ignoredefaults=1`;
+  await promisify(execFile)("open", ["-g", url]);
+  for (let i = 0; i < 20; i++) {
+    await sleep(250);
+    const tag = await findTag(title);
+    const { tasks } = await twoDo<{ tasks: Task[] }>("query_tasks", { search: placeholder, paused_filter: "include" });
+    const added = tasks.filter((t) => t.title === placeholder);
+    if (!tag || added.length === 0) continue;
+    for (const t of added) await twoDo("delete_task", { task_id: t.task_id });
+    return tag;
+  }
+  throw new Error(`Couldn't create the 2Do tag "${title}". Create it in 2Do, then try again.`);
+}
+
+// 2Do's own convention is a completed task carrying a "Cancelled" tag. A missing cancel tag is
+// created; 2Do automation can't create lists, so a missing list is an error naming the preference.
 export async function cancelTask(task: Task, p: CancelPrefs) {
   if (p.cancelBehavior === "delete") {
     await twoDo("delete_task", { task_id: task.task_id });
@@ -342,10 +321,7 @@ export async function cancelTask(task: Task, p: CancelPrefs) {
     const moved = await twoDo<{ task: { task_id: string } }>("move_task", { task_id: taskId, list_id: target.list_id });
     taskId = moved.task.task_id;
   } else {
-    const { tags } = await twoDo<{ tags: Tag[] }>("list_tags");
-    const tag = tags.find((t) => sameTitle(t.title, p.cancelTag));
-    if (!tag)
-      throw new Error(`No 2Do tag named "${p.cancelTag}". Create it in 2Do or check the Cancel Tag preference.`);
+    const tag = await ensureTag(p.cancelTag);
     await twoDo("update_task", { task_id: taskId, tag_update: { operation: "append", tag_ids: [tag.tag_id] } });
   }
   if (p.cancelBehavior !== "tag") await twoDo("complete_task", { task_id: taskId });

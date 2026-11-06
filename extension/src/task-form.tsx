@@ -1,8 +1,21 @@
-import { Action, ActionPanel, Form, showHUD, showToast, Toast, useNavigation } from "@raycast/api";
+import {
+  Action,
+  ActionPanel,
+  Alert,
+  confirmAlert,
+  Form,
+  getPreferenceValues,
+  showHUD,
+  showToast,
+  Toast,
+  useNavigation,
+} from "@raycast/api";
 import { FormValidation, showFailureToast, useCachedPromise, useForm } from "@raycast/utils";
 import {
   ACTIONS,
   actionValueError,
+  applyGoal,
+  goalValueError,
   List,
   repeatValueError,
   repeatValues,
@@ -15,6 +28,7 @@ import {
   twoDo,
   WEEKDAYS,
 } from "./2do";
+import { parseGoal } from "./goal";
 import { PageInfo } from "./link";
 
 const capitalize = (s: string) => s.slice(0, 1).toUpperCase() + s.slice(1);
@@ -49,25 +63,27 @@ export function TaskForm({
           new_tags: "",
           action_type: link ? "url" : "none",
           action_value: link?.url ?? "",
-          ...repeatValues(),
+          is_goal: false,
+          goal_last: new Date(),
           ...(link && { title: link.title, notes: link.description }),
         },
     validation: {
       title: FormValidation.Required,
       action_value: (v): string | undefined => actionValueError(values.action_type, v),
-      repeat_interval: (v): string | undefined =>
-        repeats && values.repeat === "custom" ? repeatValueError("interval", v) : undefined,
-      repeat_count: (v): string | undefined =>
-        repeats && values.repeat_end === "after_count" ? repeatValueError("count", v) : undefined,
-      repeat_until: (v): string | undefined =>
-        repeats && values.repeat_end === "on_date" && !v ? "Required" : undefined,
+      goal_total: (v): string | undefined => (values.is_goal ? goalValueError("total", v) : undefined),
+      goal_current: (v): string | undefined => (values.is_goal ? goalValueError("current", v) : undefined),
     },
     async onSubmit(v) {
+      if (!v.is_goal && parseGoal(v.notes ?? "")) {
+        const ok = await confirmAlert({
+          title: "Remove the goal?",
+          message: "Its progress history in the notes will be deleted.",
+          primaryAction: { title: "Remove Goal", style: Alert.ActionStyle.Destructive },
+        });
+        if (!ok) return;
+      }
       try {
-        // Compare with the task as it is now, not as the list loaded it: an action or list changed in
-        // 2Do since still counts as changed when the form sets it back.
-        const current = task && (await twoDo<{ task: Task }>("get_task", { task_id: task.task_id })).task;
-        await saveTask(v, current);
+        await saveTask(await applyGoal(v, getPreferenceValues<{ goalTag: string }>().goalTag), task);
         if (task) {
           await showToast({ style: Toast.Style.Success, title: "Task updated" });
           onSaved?.();
@@ -202,12 +218,22 @@ export function TaskForm({
           <Form.TagPicker.Item key={t.tag_id} value={t.tag_id} title={t.title} />
         ))}
       </Form.TagPicker>
-      <Form.TextField
-        title="New Tags"
-        placeholder="Errands, Home"
-        info="Comma-separated. Names matching an existing tag use that tag; the rest are created when you save."
-        {...itemProps.new_tags}
-      />
+      <Form.Separator />
+      <Form.Checkbox title="Goal" label="Add a goal" {...itemProps.is_goal} />
+      {values.is_goal && (
+        <>
+          <Form.TextField title="Total" placeholder="32" {...itemProps.goal_total} />
+          <Form.TextField title="Units" placeholder="pages" {...itemProps.goal_unit} />
+          {!parseGoal(values.notes ?? "") && (
+            <>
+              <Form.TextField title="Current" placeholder="0" {...itemProps.goal_current} />
+              {Number(values.goal_current) > 0 && (
+                <Form.DatePicker title="Last Completed" type={Form.DatePicker.Type.Date} {...itemProps.goal_last} />
+              )}
+            </>
+          )}
+        </>
+      )}
     </Form>
   );
 }
