@@ -190,6 +190,44 @@
           "value": "yyyy-MM-dd"
         }
       ]
+    },
+    {
+      "name": "journalDisplayFormat",
+      "title": "Journal Display Date",
+      "description": "How Show Journal displays entry dates. The notes keep whatever was written.",
+      "type": "dropdown",
+      "required": false,
+      "default": "weekday",
+      "data": [
+        {
+          "title": "Friday, November 6, 2026",
+          "value": "weekday"
+        },
+        {
+          "title": "November 6, 2026",
+          "value": "long"
+        },
+        {
+          "title": "Nov 6, 2026",
+          "value": "short"
+        },
+        {
+          "title": "2026-11-06",
+          "value": "iso"
+        },
+        {
+          "title": "As Written in the Notes",
+          "value": "written"
+        }
+      ]
+    },
+    {
+      "name": "journalRelativeTime",
+      "label": "Show relative time, like (2 hours ago)",
+      "description": "Adds how long ago each journal entry was to its date in Show Journal.",
+      "type": "checkbox",
+      "required": false,
+      "default": true
     }
   ],
   "scripts": {

@@ -59,10 +59,49 @@ export function parseTimestamp(text: string, dayFirst = (regionDayFirst ??= regi
   };
 }
 
-// "2:05 pm".
-export function formatTime(d: Date) {
+// "2:05 pm", or "3 pm" on the hour when `short`.
+export function formatTime(d: Date, short = false) {
   const h = d.getHours() % 12 || 12;
-  return `${h}:${pad(d.getMinutes())} ${d.getHours() < 12 ? "am" : "pm"}`;
+  const minutes = short && d.getMinutes() === 0 ? "" : `:${pad(d.getMinutes())}`;
+  return `${h}${minutes} ${d.getHours() < 12 ? "am" : "pm"}`;
+}
+
+export type DisplayFormat = "weekday" | "long" | "short" | "iso" | "written";
+
+// "2 hours ago", "yesterday", "in 3 days". Date-only timestamps count whole days ("today").
+export function relativeTime(at: number, hasTime: boolean, now = new Date()) {
+  const rtf = new Intl.RelativeTimeFormat("en", { numeric: "auto" });
+  const startOfDay = (t: number) => new Date(new Date(t).setHours(0, 0, 0, 0)).getTime();
+  const days = Math.round((startOfDay(at) - startOfDay(now.getTime())) / 86_400_000);
+  if (hasTime) {
+    const minutes = Math.round((at - now.getTime()) / 60_000);
+    if (Math.abs(minutes) < 1) return "just now";
+    if (Math.abs(minutes) < 60) return rtf.format(minutes, "minute");
+    if (Math.abs(minutes) < 24 * 60) return rtf.format(Math.round(minutes / 60), "hour");
+  }
+  if (Math.abs(days) < 7) return rtf.format(days, "day");
+  if (Math.abs(days) < 30) return rtf.format(Math.round(days / 7), "week");
+  if (Math.abs(days) < 365) return rtf.format(Math.round(days / 30), "month");
+  return rtf.format(Math.round(days / 365), "year");
+}
+
+// How Show Journal displays a timestamp: "Friday, November 6, 2026 3 pm (2 hours ago)" by default.
+// "written" keeps the timestamp as typed in the notes.
+export function formatDisplay(
+  t: Timestamp & { stamp: string },
+  format: DisplayFormat,
+  relative: boolean,
+  now = new Date(),
+) {
+  const d = new Date(t.at);
+  const dates: Record<Exclude<DisplayFormat, "written">, string> = {
+    weekday: `${d.toLocaleDateString("en-US", { weekday: "long" })}, ${formatDay(t.day, "MMMM d, yyyy")}`,
+    long: formatDay(t.day, "MMMM d, yyyy"),
+    short: formatDay(t.day, "MMM d, yyyy"),
+    iso: t.day,
+  };
+  const shown = format === "written" ? t.stamp : `${dates[format]}${t.hasTime ? ` ${formatTime(d, true)}` : ""}`;
+  return relative ? `${shown} (${relativeTime(t.at, t.hasTime, now)})` : shown;
 }
 
 // `day` is "yyyy-MM-dd".
