@@ -85,8 +85,8 @@ export function relativeTime(at: number, hasTime: boolean, now = new Date()) {
   return rtf.format(Math.round(days / 365), "year");
 }
 
-// How Show Journal displays a timestamp: "Friday, November 6, 2026 3 pm (2 hours ago)" by default.
-// "written" keeps the timestamp as typed in the notes.
+// How Show Journal displays a timestamp: "Friday, November 6 3 pm (2 hours ago)" by default, with
+// the year left out when it's the current one (except in ISO). "written" keeps the timestamp as typed.
 export function formatDisplay(
   t: Timestamp & { stamp: string },
   format: DisplayFormat,
@@ -94,10 +94,11 @@ export function formatDisplay(
   now = new Date(),
 ) {
   const d = new Date(t.at);
+  const year = (s: string) => (d.getFullYear() === now.getFullYear() ? s.replace(/, \d{4}$/, "") : s);
   const dates: Record<Exclude<DisplayFormat, "written">, string> = {
-    weekday: `${d.toLocaleDateString("en-US", { weekday: "long" })}, ${formatDay(t.day, "MMMM d, yyyy")}`,
-    long: formatDay(t.day, "MMMM d, yyyy"),
-    short: formatDay(t.day, "MMM d, yyyy"),
+    weekday: `${d.toLocaleDateString("en-US", { weekday: "long" })}, ${year(formatDay(t.day, "MMMM d, yyyy"))}`,
+    long: year(formatDay(t.day, "MMMM d, yyyy")),
+    short: year(formatDay(t.day, "MMM d, yyyy")),
     iso: t.day,
   };
   const shown = format === "written" ? t.stamp : `${dates[format]}${t.hasTime ? ` ${formatTime(d, true)}` : ""}`;

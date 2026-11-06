@@ -194,7 +194,7 @@
     {
       "name": "journalDisplayFormat",
       "title": "Journal Display Date",
-      "description": "How Show Journal displays entry dates. The notes keep whatever was written.",
+      "description": "How Show Journal displays entry dates. The year is left out for the current year, except in 2026-11-06 style. The notes keep whatever was written.",
       "type": "dropdown",
       "required": false,
       "default": "weekday",

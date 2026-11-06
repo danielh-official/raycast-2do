@@ -99,7 +99,7 @@ They'll send the paperwork.
 An entry starts with a date and optional time in any common format. Short entries put the text after `-` on the same line. Longer ones put the timestamp on its own line, with the text below. No tag is involved.
 
 - **Add Journal Entry (⌘J):** on any task. Write the entry and pick when it happened (now by default). Leave the time out for a date-only entry. The entry is written in the **Journal Date Format** preference ("November 6, 2026 2:05 pm" by default) and slotted in by time. Lines you typed are never rewritten.
-- **Show Journal (⇧⌘J):** reads a task's entries, newest first, with dates like "Friday, November 6, 2026 3 pm (2 hours ago)". The **Journal Display Date** preference picks the date style, including how it's written in the notes, and **Show relative time** turns the part in parentheses on or off. Tasks with a journal show a book icon.
+- **Show Journal (⇧⌘J):** reads a task's entries, newest first, with dates like "Friday, November 6 3 pm (2 hours ago)". The year shows only for other years. The **Journal Display Date** preference picks the date style, including how it's written in the notes, and **Show relative time** turns the part in parentheses on or off. Tasks with a journal show a book icon.
 
 Edit Task's Notes field leaves out the goal and journal blocks and saves them as they are, after the rest of the notes. Use Log Progress and Add Journal Entry to change them.
 

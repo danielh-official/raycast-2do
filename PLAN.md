@@ -231,6 +231,7 @@ Called again, discussed policy.
   - **Journal Display Date** preference: `weekday` ("Friday, November 6, 2026", the default), `long`, `short`, `iso`, or `written` (as typed).
   - **Show relative time** preference, a checkbox that's on by default, adds `relativeTime`. That's minutes and hours for timed entries, then calendar days ("today", "yesterday"), weeks, months and years, using `Intl.RelativeTimeFormat`.
   - Times show as "3 pm", or "3:05 pm" when there are minutes.
+  - The year is left out when it's the current one, in every style except `iso` and `written`.
 
 ---
 
