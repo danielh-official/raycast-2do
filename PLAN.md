@@ -236,6 +236,7 @@ Called again, discussed policy.
 **Follow-up: hardening before publishing.**
 
 - [x] **2Do too old or missing:** `twoDo` rewords "Message not understood" (-1708) as "update 2Do to the latest version", and "Application can't be found" (-2700) as "2Do isn't installed".
+- [x] **Dates:** chrono-node already reads weekdays, ordinals (6th), abbreviations (Nov.), ISO times and "at 2:05 PM". Dotted dates (6.11.2026) are now always day-first. Still not read: compact dates (20261106), "14h05", ISO weeks, and non-English month names.
 
 **Follow-up: nitpicks.**
 
