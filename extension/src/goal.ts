@@ -35,7 +35,7 @@ function readEntry(text: string, dayFirst?: boolean) {
     const amount = text.slice(sep.index + sep[0].length);
     if (!AMOUNT.test(amount)) continue;
     const timestamp = parseTimestamp(text.slice(0, sep.index), dayFirst);
-    if (timestamp) return { ...timestamp, amount: Number(amount) };
+    if (timestamp) return { day: timestamp.day, hasTime: timestamp.hasTime, amount: Number(amount) };
   }
 }
 

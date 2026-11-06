@@ -164,6 +164,32 @@
           "value": "yyyy-MM-dd"
         }
       ]
+    },
+    {
+      "name": "journalDateFormat",
+      "title": "Journal Date Format",
+      "description": "How the extension writes dates in a task's journal; times are written like 2:05 pm. The journal reads any common format either way.",
+      "type": "dropdown",
+      "required": false,
+      "default": "MMMM d, yyyy",
+      "data": [
+        {
+          "title": "November 6, 2026",
+          "value": "MMMM d, yyyy"
+        },
+        {
+          "title": "Nov 6, 2026",
+          "value": "MMM d, yyyy"
+        },
+        {
+          "title": "6 Nov 2026",
+          "value": "d MMM yyyy"
+        },
+        {
+          "title": "2026-11-06",
+          "value": "yyyy-MM-dd"
+        }
+      ]
     }
   ],
   "scripts": {
