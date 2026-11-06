@@ -13,5 +13,6 @@
 - Missing Goal and Cancel tags are created in 2Do on first use
 - Journal: timestamped entries in a task's notes, added with Add Journal Entry and read with Show Journal
 - Edit Task keeps the goal and journal blocks out of its Notes field
+- Show Journal displays dates with the weekday and relative time, configurable in preferences
 - View Tasks command with All, Today, Starred, Scheduled, Done, list, and smart list scopes
 - Edit, complete, star, and open tasks from the list

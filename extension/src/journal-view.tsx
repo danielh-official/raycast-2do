@@ -11,7 +11,7 @@ import {
 } from "@raycast/api";
 import { showFailureToast, useCachedPromise, useForm } from "@raycast/utils";
 import { Task, twoDo } from "./2do";
-import { DayFormat } from "./dates";
+import { DayFormat, DisplayFormat, formatDisplay } from "./dates";
 import { addJournalEntry, parseJournal } from "./journal";
 
 // Adds an entry to a task's journal. Reads the task fresh before writing so edits made in 2Do since
@@ -53,8 +53,8 @@ export function AddJournalEntryForm({ task, onAdded }: { task: Task; onAdded: ()
   );
 }
 
-// The task's journal, newest first, with timestamps as written in the notes. Reloads the task so
-// entries added from here show up.
+// The task's journal, newest first, with timestamps shown per the display preferences. Reloads the
+// task so entries added from here show up.
 export function JournalView({ task: initial, onChange }: { task: Task; onChange: () => void }) {
   const { data: task = initial, revalidate } = useCachedPromise(
     (id: string) => twoDo<{ task: Task }>("get_task", { task_id: id }).then((r) => r.task),
@@ -62,9 +62,15 @@ export function JournalView({ task: initial, onChange }: { task: Task; onChange:
     { initialData: initial },
   );
   const entries = [...(parseJournal(task.notes) ?? [])].sort((a, b) => b.at - a.at);
+  const { journalDisplayFormat, journalRelativeTime } = getPreferenceValues<{
+    journalDisplayFormat: DisplayFormat;
+    journalRelativeTime: boolean;
+  }>();
   const markdown = [
     `# ${task.title}`,
-    ...entries.map((e) => `### ${e.stamp}\n\n${e.text.replace(/\n/g, "  \n")}`),
+    ...entries.map(
+      (e) => `### ${formatDisplay(e, journalDisplayFormat, journalRelativeTime)}\n\n${e.text.replace(/\n/g, "  \n")}`,
+    ),
   ].join("\n\n");
 
   return (
