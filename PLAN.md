@@ -233,6 +233,10 @@ Called again, discussed policy.
   - Times show as "3 pm", or "3:05 pm" when there are minutes.
   - The year is left out when it's the current one, in every style except `iso` and `written`.
 
+**Follow-up: hardening before publishing.**
+
+- [x] **2Do too old or missing:** `twoDo` rewords "Message not understood" (-1708) as "update 2Do to the latest version", and "Application can't be found" (-2700) as "2Do isn't installed".
+
 **Follow-up: nitpicks.**
 
 - [x] **Multiple blocks:** only the topmost goal and topmost journal count, everywhere: parsing, logging, adding entries, header edits, removal, and Edit Task's hidden blocks (`splitNotes`). Later blocks are ordinary notes text. Removing the topmost goal promotes the next one.
