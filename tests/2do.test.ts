@@ -123,6 +123,18 @@ describe("toDate", () => {
   });
 });
 
+describe("taskToValues", () => {
+  it("keeps the goal and journal blocks out of the Notes field, but still reads the goal", () => {
+    const notes = "Call first.\n\n@goal: 3 calls\n\nNovember 6, 2026: 1\n\n@endgoal\n\n@journal\n\n@endjournal";
+    expect(taskToValues({ ...task, notes })).toMatchObject({
+      notes: "Call first.",
+      is_goal: true,
+      goal_total: "3",
+      goal_unit: "calls",
+    });
+  });
+});
+
 describe("saveTask", () => {
   const values = { ...taskToValues(task), notes: "", start: null, tag_ids: [] };
 
