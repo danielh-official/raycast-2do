@@ -6,7 +6,7 @@ Five features for the 2Do Raycast extension:
 2. [ ] Bulk add links (tabled for now)
 3. [x] Cancel a task**,** with a preference for what cancelling does
 4. [x] Track goal progress on a task, driven by syntax in the notes, with a history of each bit of progress
-5. [ ] Add dated notes to a task, driven by syntax in the notes
+5. [x] Add dated notes to a task, driven by syntax in the notes (the journal)
 
 Ship them in that order, one commit (or PR) per feature. Each feature lands with its tests, a README section, and a CHANGELOG line.
 
@@ -194,31 +194,29 @@ November 4, 2026: 4
   - Editing a goal only changes the header line.
 - [x] The **Goal Date Format** preference sets how the extension writes dates: November 6, 2026 (default), Nov 6, 2026, 6 Nov 2026, or 2026-11-06. The journal should default to the same long month name.
 
-### 5. Dated notes
+### 5. Dated notes: the journal (done)
 
-**To revisit:** the syntax below predates the goal convention. Redo it as a tagged `@name:` … `@endname` block with one line per date, newest first.
-
-**Original syntax.** A `Log:` line starts the section:
+It follows the goal convention, except that it has **no tag**, since entries are plain notes, and its entries can carry times.
 
 ```
-Log:
-- 2026-11-04: Emailed the vendor for a quote.
-- 2026-11-06: Quote came in at $400, waiting on approval.
+@journal
+
+November 6, 2026 11:00 am - Called the president, went to voicemail
+2026-11-05 2 pm
+
+Called again, discussed policy.
+
+@endjournal
 ```
 
-- Entry: `- <yyyy-MM-dd>: <text>`. The colon after the date keeps these lines distinct from progress entries.
-- Entries are appended in chronological order, the same as progress.
-
-**In Raycast:**
-
-- **Add Dated Note** action (⌘N) pushes a form with a Note text area and a Date (default today), then appends an entry using the read-modify-write rule. If the notes have no `Log:` section, it creates one at the end of the notes. Unlike goals, there's no separate "start" step, because adding the first note starts the log.
-- Search keywords already include the notes, so log text is searchable as is.
-- **Show Progress** from feature 4 becomes **Show Details**, rendering the goal (if any) and the log as a timeline, with the newest entry first in the view only.
-- Optional accessory: the date of the latest log entry, shown as relative time ("2d").
-
-`notes.ts` **API:** `parseLog(notes) → { date, text }[]` and `appendLog(notes, entry) → notes`.
-
-**Tests:** the same kinds of cases as the goal tests, plus a task that has both sections and only the targeted one changing.
+- [x] `journal.ts`:
+  - `parseJournal` reads an entry as a timestamp in any common format, then ` - ` (also `–`, `—` or `:`) and text, or a timestamp alone with the text below. Lines without a timestamp continue the entry above.
+  - `addJournalEntry` slots a new entry before the first entry that isn't newer. It never rewrites lines. Multi-line entries get blank lines around them, and a block is started at the end of the notes if needed.
+  - `formatEntry` writes `November 6, 2026 2:05 pm - text`, or the timestamp, a blank line, then multi-line text. Picking a date without a time writes a date-only entry.
+- [x] `dates.ts`: `parseTimestamp` also returns `at`, for ordering (date-only entries count from the start of their day), and `formatTime` writes "2:05 pm".
+- [x] **Journal Date Format** preference, defaulting to November 6, 2026.
+- [x] **Add Journal Entry** (⌘J) on any task, reading the task fresh first. **Show Journal** (⇧⌘J) is a Detail view, newest first, with timestamps as written, that reloads after an entry is added. Tasks with a journal show a book icon.
+- [x] Tests in `tests/journal.test.ts`.
 
 ---
 

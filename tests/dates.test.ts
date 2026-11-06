@@ -3,14 +3,14 @@ import { formatDay, parseTimestamp } from "../extension/src/dates";
 
 describe("parseTimestamp", () => {
   it("reads common date formats, with or without a time", () => {
-    expect(parseTimestamp("2026-11-05", false)).toEqual({ day: "2026-11-05", hasTime: false });
-    expect(parseTimestamp("Nov 6, 2026", false)).toEqual({ day: "2026-11-06", hasTime: false });
-    expect(parseTimestamp("6 Nov 2026", false)).toEqual({ day: "2026-11-06", hasTime: false });
-    expect(parseTimestamp("November 6 2026", false)).toEqual({ day: "2026-11-06", hasTime: false });
-    expect(parseTimestamp("November 6, 2026", false)).toEqual({ day: "2026-11-06", hasTime: false });
-    expect(parseTimestamp("2026-11-05 2 pm", false)).toEqual({ day: "2026-11-05", hasTime: true });
-    expect(parseTimestamp("2026-11-05 14:00", false)).toEqual({ day: "2026-11-05", hasTime: true });
-    expect(parseTimestamp("Nov 6, 2026 11:00 am", false)).toEqual({ day: "2026-11-06", hasTime: true });
+    expect(parseTimestamp("2026-11-05", false)).toMatchObject({ day: "2026-11-05", hasTime: false });
+    expect(parseTimestamp("Nov 6, 2026", false)).toMatchObject({ day: "2026-11-06", hasTime: false });
+    expect(parseTimestamp("6 Nov 2026", false)).toMatchObject({ day: "2026-11-06", hasTime: false });
+    expect(parseTimestamp("November 6 2026", false)).toMatchObject({ day: "2026-11-06", hasTime: false });
+    expect(parseTimestamp("November 6, 2026", false)).toMatchObject({ day: "2026-11-06", hasTime: false });
+    expect(parseTimestamp("2026-11-05 2 pm", false)).toMatchObject({ day: "2026-11-05", hasTime: true });
+    expect(parseTimestamp("2026-11-05 14:00", false)).toMatchObject({ day: "2026-11-05", hasTime: true });
+    expect(parseTimestamp("Nov 6, 2026 11:00 am", false)).toMatchObject({ day: "2026-11-06", hasTime: true });
   });
 
   it("reads ambiguous slash dates month first or day first", () => {
