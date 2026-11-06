@@ -185,7 +185,7 @@ November 4, 2026: 4
 **Follow-up: flexible dates.**
 
 - [x] `dates.ts` reads timestamps with chrono-node's strict English parser, which ignores relative words like "today". It handles `2026-11-05`, `Nov 6, 2026 11:00 am`, `6 Nov 2026 2pm` and `11/5/26`.
-  - Ambiguous slash dates follow the Mac's region, from `defaults read -g AppleLocale`: `en_US` reads month first.
+  - Ambiguous slash dates follow the **Ambiguous Dates** preference: month first (the default) or day first. This replaced reading the Mac's region with `defaults read -g AppleLocale`, so the extension runs no shell commands. Its only process is `runAppleScript`, which talks to 2Do. `preferences.ts`'s `dayFirst()` is passed in wherever goal or journal dates are read, keeping `dates.ts` free of Raycast APIs.
   - A timestamp only counts when it makes up the whole text before the separator.
 - [x] Goal entries are `<timestamp>` then `:` or ` - ` then an amount. Each separator is tried in turn, since times contain colons. A dash must have spaces around it, so `2026-11-05 -1` is ignored rather than misread as +1.
 - [x] Entries with times count toward their day.

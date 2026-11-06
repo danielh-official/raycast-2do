@@ -132,6 +132,24 @@
       "default": ""
     },
     {
+      "name": "dateOrder",
+      "title": "Ambiguous Dates",
+      "description": "How goals and journals read a date like 05/11/2026. Dates with a month name, or like 2026-11-05, aren't affected.",
+      "type": "dropdown",
+      "required": false,
+      "default": "month-first",
+      "data": [
+        {
+          "title": "Month First (05/11 = May 11)",
+          "value": "month-first"
+        },
+        {
+          "title": "Day First (05/11 = 5 Nov)",
+          "value": "day-first"
+        }
+      ]
+    },
+    {
       "name": "goalTag",
       "title": "Goal Tag",
       "description": "Optional. A 2Do tag to add to goal tasks, so they're tagged in 2Do too. It must already exist in 2Do. Leave empty to not tag goals.",

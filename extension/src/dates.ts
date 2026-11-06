@@ -1,5 +1,4 @@
 import * as chrono from "chrono-node";
-import { execFileSync } from "node:child_process";
 
 // `at` orders timestamps: milliseconds, at the start of the day for a date without a time.
 export type Timestamp = { day: string; hasTime: boolean; at: number };
@@ -24,27 +23,13 @@ const MONTHS = [
   "December",
 ];
 
-// Whether the Mac's region writes the day before the month, which decides how 05/11/2026 reads.
-function regionIsDayFirst() {
-  try {
-    const locale = execFileSync("defaults", ["read", "-g", "AppleLocale"], { encoding: "utf8" })
-      .trim()
-      .replace(/@.*/, "")
-      .replace("_", "-");
-    const parts = new Intl.DateTimeFormat(locale).formatToParts(new Date(2000, 10, 22));
-    return parts.findIndex((p) => p.type === "day") < parts.findIndex((p) => p.type === "month");
-  } catch {
-    return false;
-  }
-}
-
 const parsers = new Map<boolean, chrono.Chrono>();
-let regionDayFirst: boolean | undefined;
 
 // All of `text` read as a date with an optional time, in most common formats ("2026-11-05",
 // "Nov 6, 2026 11:00 am", "6 Nov 2026 2pm", "11/5/26"). Undefined unless the whole text is one.
-// Strict parsing skips relative words like "today", whose meaning would drift.
-export function parseTimestamp(text: string, dayFirst = (regionDayFirst ??= regionIsDayFirst())) {
+// Strict parsing skips relative words like "today", whose meaning would drift. `dayFirst` reads
+// an ambiguous date like 05/11/2026 as 5 November instead of May 11.
+export function parseTimestamp(text: string, dayFirst = false) {
   if (!parsers.has(dayFirst))
     parsers.set(dayFirst, new chrono.Chrono(chrono.en.configuration.createConfiguration(true, dayFirst)));
   const trimmed = text.trim();

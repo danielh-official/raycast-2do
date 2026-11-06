@@ -13,6 +13,7 @@ import { showFailureToast, useCachedPromise, useForm } from "@raycast/utils";
 import { Task, twoDo } from "./2do";
 import { DayFormat, DisplayFormat, formatDisplay } from "./dates";
 import { addJournalEntry, parseJournal } from "./journal";
+import { dayFirst } from "./preferences";
 
 // Adds an entry to a task's journal. Reads the task fresh before writing so edits made in 2Do since
 // the list loaded aren't lost. A date picked without a time writes a date-only entry.
@@ -26,7 +27,14 @@ export function AddJournalEntryForm({ task, onAdded }: { task: Task; onAdded: ()
         const { task: fresh } = await twoDo<{ task: Task }>("get_task", { task_id: task.task_id });
         const date = when ?? new Date();
         const { journalDateFormat } = getPreferenceValues<{ journalDateFormat: DayFormat }>();
-        const notes = addJournalEntry(fresh.notes, date, !Form.DatePicker.isFullDay(date), text, journalDateFormat);
+        const notes = addJournalEntry(
+          fresh.notes,
+          date,
+          !Form.DatePicker.isFullDay(date),
+          text,
+          journalDateFormat,
+          dayFirst(),
+        );
         await twoDo("update_task", { task_id: task.task_id, notes });
         onAdded();
         pop();
@@ -61,7 +69,7 @@ export function JournalView({ task: initial, onChange }: { task: Task; onChange:
     [initial.task_id],
     { initialData: initial },
   );
-  const entries = [...(parseJournal(task.notes) ?? [])].sort((a, b) => b.at - a.at);
+  const entries = [...(parseJournal(task.notes, dayFirst()) ?? [])].sort((a, b) => b.at - a.at);
   const { journalDisplayFormat, journalRelativeTime } = getPreferenceValues<{
     journalDisplayFormat: DisplayFormat;
     journalRelativeTime: boolean;
