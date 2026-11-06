@@ -1,84 +1,115 @@
 import { describe, expect, it } from "vitest";
-import { formatGoal, goalProgress, logProgress, parseGoal, writeGoal } from "../extension/src/goal";
+import {
+  appendGoal,
+  formatGoal,
+  goalProgress,
+  logProgress,
+  parseGoal,
+  removeGoal,
+  setGoalHeader,
+} from "../extension/src/goal";
 
-const block = "@goal: 32 pages\n\n2026-11-06: 10\n2026-11-05: -1\n2026-11-04: 4\n\n@endgoal";
-const goal = {
-  total: 32,
-  unit: "pages",
-  entries: [
-    { date: "2026-11-06", amount: 10 },
-    { date: "2026-11-05", amount: -1 },
-    { date: "2026-11-04", amount: 4 },
-  ],
-};
+const block = "@goal: 32 pages\n\nNov 6, 2026: 10\n2026-11-05: -1\n2026-11-04: 4\n\n@endgoal";
+const parse = (notes: string) => parseGoal(notes, false);
+const log = (notes: string, day: string, amount: number) => logProgress(notes, day, amount, "MMM d, yyyy", false);
 
 describe("parseGoal", () => {
-  it("reads the total, unit, and entries", () => {
-    expect(parseGoal(block)).toEqual(goal);
-  });
-
-  it("finds the block among other notes, ignoring non-entry lines inside it", () => {
-    const notes = `Chapter list below.\n\n@GOAL: 2.5 km\nmorning runs\n2026-11-06: 0.5\n@endgoal\n\nhttps://example.com`;
-    expect(parseGoal(notes)).toEqual({ total: 2.5, unit: "km", entries: [{ date: "2026-11-06", amount: 0.5 }] });
-  });
-
-  it("reads to the end when @endgoal is missing, and allows no unit", () => {
-    expect(parseGoal("@goal: 3\n2026-11-06: 1")).toEqual({
-      total: 3,
-      unit: "",
-      entries: [{ date: "2026-11-06", amount: 1 }],
+  it("reads the total, unit, and entries in mixed date formats", () => {
+    expect(parse(block)).toEqual({
+      total: 32,
+      unit: "pages",
+      entries: [
+        { day: "2026-11-06", amount: 10, hasTime: false, line: 2 },
+        { day: "2026-11-05", amount: -1, hasTime: false, line: 3 },
+        { day: "2026-11-04", amount: 4, hasTime: false, line: 4 },
+      ],
     });
   });
 
+  it("reads timestamps with times, separated by a colon or a dash", () => {
+    const notes = "@goal: 10\nNov 6, 2026 11:00 am: 3\n2026-11-06 2 pm - 2\n6 Nov 2026 14:00 - -1\n@endgoal";
+    expect(parse(notes)?.entries.map((e) => [e.day, e.amount, e.hasTime])).toEqual([
+      ["2026-11-06", 3, true],
+      ["2026-11-06", 2, true],
+      ["2026-11-06", -1, true],
+    ]);
+  });
+
+  it("finds the block among other notes, ignoring lines that aren't entries", () => {
+    const notes =
+      "Chapter list below.\n\n@GOAL: 2.5 km\nmorning runs\n2026-11-06: 0.5\n2026-11-05 -1\n@endgoal\n\nhttps://a.test";
+    expect(parse(notes)).toMatchObject({ total: 2.5, unit: "km", entries: [{ day: "2026-11-06", amount: 0.5 }] });
+  });
+
+  it("reads to the end when @endgoal is missing, and allows no unit", () => {
+    expect(parse("@goal: 3\n2026-11-06: 1")).toMatchObject({ total: 3, unit: "", entries: [{ amount: 1 }] });
+  });
+
   it("is undefined without a @goal line", () => {
-    expect(parseGoal("Just notes\n2026-11-06: 1")).toBeUndefined();
-  });
-});
-
-describe("formatGoal", () => {
-  it("writes newest first, with blank lines around the entries", () => {
-    expect(formatGoal({ ...goal, entries: [...goal.entries].reverse() })).toBe(block);
-  });
-
-  it("writes an empty goal without a unit", () => {
-    expect(formatGoal({ total: 5, unit: "", entries: [] })).toBe("@goal: 5\n\n@endgoal");
-  });
-});
-
-describe("writeGoal", () => {
-  it("appends a block after the notes, or alone in empty notes", () => {
-    expect(writeGoal("Read it.\n", goal)).toBe(`Read it.\n\n${block}`);
-    expect(writeGoal("", goal)).toBe(block);
-  });
-
-  it("replaces the block in place, leaving the rest of the notes alone", () => {
-    const notes = `Before\n\n@goal: 10\n2026-11-01: 1\n@endgoal\n\nAfter`;
-    expect(writeGoal(notes, goal)).toBe(`Before\n\n${block}\n\nAfter`);
-  });
-
-  it("removes the block and the blank line before it", () => {
-    expect(writeGoal(`Before\n\n${block}\n\nAfter`)).toBe("Before\n\nAfter");
-    expect(writeGoal(`Before\n\n${block}`)).toBe("Before");
-    expect(writeGoal("No goal")).toBe("No goal");
-  });
-});
-
-describe("logProgress", () => {
-  it("adds to the day's line, or adds a line for a new day", () => {
-    expect(logProgress(goal, "2026-11-06", 2).entries).toContainEqual({ date: "2026-11-06", amount: 12 });
-    expect(logProgress(goal, "2026-11-07", 3).entries).toContainEqual({ date: "2026-11-07", amount: 3 });
-  });
-
-  it("drops a day that nets to 0, and avoids float drift", () => {
-    expect(logProgress(goal, "2026-11-04", -4).entries.map((e) => e.date)).not.toContain("2026-11-04");
-    const tenths = logProgress(logProgress({ ...goal, entries: [] }, "2026-11-06", 0.1), "2026-11-06", 0.2);
-    expect(tenths.entries).toEqual([{ date: "2026-11-06", amount: 0.3 }]);
+    expect(parse("Just notes\n2026-11-06: 1")).toBeUndefined();
   });
 });
 
 describe("goalProgress", () => {
-  it("sums all entries and today's", () => {
-    expect(goalProgress(goal, "2026-11-06")).toEqual({ done: 13, today: 10 });
-    expect(goalProgress(goal, "2026-11-07")).toEqual({ done: 13, today: 0 });
+  it("sums every entry, and every entry for today, times included", () => {
+    const notes = "@goal: 10\nNov 6, 2026 11:00 am: 3\nNov 6, 2026: 2\n2026-11-05: 4\n@endgoal";
+    expect(goalProgress(parse(notes)!, "2026-11-06")).toEqual({ done: 9, today: 5 });
+  });
+});
+
+describe("formatGoal", () => {
+  it("writes a new block newest first in the chosen format", () => {
+    const entries = [
+      { day: "2026-11-04", amount: 4 },
+      { day: "2026-11-06", amount: 10 },
+    ];
+    expect(formatGoal(32, "pages", entries, "MMM d, yyyy")).toBe(
+      "@goal: 32 pages\n\nNov 6, 2026: 10\nNov 4, 2026: 4\n\n@endgoal",
+    );
+    expect(formatGoal(5, "", [], "yyyy-MM-dd")).toBe("@goal: 5\n\n@endgoal");
+  });
+});
+
+describe("appendGoal, setGoalHeader, removeGoal", () => {
+  it("appends after the notes, or alone in empty notes", () => {
+    expect(appendGoal("Read it.\n", block)).toBe(`Read it.\n\n${block}`);
+    expect(appendGoal("", block)).toBe(block);
+  });
+
+  it("changes only the header, leaving entries as typed", () => {
+    const notes = `Before\n\n${block}\n\nAfter`;
+    expect(setGoalHeader(notes, 40, "chapters")).toBe(notes.replace("@goal: 32 pages", "@goal: 40 chapters"));
+  });
+
+  it("removes the block and the blank line before it", () => {
+    expect(removeGoal(`Before\n\n${block}\n\nAfter`)).toBe("Before\n\nAfter");
+    expect(removeGoal(`Before\n\n${block}`)).toBe("Before");
+    expect(removeGoal("No goal")).toBe("No goal");
+  });
+});
+
+describe("logProgress", () => {
+  it("adds to the day's date-only line, keeping its format", () => {
+    expect(log(block, "2026-11-05", 3)).toBe(block.replace("2026-11-05: -1", "2026-11-05: 2"));
+  });
+
+  it("adds a date-only line beside timed entries instead of rewriting them", () => {
+    const notes = "@goal: 10\n\nNov 6, 2026 11:00 am: 3\n\n@endgoal";
+    expect(log(notes, "2026-11-06", 2)).toBe("@goal: 10\n\nNov 6, 2026 11:00 am: 3\nNov 6, 2026: 2\n\n@endgoal");
+  });
+
+  it("puts a new day before the first older entry, in the chosen format", () => {
+    expect(log(block, "2026-11-07", 1)).toBe(block.replace("Nov 6, 2026: 10", "Nov 7, 2026: 1\nNov 6, 2026: 10"));
+    expect(logProgress(block, "2026-11-07", 1, "yyyy-MM-dd", false)).toContain("2026-11-07: 1\nNov 6, 2026: 10");
+  });
+
+  it("adds the first entry inside an empty block", () => {
+    expect(log("@goal: 5\n\n@endgoal", "2026-11-06", 1)).toBe("@goal: 5\n\nNov 6, 2026: 1\n\n@endgoal");
+  });
+
+  it("drops a date-only line that nets to 0, and avoids float drift", () => {
+    expect(log(block, "2026-11-04", -4)).toBe(block.replace("2026-11-04: 4\n", ""));
+    const tenths = log(log("@goal: 1\n\n@endgoal", "2026-11-06", 0.1), "2026-11-06", 0.2);
+    expect(tenths).toContain("Nov 6, 2026: 0.3");
   });
 });

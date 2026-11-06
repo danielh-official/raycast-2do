@@ -1,71 +1,117 @@
+import { DayFormat, formatDay, parseTimestamp } from "./dates";
+
 // A goal lives in a task's notes as a block, one line per date, newest first:
 //
 //   @goal: 32 pages
 //
-//   2026-11-06: 10
-//   2026-11-05: -1
+//   Nov 6, 2026: 10
+//   2026-11-05 2 pm - -1
+//   Nov 4, 2026: 4
 //
 //   @endgoal
 //
-// Lines inside the block that aren't entries are ignored, and text outside it is left alone.
-export type GoalEntry = { date: string; amount: number };
+// An entry is a timestamp in any common format, then ":" or " - ", then an amount. Entries with
+// times count toward their day. Other lines in the block are ignored, and the extension never
+// rewrites lines it didn't write: logging updates or adds a date-only line, and editing the goal
+// only changes the header. Text outside the block is left alone.
+export type GoalEntry = { day: string; amount: number; hasTime: boolean; line: number };
 export type Goal = { total: number; unit: string; entries: GoalEntry[] };
 
 const HEADER = /^@goal:\s*(\d+(?:\.\d+)?)\s*(.*)$/i;
 const END = /^@endgoal$/i;
-const ENTRY = /^(\d{4}-\d{2}-\d{2}):\s*([+-]?\d+(?:\.\d+)?)$/;
+const AMOUNT = /^[+-]?\d+(?:\.\d+)?$/;
 
 // Header line through @endgoal, or through the last line when @endgoal is missing.
 function findBlock(lines: string[]) {
   const start = lines.findIndex((l) => HEADER.test(l.trim()));
   if (start < 0) return;
   const end = lines.findIndex((l, i) => i > start && END.test(l.trim()));
-  return { start, end: end < 0 ? lines.length - 1 : end };
+  return { start, end: end < 0 ? lines.length - 1 : end, closed: end >= 0 };
 }
 
-export function parseGoal(notes: string): Goal | undefined {
+// Tries each ":" or " - " in turn, since times have colons too ("11:00 am: 3").
+function readEntry(text: string, dayFirst?: boolean) {
+  for (const sep of text.matchAll(/:\s*|\s[-–—]\s+/g)) {
+    const amount = text.slice(sep.index + sep[0].length);
+    if (!AMOUNT.test(amount)) continue;
+    const timestamp = parseTimestamp(text.slice(0, sep.index), dayFirst);
+    if (timestamp) return { ...timestamp, amount: Number(amount) };
+  }
+}
+
+export function parseGoal(notes: string, dayFirst?: boolean): Goal | undefined {
   const lines = notes.split("\n");
   const block = findBlock(lines);
   if (!block) return;
   const [, total, unit] = lines[block.start].trim().match(HEADER)!;
-  const entries = lines.slice(block.start + 1, block.end + 1).flatMap((l) => {
-    const m = l.trim().match(ENTRY);
-    return m ? [{ date: m[1], amount: Number(m[2]) }] : [];
-  });
+  const entries: GoalEntry[] = [];
+  for (let i = block.start + 1; i <= block.end; i++) {
+    const entry = readEntry(lines[i].trim(), dayFirst);
+    if (entry) entries.push({ ...entry, line: i });
+  }
   return { total: Number(total), unit: unit.trim(), entries };
 }
 
 const round = (n: number) => Math.round(n * 1000) / 1000;
 
-export function formatGoal({ total, unit, entries }: Goal) {
-  const lines = [...entries].sort((a, b) => b.date.localeCompare(a.date)).map((e) => `${e.date}: ${round(e.amount)}`);
-  return [
-    `@goal: ${round(total)}${unit ? ` ${unit}` : ""}`,
-    "",
-    ...lines,
-    ...(lines.length ? [""] : []),
-    "@endgoal",
-  ].join("\n");
+const header = (total: number, unit: string) => `@goal: ${round(total)}${unit ? ` ${unit}` : ""}`;
+
+// A new block, for a task becoming a goal.
+export function formatGoal(total: number, unit: string, entries: { day: string; amount: number }[], format: DayFormat) {
+  const lines = [...entries]
+    .sort((a, b) => b.day.localeCompare(a.day))
+    .map((e) => `${formatDay(e.day, format)}: ${round(e.amount)}`);
+  return [header(total, unit), "", ...lines, ...(lines.length ? [""] : []), "@endgoal"].join("\n");
 }
 
-// Replaces the goal block in place, appends one at the end, or removes it when `goal` is undefined.
-export function writeGoal(notes: string, goal?: Goal) {
+export function appendGoal(notes: string, block: string) {
+  return [notes.trimEnd(), block].filter(Boolean).join("\n\n");
+}
+
+export function setGoalHeader(notes: string, total: number, unit: string) {
   const lines = notes.split("\n");
   const block = findBlock(lines);
-  if (!block) return goal ? [notes.trimEnd(), formatGoal(goal)].filter(Boolean).join("\n\n") : notes;
-  const start = !goal && block.start > 0 && !lines[block.start - 1].trim() ? block.start - 1 : block.start;
-  lines.splice(start, block.end - start + 1, ...(goal ? [formatGoal(goal)] : []));
+  if (!block) return notes;
+  lines[block.start] = header(total, unit);
+  return lines.join("\n");
+}
+
+// Removes the block and the blank line before it.
+export function removeGoal(notes: string) {
+  const lines = notes.split("\n");
+  const block = findBlock(lines);
+  if (!block) return notes;
+  const start = block.start > 0 && !lines[block.start - 1].trim() ? block.start - 1 : block.start;
+  lines.splice(start, block.end - start + 1);
   return lines.join("\n").trimEnd();
 }
 
-// Adds `amount` to `date`'s line, keeping one line per date. A day that nets to 0 is dropped.
-export function logProgress(goal: Goal, date: string, amount: number): Goal {
-  const day = round((goal.entries.find((e) => e.date === date)?.amount ?? 0) + amount);
-  const rest = goal.entries.filter((e) => e.date !== date);
-  return { ...goal, entries: day ? [...rest, { date, amount: day }] : rest };
+// Adds `amount` to the day's date-only line, whatever its format, or adds a line in `format`
+// before the first older entry. A date-only line that nets to 0 is dropped.
+export function logProgress(notes: string, day: string, amount: number, format: DayFormat, dayFirst?: boolean) {
+  const lines = notes.split("\n");
+  const block = findBlock(lines);
+  const goal = parseGoal(notes, dayFirst);
+  if (!block || !goal) return notes;
+  const own = goal.entries.find((e) => e.day === day && !e.hasTime);
+  if (own) {
+    const sum = round(own.amount + amount);
+    if (sum) lines[own.line] = lines[own.line].replace(/[+-]?\d+(?:\.\d+)?\s*$/, String(sum));
+    else lines.splice(own.line, 1);
+    return lines.join("\n");
+  }
+  const line = `${formatDay(day, format)}: ${round(amount)}`;
+  const older = goal.entries.find((e) => e.day < day);
+  if (older) lines.splice(older.line, 0, line);
+  else if (goal.entries.length) lines.splice(goal.entries[goal.entries.length - 1].line + 1, 0, line);
+  else {
+    const at = block.closed ? block.end : block.end + 1;
+    lines.splice(at, 0, ...(lines[at - 1].trim() ? [""] : []), line, ...(block.closed ? [""] : []));
+  }
+  return lines.join("\n");
 }
 
 export function goalProgress(goal: Goal, today: string) {
   const sum = (entries: GoalEntry[]) => round(entries.reduce((n, e) => n + e.amount, 0));
-  return { done: sum(goal.entries), today: sum(goal.entries.filter((e) => e.date === today)) };
+  return { done: sum(goal.entries), today: sum(goal.entries.filter((e) => e.day === today)) };
 }

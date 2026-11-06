@@ -1,7 +1,7 @@
-import { Action, ActionPanel, Form, showToast, Toast, useNavigation } from "@raycast/api";
+import { Action, ActionPanel, Form, getPreferenceValues, showToast, Toast, useNavigation } from "@raycast/api";
 import { showFailureToast, useForm } from "@raycast/utils";
-import { Task, twoDo, ymd } from "./2do";
-import { goalProgress, logProgress, parseGoal, writeGoal } from "./goal";
+import { GoalPrefs, Task, twoDo, ymd } from "./2do";
+import { goalProgress, logProgress, parseGoal } from "./goal";
 
 // Logs progress on a goal task. Reads the task fresh before writing so edits made in 2Do since the
 // list loaded aren't lost.
@@ -16,11 +16,12 @@ export function LogProgressForm({ task, onLogged }: { task: Task; onLogged: () =
     async onSubmit({ amount, date }) {
       try {
         const { task: fresh } = await twoDo<{ task: Task }>("get_task", { task_id: task.task_id });
-        const goal = parseGoal(fresh.notes);
-        if (!goal) throw new Error("The task's notes no longer have a @goal block.");
-        const next = logProgress(goal, ymd(date ?? new Date()), Number(amount));
-        await twoDo("update_task", { task_id: task.task_id, notes: writeGoal(fresh.notes, next) });
-        const { done } = goalProgress(next, ymd(new Date()));
+        if (!parseGoal(fresh.notes)) throw new Error("The task's notes no longer have a @goal block.");
+        const { goalDateFormat } = getPreferenceValues<GoalPrefs>();
+        const notes = logProgress(fresh.notes, ymd(date ?? new Date()), Number(amount), goalDateFormat);
+        await twoDo("update_task", { task_id: task.task_id, notes });
+        const goal = parseGoal(notes)!;
+        const { done } = goalProgress(goal, ymd(new Date()));
         const progress = `${done}/${goal.total}${goal.unit ? ` ${goal.unit}` : ""}`;
         onLogged();
         pop();
