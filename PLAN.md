@@ -14,7 +14,10 @@ Ship them in that order, one commit (or PR) per feature. Each feature lands with
 
 The Automation Suite was checked against 2Do 2026.4.3 with read-only calls and calls that used a fake `task_id`.
 
-- **Links are task actions.** A task has `action: { type: "none" }` or `action: { type: "url", value: "https://…" }`. 2Do shows the URL as the task's "Visit website" action. `create_task` accepts `action`, and `update_task_action` takes `{ task_id, action }`. Other action types exist (call, email, and so on), and the extension must not overwrite them by accident.
+- **Links are task actions.** A task has `action: { type: "none" }` or `action: { type: "url", value: "https://…" }`. 2Do shows the URL as the task's "Visit website" action. `create_task` and `update_task` accept `action`, and `update_task_action` takes `{ task_id, action }`. These were confirmed on a scratch task:
+  - The types are `none`, `url`, `call`, `message`, `mail` and `visit` (a place), plus `google` (a search).
+  - Every type but `none` needs a non-empty `value`.
+  - `none` must have no `value`; `{ type: "none" }` clears the action.
 - **There's no batch create.** Bulk adding means one `create_task` call per link.
 - **Cancelled tasks are completed tasks with a "Cancelled" tag.** That's 2Do's convention, and 18 tasks in the current database follow it. `complete_task` on a project or checklist also completes its subtasks (`recursive` defaults to true).
 - **The automation can't create tags.** The suite has `list_tags` but no `create_tag`. If the cancel tag doesn't exist, the extension has to say so instead of creating it.
@@ -64,6 +67,15 @@ The Automation Suite was checked against 2Do 2026.4.3 with read-only calls and c
   - **Choose Link** (⇧⌘L), a submenu shown only with 2 or more links, lists every link with the primary first.
   - Tasks with links show a link icon whose tooltip is the primary link, and their URLs are included in search.
 - [x] Tests for `taskLinks`, and for `saveTask` setting, changing, clearing, and skipping the link, and leaving non-URL actions alone.
+
+**Then, all 2Do actions:**
+
+- [x] The form's Link field became an **Action** dropdown, offering None, Link (`url`), Call (`call`), Message (`message`), Email (`mail`), Visit (`visit`) and Google (`google`).
+  - A value field follows it, labelled for the chosen type: URL, Phone Number, Email Address, Address, or Search Terms. It's required, and Link needs a full URL.
+  - Add Link opens with Link selected and the URL filled in.
+  - If 2Do ever reports a type the extension doesn't know, the form hides the action and saving leaves it alone.
+- [x] In View Tasks, ⌘L runs the action through the matching scheme: the URL itself, `tel:`, `sms:`, `mailto:`, `maps://?q=`, or a Google search. A task with no action opens the first link in its notes. The accessory icon shows the action type.
+- [x] Tests for `actionURL`, `actionValueError`, and `saveTask` setting, changing, clearing and preserving actions.
 
 **Optional, not planned:** prefill Add Link from a URL on the clipboard.
 

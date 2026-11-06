@@ -20,7 +20,9 @@ If you clicked **Don't Allow**, turn it back on in **System Settings → Privacy
 
 ### Add Task
 
-Create a task with a title, notes, link, list, start and due dates (with optional times), priority, star, and tags. The list you pick is remembered for next time. The link is saved as the task's 2Do action, so 2Do can open it.
+Create a task with a title, notes, action, list, start and due dates (with optional times), priority, star, and tags. The list you pick is remembered for next time.
+
+The action is 2Do's one-tap task action: **Link** (a URL), **Call** or **Message** (a phone number), **Email** (an address), **Visit** (a place, opened in Maps), or **Google** (search terms). Edit Task changes or removes it.
 
 ### Add Link
 
@@ -28,19 +30,19 @@ Enter a web address and continue to the task form, with the address as the title
 
 Some sites (Goodreads, for example) block automated reading. Keep a browser open with the [Raycast browser extension](https://www.raycast.com/browser-extension) (Raycast Companion) installed and enabled to get past those blocks. If reading fails, a toast says why.
 
-Either way, the address is saved as the task's link, so 2Do can open it.
+Either way, the task form opens with the address as the task's Link action, so 2Do can open it.
 
 ### View Tasks
 
 Browse tasks by scope: All, Today, Starred, Scheduled, Done, any list, or any smart list. Type to filter by title, notes, tag, or link.
 
-A task's primary link is its 2Do link action, or else the first link in its notes. Tasks with a link show a link icon. Edit Task shows the link action, unless the task has a different kind of action (such as a call or email).
+⌘L runs the task's 2Do action: it opens the link, calls or messages the number (through FaceTime or Messages), starts an email, opens the place in Maps, or searches Google. A task with no action opens the first link in its notes instead. An icon shows which kind of action a task has. Choose Link lists every link, from the action and the notes.
 
-| Action                      | Shortcut |
-| --------------------------- | -------- |
-| Edit Task                   | ↵        |
-| Open Link (primary)         | ⌘L       |
-| Choose Link (2 or more)     | ⇧⌘L      |
+| Action                                 | Shortcut |
+| -------------------------------------- | -------- |
+| Edit Task                              | ↵        |
+| Run Action (or open the first link)    | ⌘L       |
+| Choose Link (2 or more)                | ⇧⌘L      |
 | Complete / Mark as Not Done | ⌘D       |
 | Star / Unstar               | ⌘.       |
 | Open in 2Do                 | ⌘O       |

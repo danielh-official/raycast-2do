@@ -1,6 +1,17 @@
 import { Action, ActionPanel, Form, showHUD, showToast, Toast, useNavigation } from "@raycast/api";
 import { FormValidation, showFailureToast, useCachedPromise, useForm } from "@raycast/utils";
-import { List, saveTask, Tag, tagOptions, Task, taskToValues, TaskValues, twoDo } from "./2do";
+import {
+  ACTIONS,
+  actionValueError,
+  List,
+  saveTask,
+  Tag,
+  tagOptions,
+  Task,
+  taskToValues,
+  TaskValues,
+  twoDo,
+} from "./2do";
 import { PageInfo } from "./link";
 
 // Creates a task, or edits `task` when given. `link` prefills a new task from a web page, with
@@ -18,14 +29,17 @@ export function TaskForm({
   const lists = useCachedPromise(() => twoDo<{ list: List[] }>("list_lists").then((r) => r.list));
   const tags = useCachedPromise(() => twoDo<{ tags: Tag[] }>("list_tags").then((r) => r.tags));
 
-  const { handleSubmit, itemProps } = useForm<TaskValues>({
-    initialValues: task ? taskToValues(task) : link && { title: link.title, notes: link.description, url: link.url },
+  const { handleSubmit, itemProps, values } = useForm<TaskValues>({
+    initialValues: task
+      ? taskToValues(task)
+      : {
+          action_type: link ? "url" : "none",
+          action_value: link?.url ?? "",
+          ...(link && { title: link.title, notes: link.description }),
+        },
     validation: {
       title: FormValidation.Required,
-      url: (v) => {
-        if (v && !(/^[a-z][\w+.-]*:\/\//i.test(v) && URL.canParse(v)))
-          return "Enter a full link, like https://example.com";
-      },
+      action_value: (v): string | undefined => actionValueError(values.action_type, v),
     },
     async onSubmit(v) {
       try {
@@ -55,8 +69,20 @@ export function TaskForm({
     >
       <Form.TextField title="Title" placeholder="Task" {...itemProps.title} />
       <Form.TextArea title="Notes" placeholder="Notes" {...itemProps.notes} />
-      {(!task || ["url", "none"].includes(task.action.type)) && (
-        <Form.TextField title="Link" placeholder="https://" {...itemProps.url} />
+      {values.action_type !== undefined && (
+        <Form.Dropdown title="Action" {...itemProps.action_type}>
+          <Form.Dropdown.Item value="none" title="None" />
+          {Object.entries(ACTIONS).map(([type, a]) => (
+            <Form.Dropdown.Item key={type} value={type} title={a.title} />
+          ))}
+        </Form.Dropdown>
+      )}
+      {values.action_type && values.action_type !== "none" && (
+        <Form.TextField
+          title={ACTIONS[values.action_type].label}
+          placeholder={ACTIONS[values.action_type].placeholder}
+          {...itemProps.action_value}
+        />
       )}
       <Form.Dropdown title="List" storeValue={!task} {...itemProps.list_id}>
         {lists.data?.map((l) => (

@@ -1,5 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import {
+  actionURL,
+  actionValueError,
   dateFields,
   saveTask,
   scopeArgs,
@@ -112,9 +114,9 @@ describe("saveTask", () => {
     expect(sent()[0][1].tag_update).toEqual({ operation: "set", tag_ids: ["tag1"] });
   });
 
-  it("sets the link action when creating with a url", async () => {
-    await saveTask({ ...values, url: "https://example.com" });
-    expect(sent()[0][1].action).toEqual({ type: "url", value: "https://example.com" });
+  it("sets the action when creating, trimming its value", async () => {
+    await saveTask({ ...values, action_type: "mail", action_value: " a@example.com " });
+    expect(sent()[0][1].action).toEqual({ type: "mail", value: "a@example.com" });
   });
 
   it("updates a task, clearing removed fields", async () => {
@@ -148,20 +150,22 @@ describe("saveTask", () => {
     });
   });
 
-  it("sets, changes, and clears the link only when it changed", async () => {
+  it("sets, changes, and clears the action only when it changed", async () => {
     const linked = { ...task, action: { type: "url", value: "https://a.test" } };
     await saveTask(taskToValues(linked), linked);
     expect(sent()[0][1]).not.toHaveProperty("action");
-    await saveTask({ ...taskToValues(task), url: "https://b.test" }, task);
-    expect(sent()[1][1].action).toEqual({ type: "url", value: "https://b.test" });
-    await saveTask({ ...taskToValues(linked), url: "" }, linked);
-    expect(sent()[2][1].action).toEqual({ type: "none" });
+    await saveTask({ ...taskToValues(task), action_type: "call", action_value: "555-0100" }, task);
+    expect(sent()[1][1].action).toEqual({ type: "call", value: "555-0100" });
+    await saveTask({ ...taskToValues(linked), action_value: "https://b.test" }, linked);
+    expect(sent()[2][1].action).toEqual({ type: "url", value: "https://b.test" });
+    await saveTask({ ...taskToValues(linked), action_type: "none", action_value: undefined }, linked);
+    expect(sent()[3][1].action).toEqual({ type: "none" });
   });
 
-  it("leaves a non-link action alone", async () => {
-    const calls = { ...task, action: { type: "call", value: "555-0100" } };
-    expect(taskToValues(calls).url).toBeUndefined();
-    await saveTask(taskToValues(calls), calls);
+  it("leaves an unknown action type alone", async () => {
+    const future = { ...task, action: { type: "shortcut", value: "Run" } };
+    expect(taskToValues(future).action_type).toBeUndefined();
+    await saveTask(taskToValues(future), future);
     expect(sent()[0][1]).not.toHaveProperty("action");
   });
 
@@ -188,6 +192,33 @@ describe("taskLinks", () => {
       "https://en.wikipedia.org/wiki/Foo_(bar)",
     ]);
     expect(taskLinks(task)).toEqual([]);
+  });
+});
+
+describe("actionURL", () => {
+  it("builds the URL that runs each action type", () => {
+    expect(actionURL({ type: "url", value: "https://a.test" })).toBe("https://a.test");
+    expect(actionURL({ type: "call", value: "+1 (555) 010-0" })).toBe("tel:+15550100");
+    expect(actionURL({ type: "message", value: "555-0100" })).toBe("sms:5550100");
+    expect(actionURL({ type: "mail", value: "a@example.com" })).toBe("mailto:a@example.com");
+    expect(actionURL({ type: "visit", value: "1 Main St, Town" })).toBe("maps://?q=1%20Main%20St%2C%20Town");
+    expect(actionURL({ type: "google", value: "a&b" })).toBe("https://www.google.com/search?q=a%26b");
+  });
+
+  it("has nothing to run for no action or an unknown type", () => {
+    expect(actionURL({ type: "none" })).toBeUndefined();
+    expect(actionURL({ type: "shortcut", value: "Run" })).toBeUndefined();
+  });
+});
+
+describe("actionValueError", () => {
+  it("requires a value for every type but none, and a full link for url", () => {
+    expect(actionValueError("none", "")).toBeUndefined();
+    expect(actionValueError(undefined, "")).toBeUndefined();
+    expect(actionValueError("call", "  ")).toBe("Required");
+    expect(actionValueError("url", "example.com")).toMatch("full link");
+    expect(actionValueError("url", "x-apple-health://Meds")).toBeUndefined();
+    expect(actionValueError("google", "anything")).toBeUndefined();
   });
 });
 

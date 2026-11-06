@@ -1,7 +1,7 @@
 import { Action, ActionPanel, Color, Icon, Keyboard, List, showToast, Toast } from "@raycast/api";
 import { showFailureToast, useCachedPromise } from "@raycast/utils";
 import { useState } from "react";
-import { List as TwoDoList, scopeArgs, SmartList, Task, taskLinks, twoDo } from "./2do";
+import { actionURL, List as TwoDoList, scopeArgs, SmartList, Task, taskLinks, twoDo } from "./2do";
 import { TaskForm } from "./task-form";
 
 const FOCUSES = [
@@ -16,6 +16,16 @@ const PRIORITY_TAGS = {
   high: { value: "High", color: Color.Red },
   medium: { value: "Medium", color: Color.Orange },
   low: { value: "Low", color: Color.Blue },
+};
+
+// The ⌘L action for each 2Do action type.
+const RUN_ACTION: Record<string, { title: string; icon: Icon }> = {
+  url: { title: "Open Link", icon: Icon.Link },
+  call: { title: "Call", icon: Icon.Phone },
+  message: { title: "Send Message", icon: Icon.Message },
+  mail: { title: "Send Email", icon: Icon.Envelope },
+  visit: { title: "Open in Maps", icon: Icon.Map },
+  google: { title: "Search Google", icon: Icon.MagnifyingGlass },
 };
 
 export default function Command() {
@@ -69,12 +79,21 @@ export default function Command() {
       {!tasks.isLoading && <List.EmptyView icon={Icon.CheckCircle} title="No Tasks" />}
       {tasks.data?.map((t) => {
         const links = taskLinks(t);
+        const actionTarget = actionURL(t.action);
+        const primary = actionTarget
+          ? { ...RUN_ACTION[t.action.type], target: actionTarget, value: t.action.value }
+          : links[0] && { ...RUN_ACTION.url, target: links[0], value: links[0] };
         return (
           <List.Item
             key={t.task_id}
             title={t.title}
             subtitle={t.list_title}
-            keywords={[t.notes, ...t.tags.map((tag) => tag.title), ...links]}
+            keywords={[
+              t.notes,
+              ...t.tags.map((tag) => tag.title),
+              ...links,
+              ...(t.action.value ? [t.action.value] : []),
+            ]}
             icon={t.completed ? { source: Icon.CheckCircle, tintColor: Color.Green } : Icon.Circle}
             accessories={[
               ...t.tags.map((tag) => ({ tag: tag.title })),
@@ -89,7 +108,7 @@ export default function Command() {
                     },
                   ]
                 : []),
-              ...(links.length > 0 ? [{ icon: Icon.Link, tooltip: links[0] }] : []),
+              ...(primary ? [{ icon: primary.icon, tooltip: `${primary.title}: ${primary.value}` }] : []),
               ...(t.starred ? [{ icon: { source: Icon.Star, tintColor: Color.Yellow } }] : []),
             ]}
             actions={
@@ -99,8 +118,13 @@ export default function Command() {
                   icon={Icon.Pencil}
                   target={<TaskForm task={t} onSaved={tasks.revalidate} />}
                 />
-                {links.length > 0 && (
-                  <Action.OpenInBrowser title="Open Link" url={links[0]} shortcut={{ modifiers: ["cmd"], key: "l" }} />
+                {primary && (
+                  <Action.Open
+                    title={primary.title}
+                    icon={primary.icon}
+                    target={primary.target}
+                    shortcut={{ modifiers: ["cmd"], key: "l" }}
+                  />
                 )}
                 {links.length > 1 && (
                   <ActionPanel.Submenu
