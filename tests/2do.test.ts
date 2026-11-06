@@ -1,5 +1,15 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { dateFields, saveTask, scopeArgs, tagOptions, Task, taskToValues, toDate, twoDo } from "../extension/src/2do";
+import {
+  dateFields,
+  saveTask,
+  scopeArgs,
+  tagOptions,
+  Task,
+  taskLinks,
+  taskToValues,
+  toDate,
+  twoDo,
+} from "../extension/src/2do";
 
 const { runAppleScript } = vi.hoisted(() => ({ runAppleScript: vi.fn() }));
 vi.mock("@raycast/utils", () => ({ runAppleScript }));
@@ -159,6 +169,25 @@ describe("saveTask", () => {
     await saveTask({ ...values, list_id: "work" }, task);
     expect(sent().map(([command]) => command)).toEqual(["update_task", "move_task"]);
     expect(sent()[1][1]).toEqual({ task_id: "t1", list_id: "work" });
+  });
+});
+
+describe("taskLinks", () => {
+  it("puts the link action first, then links in the notes, without duplicates", () => {
+    const notes = "See https://b.test/x and x-apple-health://Meds.\n- https://a.test\n(https://c.test/y)";
+    expect(taskLinks({ ...task, notes, action: { type: "url", value: "https://a.test" } })).toEqual([
+      "https://a.test",
+      "https://b.test/x",
+      "x-apple-health://Meds",
+      "https://c.test/y",
+    ]);
+  });
+
+  it("keeps balanced parentheses and finds no links in plain notes", () => {
+    expect(taskLinks({ ...task, notes: "https://en.wikipedia.org/wiki/Foo_(bar)." })).toEqual([
+      "https://en.wikipedia.org/wiki/Foo_(bar)",
+    ]);
+    expect(taskLinks(task)).toEqual([]);
   });
 });
 

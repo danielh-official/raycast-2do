@@ -32,13 +32,15 @@ Either way, the address is saved as the task's link, so 2Do can open it.
 
 ### View Tasks
 
-Browse tasks by scope: All, Today, Starred, Scheduled, Done, any list, or any smart list. Type to filter by title, notes, or tag.
+Browse tasks by scope: All, Today, Starred, Scheduled, Done, any list, or any smart list. Type to filter by title, notes, tag, or link.
 
-Edit Task shows the task's link action, unless the task has a different kind of action (such as a call or email).
+A task's primary link is its 2Do link action, or else the first link in its notes. Tasks with a link show a link icon. Edit Task shows the link action, unless the task has a different kind of action (such as a call or email).
 
 | Action                      | Shortcut |
 | --------------------------- | -------- |
 | Edit Task                   | ↵        |
+| Open Link (primary)         | ⌘L       |
+| Choose Link (2 or more)     | ⇧⌘L      |
 | Complete / Mark as Not Done | ⌘D       |
 | Star / Unstar               | ⌘.       |
 | Open in 2Do                 | ⌘O       |

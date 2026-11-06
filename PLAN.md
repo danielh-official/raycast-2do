@@ -2,11 +2,11 @@
 
 Five features for the 2Do Raycast extension:
 
-1. Add a link
-2. Bulk add links
-3. Cancel a task**,** with a preference for what cancelling does
-4. Track goal progress on a task, driven by syntax in the notes, with a history of each bit of progress
-5. Add dated notes to a task, driven by syntax in the notes
+1. [x] Add a link
+2. [ ] Bulk add links
+3. [ ] Cancel a task**,** with a preference for what cancelling does
+4. [ ] Track goal progress on a task, driven by syntax in the notes, with a history of each bit of progress
+5. [ ] Add dated notes to a task, driven by syntax in the notes
 
 Ship them in that order, one commit (or PR) per feature. Each feature lands with its tests, a README section, and a CHANGELOG line.
 
@@ -23,6 +23,7 @@ The Automation Suite was checked against 2Do 2026.4.3 with read-only calls and c
 ## Code layout
 
 - `extension/src/2do.ts`: 2Do calls and task logic (exists).
+- `extension/src/link.ts`: reads a web page's title and description, from an open browser tab or a direct fetch (exists, added for Add Link).
 - `extension/src/notes.ts` (new): pure functions that parse and rewrite the progress and dated-note syntax. They don't call 2Do, so they're easy to unit test.
 - `tests/2do.test.ts` (exists) and `tests/notes.test.ts` (new).
 - Pull a `ymd(date)` helper (local `yyyy-MM-dd`) out of `dateFields` so the notes code formats dates the same way.
@@ -35,16 +36,36 @@ The Automation Suite was checked against 2Do 2026.4.3 with read-only calls and c
 
 **Goal:** a task can carry a URL, set from Raycast, that opens from Raycast.
 
-- Add a `link` field to `TaskValues`, read from `task.action` when `type === "url"`.
-- `TaskForm`: add a **Link** text field below Notes, validated as a URL when it's not empty.
-- `saveTask`:
-  - Create: include `action: { type: "url", value }` when a link is set.
-  - Edit: call `update_task_action` only when the link changed. Clearing it sends `{ type: "none" }`.
-  - If the task has a non-URL action (call, email, …), hide the Link field so saving can't overwrite that action.
-- `view-tasks.tsx`: when a task has a URL, show an **Open Link** action (`Action.OpenInBrowser`, ⌘L) and a link icon accessory, and add the URL to the search keywords.
-- Prefill (optional, small): in Add Task, if the clipboard holds a URL, offer it as the default Link.
+**Done** (commits `0275f60` and `9429dab`):
 
-**Tests:** `taskToValues` reads the link. `saveTask` sends the action on create, skips it when unchanged, clears it, and leaves non-URL actions alone.
+- [x] **Add Link** command (`add-link.tsx`). It starts as a Link field and a **Read page title and description** checkbox, which remembers its last setting.
+  - Unchecked: Continue opens the task form with the URL as the title.
+  - Checked: Continue reads the page first. The task form opens with the page title as the task title and the page's description in the notes.
+  - Either way, the task form shows the URL, and saving sets it as the task's link action.
+- [x] Page reading (`link.ts`):
+  - It tries a browser tab showing the page first, through Raycast Companion (`readTab`). The browser has already passed any bot check, so this works on sites like Goodreads.
+  - Otherwise it fetches the page directly, with a 10-second timeout (`fetchPage`).
+  - The title comes from `<title>`, then `og:title`. The description comes from the description meta tag, then `og:description`, then `twitter:description`.
+- [x] A failure toast explains why reading failed: the site refused (401/403/429/503), an AWS WAF bot check, no page title, a network error, or a timeout. The task form still opens, with the URL as the title.
+- [x] While the checkbox is checked, the form shows a tip to keep a browser open with Raycast Companion installed and enabled, plus a **Get Raycast Companion** link in the top-right corner.
+- [x] `saveTask` sends `action: { type: "url", value }` when creating a task with `TaskValues.url`.
+- [x] Tests in `tests/link.test.ts` and `tests/2do.test.ts`. README and CHANGELOG are updated.
+- [x] `extension/tsconfig.json` has `"types": ["node"]`, because TypeScript 6 no longer loads `@types/node` automatically.
+
+**Done next:**
+
+- [x] **Link field** in the task form (Add Task, Edit Task, and Add Link's second step). It's stored as `TaskValues.url` and read from `task.action` when `type === "url"`.
+  - The field accepts any scheme with `://`, since existing tasks use `x-apple-health://` and `readdle-spark://`.
+  - The action goes in the `update_task` call, which accepts `action`, only when the link changed. Clearing the link sends `{ type: "none" }`.
+  - The field is hidden for tasks with a non-URL action (call, email, …), so saving can't overwrite it.
+- [x] **View Tasks links** (`taskLinks` in `2do.ts`):
+  - The primary link is the task's link action, otherwise the first URL in its notes.
+  - **Open Link** (⌘L) opens the primary link.
+  - **Choose Link** (⇧⌘L), a submenu shown only with 2 or more links, lists every link with the primary first.
+  - Tasks with links show a link icon whose tooltip is the primary link, and their URLs are included in search.
+- [x] Tests for `taskLinks`, and for `saveTask` setting, changing, clearing, and skipping the link, and leaving non-URL actions alone.
+
+**Optional, not planned:** prefill Add Link from a URL on the clipboard.
 
 ## 2. Bulk add links
 
@@ -53,7 +74,7 @@ The Automation Suite was checked against 2Do 2026.4.3 with read-only calls and c
 - New command **Add Links** (`add-links.tsx`), as a form with:
   - **Links**: a text area with one URL per line. Blank lines and duplicates are ignored. Lines that aren't URLs fail validation, and the error lists them.
   - **List**, **Tags**, **Priority**, and **Due**, applied to every task. Reuse the existing dropdown and tag-picker code.
-- Title for each task: the page's `<title>`, fetched with a short timeout (about 3 s, a few requests at a time). If that fails, use the URL without its scheme. The title can always be fixed later in Edit Task.
+- Titles: offer the same **Read page title and description** checkbox as Add Link, and reuse `readTab` and `fetchPage` from `link.ts`, a few pages at a time. When a page can't be read, use the URL as the title, as Add Link does, and count it in the end-of-run summary. The title can always be fixed later in Edit Task.
 - Create the tasks one at a time with `create_task` (sequential is gentler on 2Do's AppleScript bridge), and show an animated toast with "Adding 3 of 12…".
 - When it finishes, show a HUD for "Added 12 links to 2Do". If some fail, show a toast like "Added 10, 2 failed" with the failed URLs available to copy.
 - Optional: a `Text` + `url` line format (`Read later https://…`) where the text before the URL becomes the title.
@@ -149,8 +170,8 @@ Log:
 
 The plan assumes the answer in bold for each question. Change these before starting if the defaults are wrong.
 
-1. **"Add a link":** is it a link on any task, as planned, or specifically a "save this URL as a task" command? Bulk Add Links already covers the second, so a single-link version could be a one-line form if wanted.
-2. **Bulk titles:** **fetch page titles**, or skip the network and title tasks with the URL?
+1. ~~**"Add a link"**: a link on any task, or a "save this URL as a task" command?~~ Answered: both. The Add Link command is built, and the link on any task is the rest of section 1.
+2. **Bulk titles:** **an optional checkbox, the same as Add Link** (reading pages, or using the URL as the title)?
 3. **Cancel default:** **Complete and tag "Cancelled"**, which matches the existing `cancel-2do-task` skill and the 18 existing cancelled tasks?
 4. **Goal reached:** **offer to complete the task**, complete it automatically, or do nothing?
 5. **Syntax keywords:** are `Goal:` and `Log:` the right words? Other candidates are `Progress:` and `Notes:`/`Journal:`.

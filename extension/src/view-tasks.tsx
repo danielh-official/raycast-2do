@@ -1,7 +1,7 @@
 import { Action, ActionPanel, Color, Icon, Keyboard, List, showToast, Toast } from "@raycast/api";
 import { showFailureToast, useCachedPromise } from "@raycast/utils";
 import { useState } from "react";
-import { List as TwoDoList, scopeArgs, SmartList, Task, twoDo } from "./2do";
+import { List as TwoDoList, scopeArgs, SmartList, Task, taskLinks, twoDo } from "./2do";
 import { TaskForm } from "./task-form";
 
 const FOCUSES = [
@@ -67,67 +67,85 @@ export default function Command() {
       }
     >
       {!tasks.isLoading && <List.EmptyView icon={Icon.CheckCircle} title="No Tasks" />}
-      {tasks.data?.map((t) => (
-        <List.Item
-          key={t.task_id}
-          title={t.title}
-          subtitle={t.list_title}
-          keywords={[t.notes, ...t.tags.map((tag) => tag.title)]}
-          icon={t.completed ? { source: Icon.CheckCircle, tintColor: Color.Green } : Icon.Circle}
-          accessories={[
-            ...t.tags.map((tag) => ({ tag: tag.title })),
-            ...(t.priority !== "none" ? [{ tag: PRIORITY_TAGS[t.priority] }] : []),
-            ...(t.presentation.due_date_formatted
-              ? [
-                  {
-                    text: {
-                      value: t.presentation.due_date_formatted,
-                      color: t.presentation.is_overdue ? Color.Red : undefined,
-                    },
-                  },
-                ]
-              : []),
-            ...(t.starred ? [{ icon: { source: Icon.Star, tintColor: Color.Yellow } }] : []),
-          ]}
-          actions={
-            <ActionPanel>
-              <Action.Push
-                title="Edit Task"
-                icon={Icon.Pencil}
-                target={<TaskForm task={t} onSaved={tasks.revalidate} />}
-              />
-              <Action
-                title={t.completed ? "Mark as Not Done" : "Complete Task"}
-                icon={t.completed ? Icon.Circle : Icon.CheckCircle}
-                shortcut={{ modifiers: ["cmd"], key: "d" }}
-                onAction={() =>
-                  run(
-                    t.completed ? "Marked not done" : "Completed",
-                    t.completed ? "uncomplete_task" : "complete_task",
+      {tasks.data?.map((t) => {
+        const links = taskLinks(t);
+        return (
+          <List.Item
+            key={t.task_id}
+            title={t.title}
+            subtitle={t.list_title}
+            keywords={[t.notes, ...t.tags.map((tag) => tag.title), ...links]}
+            icon={t.completed ? { source: Icon.CheckCircle, tintColor: Color.Green } : Icon.Circle}
+            accessories={[
+              ...t.tags.map((tag) => ({ tag: tag.title })),
+              ...(t.priority !== "none" ? [{ tag: PRIORITY_TAGS[t.priority] }] : []),
+              ...(t.presentation.due_date_formatted
+                ? [
                     {
-                      task_id: t.task_id,
+                      text: {
+                        value: t.presentation.due_date_formatted,
+                        color: t.presentation.is_overdue ? Color.Red : undefined,
+                      },
                     },
-                  )
-                }
-              />
-              <Action
-                title={t.starred ? "Unstar" : "Star"}
-                icon={Icon.Star}
-                shortcut={Keyboard.Shortcut.Common.Pin}
-                onAction={() =>
-                  run(t.starred ? "Unstarred" : "Starred", "update_task", { task_id: t.task_id, starred: !t.starred })
-                }
-              />
-              <Action
-                title="Open in 2Do"
-                icon={Icon.AppWindow}
-                shortcut={Keyboard.Shortcut.Common.Open}
-                onAction={() => twoDo("open_task", { task_id: t.task_id }).catch((e) => showFailureToast(e))}
-              />
-            </ActionPanel>
-          }
-        />
-      ))}
+                  ]
+                : []),
+              ...(links.length > 0 ? [{ icon: Icon.Link, tooltip: links[0] }] : []),
+              ...(t.starred ? [{ icon: { source: Icon.Star, tintColor: Color.Yellow } }] : []),
+            ]}
+            actions={
+              <ActionPanel>
+                <Action.Push
+                  title="Edit Task"
+                  icon={Icon.Pencil}
+                  target={<TaskForm task={t} onSaved={tasks.revalidate} />}
+                />
+                {links.length > 0 && (
+                  <Action.OpenInBrowser title="Open Link" url={links[0]} shortcut={{ modifiers: ["cmd"], key: "l" }} />
+                )}
+                {links.length > 1 && (
+                  <ActionPanel.Submenu
+                    title="Choose Link"
+                    icon={Icon.Link}
+                    shortcut={{ modifiers: ["cmd", "shift"], key: "l" }}
+                  >
+                    {links.map((url) => (
+                      <Action.OpenInBrowser key={url} title={url} url={url} />
+                    ))}
+                  </ActionPanel.Submenu>
+                )}
+                <Action
+                  title={t.completed ? "Mark as Not Done" : "Complete Task"}
+                  icon={t.completed ? Icon.Circle : Icon.CheckCircle}
+                  shortcut={{ modifiers: ["cmd"], key: "d" }}
+                  onAction={() =>
+                    run(
+                      t.completed ? "Marked not done" : "Completed",
+                      t.completed ? "uncomplete_task" : "complete_task",
+                      {
+                        task_id: t.task_id,
+                      },
+                    )
+                  }
+                />
+                <Action
+                  title={t.starred ? "Unstar" : "Star"}
+                  icon={Icon.Star}
+                  shortcut={Keyboard.Shortcut.Common.Pin}
+                  onAction={() =>
+                    run(t.starred ? "Unstarred" : "Starred", "update_task", { task_id: t.task_id, starred: !t.starred })
+                  }
+                />
+                <Action
+                  title="Open in 2Do"
+                  icon={Icon.AppWindow}
+                  shortcut={Keyboard.Shortcut.Common.Open}
+                  onAction={() => twoDo("open_task", { task_id: t.task_id }).catch((e) => showFailureToast(e))}
+                />
+              </ActionPanel>
+            }
+          />
+        );
+      })}
     </List>
   );
 }

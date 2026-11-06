@@ -92,6 +92,16 @@ function linkAction(task: Task) {
   if (task.action.type === "url") return task.action.value ?? "";
   if (task.action.type === "none") return "";
 }
+
+// The task's links: its link action first (the primary link), then URLs in the notes, without duplicates.
+export function taskLinks(task: Task): string[] {
+  const inNotes = (task.notes.match(/\b[a-z][\w+.-]*:\/\/[^\s<>"]+/gi) ?? []).map((u) => {
+    u = u.replace(/[.,;:!?]+$/, "");
+    return u.endsWith(")") && !u.includes("(") ? u.slice(0, -1) : u;
+  });
+  return [...new Set([linkAction(task), ...inNotes].filter((u): u is string => !!u))];
+}
+
 // Creates a task, or updates `task` (moving it if the list changed).
 export async function saveTask(v: TaskValues, task?: Task) {
   const fields = {
