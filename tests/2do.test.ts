@@ -26,6 +26,7 @@ const task: Task = {
   start_time: "12:00",
   due_date: "2026-10-25",
   tags: [{ tag_id: "tag1", title: "Family" }],
+  action: { type: "none" },
   presentation: { is_overdue: false },
 };
 
@@ -135,6 +136,23 @@ describe("saveTask", () => {
       notes: "about Sunday",
       tag_update: { operation: "set", tag_ids: ["tag1"] },
     });
+  });
+
+  it("sets, changes, and clears the link only when it changed", async () => {
+    const linked = { ...task, action: { type: "url", value: "https://a.test" } };
+    await saveTask(taskToValues(linked), linked);
+    expect(sent()[0][1]).not.toHaveProperty("action");
+    await saveTask({ ...taskToValues(task), url: "https://b.test" }, task);
+    expect(sent()[1][1].action).toEqual({ type: "url", value: "https://b.test" });
+    await saveTask({ ...taskToValues(linked), url: "" }, linked);
+    expect(sent()[2][1].action).toEqual({ type: "none" });
+  });
+
+  it("leaves a non-link action alone", async () => {
+    const calls = { ...task, action: { type: "call", value: "555-0100" } };
+    expect(taskToValues(calls).url).toBeUndefined();
+    await saveTask(taskToValues(calls), calls);
+    expect(sent()[0][1]).not.toHaveProperty("action");
   });
 
   it("moves the task when its list changed", async () => {

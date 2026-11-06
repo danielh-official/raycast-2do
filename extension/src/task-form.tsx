@@ -3,8 +3,8 @@ import { FormValidation, showFailureToast, useCachedPromise, useForm } from "@ra
 import { List, saveTask, Tag, tagOptions, Task, taskToValues, TaskValues, twoDo } from "./2do";
 import { PageInfo } from "./link";
 
-// Creates a task, or edits `task` when given. `link` prefills a new task from a web page and
-// sets the page as the task's link action.
+// Creates a task, or edits `task` when given. `link` prefills a new task from a web page, with
+// the page as the task's link.
 export function TaskForm({
   task,
   link,
@@ -19,11 +19,17 @@ export function TaskForm({
   const tags = useCachedPromise(() => twoDo<{ tags: Tag[] }>("list_tags").then((r) => r.tags));
 
   const { handleSubmit, itemProps } = useForm<TaskValues>({
-    initialValues: task ? taskToValues(task) : link && { title: link.title, notes: link.description },
-    validation: { title: FormValidation.Required },
+    initialValues: task ? taskToValues(task) : link && { title: link.title, notes: link.description, url: link.url },
+    validation: {
+      title: FormValidation.Required,
+      url: (v) => {
+        if (v && !(/^[a-z][\w+.-]*:\/\//i.test(v) && URL.canParse(v)))
+          return "Enter a full link, like https://example.com";
+      },
+    },
     async onSubmit(v) {
       try {
-        await saveTask({ ...v, url: link?.url }, task);
+        await saveTask(v, task);
         if (task) {
           await showToast({ style: Toast.Style.Success, title: "Task updated" });
           onSaved?.();
@@ -47,9 +53,11 @@ export function TaskForm({
         </ActionPanel>
       }
     >
-      {link && <Form.Description title="Link" text={link.url} />}
       <Form.TextField title="Title" placeholder="Task" {...itemProps.title} />
       <Form.TextArea title="Notes" placeholder="Notes" {...itemProps.notes} />
+      {(!task || ["url", "none"].includes(task.action.type)) && (
+        <Form.TextField title="Link" placeholder="https://" {...itemProps.url} />
+      )}
       <Form.Dropdown title="List" storeValue={!task} {...itemProps.list_id}>
         {lists.data?.map((l) => (
           <Form.Dropdown.Item key={l.list_id} value={l.list_id} title={l.title} />

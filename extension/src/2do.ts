@@ -18,6 +18,7 @@ export type Task = {
   due_date?: string;
   due_time?: string;
   tags: Tag[];
+  action: { type: string; value?: string };
   presentation: { due_date_formatted?: string; is_overdue: boolean };
 };
 
@@ -30,6 +31,8 @@ export type TaskValues = {
   priority: string;
   starred: boolean;
   tag_ids: string[];
+  // The task's link action. Undefined when the task has another kind of action (call, email, …),
+  // which the form must not overwrite.
   url?: string;
 };
 
@@ -81,9 +84,14 @@ export function taskToValues(task: Task): TaskValues {
     priority: task.priority,
     starred: task.starred,
     tag_ids: task.tags.map((t) => t.tag_id),
+    url: linkAction(task),
   };
 }
 
+function linkAction(task: Task) {
+  if (task.action.type === "url") return task.action.value ?? "";
+  if (task.action.type === "none") return "";
+}
 // Creates a task, or updates `task` (moving it if the list changed).
 export async function saveTask(v: TaskValues, task?: Task) {
   const fields = {
@@ -108,6 +116,8 @@ export async function saveTask(v: TaskValues, task?: Task) {
     task_id: task.task_id,
     notes: v.notes,
     tag_update: { operation: "set", tag_ids: v.tag_ids },
+    ...(v.url !== undefined &&
+      v.url !== linkAction(task) && { action: v.url ? { type: "url", value: v.url } : { type: "none" } }),
   });
   if (v.list_id !== task.list_id) await twoDo("move_task", { task_id: task.task_id, list_id: v.list_id });
 }

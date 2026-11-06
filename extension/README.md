@@ -20,7 +20,7 @@ If you clicked **Don't Allow**, turn it back on in **System Settings → Privacy
 
 ### Add Task
 
-Create a task with a title, notes, list, start and due dates (with optional times), priority, star, and tags. The list you pick is remembered for next time.
+Create a task with a title, notes, link, list, start and due dates (with optional times), priority, star, and tags. The list you pick is remembered for next time. The link is saved as the task's 2Do action, so 2Do can open it.
 
 ### Add Link
 
@@ -33,6 +33,8 @@ Either way, the address is saved as the task's link, so 2Do can open it.
 ### View Tasks
 
 Browse tasks by scope: All, Today, Starred, Scheduled, Done, any list, or any smart list. Type to filter by title, notes, or tag.
+
+Edit Task shows the task's link action, unless the task has a different kind of action (such as a call or email).
 
 | Action                      | Shortcut |
 | --------------------------- | -------- |
