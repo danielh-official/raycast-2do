@@ -30,10 +30,12 @@ const parsers = new Map<boolean, chrono.Chrono>();
 // Strict parsing skips relative words like "today", whose meaning would drift. `dayFirst` reads
 // an ambiguous date like 05/11/2026 as 5 November instead of May 11.
 export function parseTimestamp(text: string, dayFirst = false) {
-  if (!parsers.has(dayFirst))
-    parsers.set(dayFirst, new chrono.Chrono(chrono.en.configuration.createConfiguration(true, dayFirst)));
   const trimmed = text.trim();
-  const [result] = parsers.get(dayFirst)!.parse(trimmed);
+  // Dotted dates (6.11.2026) are a day-first convention everywhere they're used.
+  const order = dayFirst || /^\d{1,2}\.\d{1,2}\.\d{2,4}\b/.test(trimmed);
+  if (!parsers.has(order))
+    parsers.set(order, new chrono.Chrono(chrono.en.configuration.createConfiguration(true, order)));
+  const [result] = parsers.get(order)!.parse(trimmed);
   if (!result || result.index !== 0 || result.text.length !== trimmed.length) return;
   const d = result.start.date();
   const hasTime = result.start.isCertain("hour");

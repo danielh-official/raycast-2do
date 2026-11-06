@@ -71,6 +71,19 @@ describe("parseTimestamp", () => {
     expect(parseTimestamp("05/11/2026", true)?.day).toBe("2026-11-05");
   });
 
+  it("always reads dotted dates day first", () => {
+    expect(parseTimestamp("6.11.2026", false)?.day).toBe("2026-11-06");
+    expect(parseTimestamp("06.11.26 14:00", false)).toMatchObject({ day: "2026-11-06", hasTime: true });
+  });
+
+  it("reads weekdays, ordinals, abbreviations, and ISO times", () => {
+    expect(parseTimestamp("Friday, November 6, 2026", false)?.day).toBe("2026-11-06");
+    expect(parseTimestamp("November 6th, 2026", false)?.day).toBe("2026-11-06");
+    expect(parseTimestamp("Nov. 6, 2026", false)?.day).toBe("2026-11-06");
+    expect(parseTimestamp("2026-11-06T14:05", false)).toMatchObject({ day: "2026-11-06", hasTime: true });
+    expect(parseTimestamp("Nov 6, 2026 at 2:05 PM", false)).toMatchObject({ day: "2026-11-06", hasTime: true });
+  });
+
   it("rejects text that isn't wholly a timestamp, and relative words", () => {
     expect(parseTimestamp("Ran 5 km", false)).toBeUndefined();
     expect(parseTimestamp("Nov 6, 2026 and more", false)).toBeUndefined();
