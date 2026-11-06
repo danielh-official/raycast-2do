@@ -4,6 +4,7 @@ import {
   Alert,
   Color,
   confirmAlert,
+  environment,
   getPreferenceValues,
   Icon,
   Keyboard,
@@ -12,8 +13,26 @@ import {
   Toast,
 } from "@raycast/api";
 import { showFailureToast } from "@raycast/utils";
-import { actionURL, CancelPrefs, cancelTask, isCancelled, Task, taskLinks, twoDo } from "./2do";
+import { actionURL, CancelPrefs, cancelTask, isCancelled, Task, taskLinks, twoDo, ymd } from "./2do";
+import { goalProgress, parseGoal } from "./goal";
+import { LogProgressForm } from "./log-progress";
 import { TaskForm } from "./task-form";
+
+// A progress ring like getProgressIcon's, with today's share of the progress in a second color.
+function goalIcon(done: number, today: number, total: number) {
+  const share = (n: number) => Math.max(0, Math.min(1, n / total));
+  const todayShare = Math.min(share(done), share(today));
+  const before = share(done) - todayShare;
+  const r = 40;
+  const c = 2 * Math.PI * r;
+  const arc = (from: number, length: number, color: string) =>
+    length > 0
+      ? `<circle cx="50" cy="50" r="${r}" fill="none" stroke="${color}" stroke-width="10" stroke-dasharray="${length * c} ${c}" stroke-dashoffset="${-from * c}" transform="rotate(-90 50 50)" />`
+      : "";
+  const track = environment.appearance === "light" ? "black" : "white";
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="100px" height="100px"><circle cx="50" cy="50" r="${r}" fill="none" stroke="${track}" stroke-width="10" opacity="0.1" />${arc(0, before, Color.Green)}${arc(before, todayShare, Color.Blue)}</svg>`;
+  return `data:image/svg+xml,${encodeURIComponent(svg)}`;
+}
 
 const PRIORITY_TAGS = {
   high: { value: "High", color: Color.Red },
@@ -39,6 +58,8 @@ export function TaskItem({ task: t, onChange }: { task: Task; onChange: () => vo
   const primary = actionTarget
     ? { ...RUN_ACTION[t.action.type], target: actionTarget, value: t.action.value }
     : links[0] && { ...RUN_ACTION.url, target: links[0], value: links[0] };
+  const goal = parseGoal(t.notes);
+  const progress = goal && goalProgress(goal, ymd(new Date()));
 
   async function run(title: string, command: string, args: object) {
     try {
@@ -91,9 +112,19 @@ export function TaskItem({ task: t, onChange }: { task: Task; onChange: () => vo
           ? { source: Icon.XMarkCircle, tintColor: Color.SecondaryText }
           : t.completed
             ? { source: Icon.CheckCircle, tintColor: Color.Green }
-            : Icon.Circle
+            : goal && progress
+              ? goalIcon(progress.done, progress.today, goal.total)
+              : Icon.Circle
       }
       accessories={[
+        ...(goal && progress
+          ? [
+              {
+                text: `${progress.done}/${goal.total}${goal.unit ? ` ${goal.unit}` : ""}`,
+                tooltip: progress.today ? `${progress.today > 0 ? "+" : ""}${progress.today} today` : undefined,
+              },
+            ]
+          : []),
         ...t.tags.map((tag) => ({ tag: tag.title })),
         ...(t.priority !== "none" ? [{ tag: PRIORITY_TAGS[t.priority] }] : []),
         ...(t.presentation.due_date_formatted
@@ -112,6 +143,14 @@ export function TaskItem({ task: t, onChange }: { task: Task; onChange: () => vo
       actions={
         <ActionPanel>
           <Action.Push title="Edit Task" icon={Icon.Pencil} target={<TaskForm task={t} onSaved={onChange} />} />
+          {goal && (
+            <Action.Push
+              title="Log Progress"
+              icon={Icon.PlusCircle}
+              shortcut={{ modifiers: ["cmd"], key: "g" }}
+              target={<LogProgressForm task={t} onLogged={onChange} />}
+            />
+          )}
           {primary && (
             <Action.Open
               title={primary.title}
