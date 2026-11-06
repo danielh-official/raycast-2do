@@ -380,7 +380,7 @@ describe("ensureTag", () => {
 
 describe("applyGoal", () => {
   const base = { ...taskToValues(task), notes: "Read it.", tag_ids: ["tag1"] };
-  const prefs: GoalPrefs = { goalTag: "Goal", goalDateFormat: "MMMM d, yyyy" };
+  const prefs: GoalPrefs = { goalTagEnabled: true, goalTag: "Goal", goalDateFormat: "MMMM d, yyyy" };
   beforeEach(() => {
     runAppleScript.mockResolvedValue(JSON.stringify({ tags: [{ tag_id: "g1", title: "Goal" }] }));
   });
@@ -418,6 +418,25 @@ describe("applyGoal", () => {
     const notes = "Before\n\n@goal: 10 pages\n\n2026-11-06 2 pm - 4\n\n@endgoal\n\nAfter";
     const v = await applyGoal({ ...base, notes, is_goal: true, goal_total: "12", goal_unit: "chapters" }, prefs);
     expect(v.notes).toBe("Before\n\n@goal: 12 chapters\n\n2026-11-06 2 pm - 4\n\n@endgoal\n\nAfter");
+  });
+
+  it("skips the tag when Tag goals is off, without looking it up or creating it", async () => {
+    const v = await applyGoal(
+      { ...base, is_goal: true, goal_total: "5", goal_current: "" },
+      { ...prefs, goalTagEnabled: false },
+    );
+    expect(v).toMatchObject({ notes: "Read it.\n\n@goal: 5\n\n@endgoal", tag_ids: ["tag1"] });
+    expect(runAppleScript).not.toHaveBeenCalled();
+    expect(openURL).not.toHaveBeenCalled();
+  });
+
+  it("still removes an existing goal tag with the goal when Tag goals is off", async () => {
+    const notes = "Read it.\n\n@goal: 10\n\n@endgoal";
+    const v = await applyGoal(
+      { ...base, notes, tag_ids: ["tag1", "g1"], is_goal: false },
+      { ...prefs, goalTagEnabled: false },
+    );
+    expect(v.tag_ids).toEqual(["tag1"]);
   });
 
   it("removes the block and the goal tag when unchecked", async () => {

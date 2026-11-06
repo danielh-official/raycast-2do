@@ -209,11 +209,11 @@ export function taskLinks(task: Task): string[] {
   return [...new Set([link, ...inNotes].filter((u): u is string => !!u))];
 }
 
-export type GoalPrefs = { goalTag: string; goalDateFormat: DayFormat };
+export type GoalPrefs = { goalTagEnabled: boolean; goalTag: string; goalDateFormat: DayFormat };
 
 // The notes and tags to save once the goal fields are applied: a new goal block is added, an
 // existing one only gets its header changed (its entries stay as typed), or the block is removed.
-// The goal tag follows the block.
+// The goal tag mirrors the block for 2Do, unless turned off; removing a goal removes the tag either way.
 export async function applyGoal(v: TaskValues, p: GoalPrefs): Promise<TaskValues> {
   if (v.is_goal === undefined) return v;
   const existing = parseGoal(v.notes);
@@ -236,6 +236,7 @@ export async function applyGoal(v: TaskValues, p: GoalPrefs): Promise<TaskValues
           p.goalDateFormat,
         ),
       );
+  if (!p.goalTagEnabled) return { ...v, notes };
   const tag = await ensureTag(p.goalTag);
   return { ...v, notes, tag_ids: [...new Set([...v.tag_ids, tag.tag_id])] };
 }

@@ -39,6 +39,15 @@ describe("parseJournal", () => {
     expect(parse(notes)?.map((e) => e.text)).toEqual(["First"]);
   });
 
+  it("uses the topmost block and ignores later ones, for reading and writing", () => {
+    const notes = `${block}\n\n@journal\n\n2026-11-07 - Ignored\n\n@endjournal`;
+    expect(parse(notes)?.map((e) => e.text)).not.toContain("Ignored");
+    expect(parse(notes)).toHaveLength(3);
+    const added = add(notes, new Date(2026, 10, 8), false, "Newest");
+    expect(added.indexOf("November 8, 2026 - Newest")).toBeLessThan(added.indexOf("Nov 6, 2026 11:00 am"));
+    expect(added).toContain("@journal\n\n2026-11-07 - Ignored\n\n@endjournal");
+  });
+
   it("is undefined without a block, and empty for an empty one", () => {
     expect(parse("Just notes")).toBeUndefined();
     expect(parse("@journal\n\n@endjournal")).toEqual([]);

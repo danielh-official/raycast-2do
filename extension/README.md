@@ -75,7 +75,7 @@ Each line is a date, then `:` or `-`, then an amount; a negative number corrects
 
 The extension writes one date-only line per day, newest first, in the **Goal Date Format** preference ("November 6, 2026" by default). It never rewrites lines you typed: logging adds to that day's date-only line, or adds one. The rest of the notes are left alone.
 
-- **Make a goal:** check **Add a goal** in Add Task or Edit Task, and fill in **Total**, **Units** and, optionally, **Current**. When Current is above 0, **Last Completed** sets its date (today by default). The task also gets the **Goal** tag, which is created in 2Do if needed. Its name is set in the extension's preferences.
+- **Make a goal:** check **Add a goal** in Add Task or Edit Task, and fill in **Total**, **Units** and, optionally, **Current**. When Current is above 0, **Last Completed** sets its date (today by default). The task also gets the **Goal** tag, so goals show up in 2Do too. The tag is created in 2Do if needed, and its name is set in the extension's preferences. Goals work without the tag, so you can turn off **Tag goals** there.
 - **Change a goal:** Edit Task changes Total and Units, keeping its history. Unchecking **Add a goal** removes the goal and its history, after asking.
 - **Log Progress (⌘G):** add an amount for a day (today by default). Logging twice on one day adds to that day's date-only line. When the total is reached, a toast offers to complete the task.
 - **In task lists:** a goal task shows a progress ring, with today's share in a second color, and "13/32 pages".
@@ -102,6 +102,8 @@ An entry starts with a date and optional time in any common format. Short entrie
 - **Show Journal (⇧⌘J):** reads a task's entries, newest first, with dates like "Friday, November 6 3 pm (2 hours ago)". The year shows only for other years. The **Journal Display Date** preference picks the date style, including how it's written in the notes, and **Show relative time** turns the part in parentheses on or off. Tasks with a journal show a book icon.
 
 Edit Task's Notes field leaves out the goal and journal blocks and saves them as they are, after the rest of the notes. Use Log Progress and Add Journal Entry to change them.
+
+If notes have more than one goal or journal block, the topmost of each is used, and the rest are treated as ordinary notes.
 
 ### View Tasks: Today, Now, Later Today, Starred, Scheduled, Paused, Goals, Done
 

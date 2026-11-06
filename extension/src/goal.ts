@@ -76,13 +76,15 @@ export function setGoalHeader(notes: string, total: number, unit: string) {
   return lines.join("\n");
 }
 
-// Removes the block and the blank line before it.
+// Removes the block and one blank line beside it: the one before, or after when it's at the top.
 export function removeGoal(notes: string) {
   const lines = notes.split("\n");
   const block = findBlock(lines);
   if (!block) return notes;
-  const start = block.start > 0 && !lines[block.start - 1].trim() ? block.start - 1 : block.start;
-  lines.splice(start, block.end - start + 1);
+  const blankBefore = block.start > 0 && !lines[block.start - 1].trim();
+  const blankAfter = !blankBefore && block.end + 1 < lines.length && !lines[block.end + 1].trim();
+  const start = blankBefore ? block.start - 1 : block.start;
+  lines.splice(start, block.end - start + 1 + (blankAfter ? 1 : 0));
   return lines.join("\n").trimEnd();
 }
 
