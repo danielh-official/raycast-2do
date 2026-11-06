@@ -9,6 +9,7 @@
 - Cancel Task action, with preferences for what cancelling does
 - View Tasks: Today, Now, Later Today, Starred, Scheduled, Paused, and Done commands, each narrowed by the lists and smart lists (and, for Paused, paused tags) that have tasks in that scope
 - Goals: track progress on a task in its notes, log progress, see a progress ring, and browse them with View Tasks: Goals
+- Goal entries can use any common date format, with or without times, and the date format the extension writes is a preference
 - Missing Goal and Cancel tags are created in 2Do on first use
 - View Tasks command with All, Today, Starred, Scheduled, Done, list, and smart list scopes
 - Edit, complete, star, and open tasks from the list

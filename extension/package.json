@@ -138,6 +138,28 @@
       "type": "textfield",
       "required": false,
       "default": "Goal"
+    },
+    {
+      "name": "goalDateFormat",
+      "title": "Goal Date Format",
+      "description": "How the extension writes dates in a goal's notes. Goals read any common format either way.",
+      "type": "dropdown",
+      "required": false,
+      "default": "MMM d, yyyy",
+      "data": [
+        {
+          "title": "Nov 6, 2026",
+          "value": "MMM d, yyyy"
+        },
+        {
+          "title": "6 Nov 2026",
+          "value": "d MMM yyyy"
+        },
+        {
+          "title": "2026-11-06",
+          "value": "yyyy-MM-dd"
+        }
+      ]
     }
   ],
   "scripts": {
@@ -151,6 +173,7 @@
   "dependencies": {
     "@raycast/api": "2.7.3",
     "@raycast/utils": "2.3.2",
+    "chrono-node": "2.10.3",
     "html-entities": "2.6.0"
   },
   "devDependencies": {

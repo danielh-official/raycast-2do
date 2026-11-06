@@ -15,6 +15,7 @@ import {
   ACTIONS,
   actionValueError,
   applyGoal,
+  GoalPrefs,
   goalValueError,
   List,
   listParents,
@@ -89,7 +90,7 @@ export function TaskForm({
         if (!ok) return;
       }
       try {
-        await saveTask(await applyGoal(v, getPreferenceValues<{ goalTag: string }>().goalTag), task);
+        await saveTask(await applyGoal(v, getPreferenceValues<GoalPrefs>()), task);
         if (task) {
           await showToast({ style: Toast.Style.Success, title: "Task updated" });
           onSaved?.();

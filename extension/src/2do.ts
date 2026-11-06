@@ -3,7 +3,8 @@ import { runAppleScript } from "@raycast/utils";
 import { execFile } from "node:child_process";
 import { setTimeout as sleep } from "node:timers/promises";
 import { promisify } from "node:util";
-import { parseGoal, writeGoal } from "./goal";
+import { DayFormat } from "./dates";
+import { appendGoal, formatGoal, parseGoal, removeGoal, setGoalHeader } from "./goal";
 
 export type List = { list_id: string; collection_id: string; title: string };
 export type SmartList = { smart_list_id: string; collection_id: string; title: string };
@@ -207,21 +208,35 @@ export function taskLinks(task: Task): string[] {
   return [...new Set([link, ...inNotes].filter((u): u is string => !!u))];
 }
 
-// The notes and tags to save once the goal fields are applied: the goal block in the notes is added,
-// updated in place (keeping its entries), or removed, and the goal tag follows it.
-export async function applyGoal(v: TaskValues, goalTag: string): Promise<TaskValues> {
+export type GoalPrefs = { goalTag: string; goalDateFormat: DayFormat };
+
+// The notes and tags to save once the goal fields are applied: a new goal block is added, an
+// existing one only gets its header changed (its entries stay as typed), or the block is removed.
+// The goal tag follows the block.
+export async function applyGoal(v: TaskValues, p: GoalPrefs): Promise<TaskValues> {
   if (v.is_goal === undefined) return v;
   const existing = parseGoal(v.notes);
   if (!v.is_goal) {
     if (!existing) return v;
-    const tag = await findTag(goalTag);
-    return { ...v, notes: writeGoal(v.notes), tag_ids: v.tag_ids.filter((id) => id !== tag?.tag_id) };
+    const tag = await findTag(p.goalTag);
+    return { ...v, notes: removeGoal(v.notes), tag_ids: v.tag_ids.filter((id) => id !== tag?.tag_id) };
   }
+  const total = Number(v.goal_total);
+  const unit = v.goal_unit?.trim() ?? "";
   const current = Number(v.goal_current);
-  const entries = existing?.entries ?? (current > 0 ? [{ date: ymd(v.goal_last ?? new Date()), amount: current }] : []);
-  const goal = { total: Number(v.goal_total), unit: v.goal_unit?.trim() ?? "", entries };
-  const tag = await ensureTag(goalTag);
-  return { ...v, notes: writeGoal(v.notes, goal), tag_ids: [...new Set([...v.tag_ids, tag.tag_id])] };
+  const notes = existing
+    ? setGoalHeader(v.notes, total, unit)
+    : appendGoal(
+        v.notes,
+        formatGoal(
+          total,
+          unit,
+          current > 0 ? [{ day: ymd(v.goal_last ?? new Date()), amount: current }] : [],
+          p.goalDateFormat,
+        ),
+      );
+  const tag = await ensureTag(p.goalTag);
+  return { ...v, notes, tag_ids: [...new Set([...v.tag_ids, tag.tag_id])] };
 }
 
 // Creates a task, or updates `task` (moving it if the list changed).

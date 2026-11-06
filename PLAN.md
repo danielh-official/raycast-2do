@@ -165,14 +165,14 @@ Goals aren't a 2Do feature, so the extension stores them in the notes, staying a
 ```
 @goal: 32 pages
 
-2026-11-06: 10
-2026-11-05: -1
-2026-11-04: 4
+Nov 6, 2026: 10
+2026-11-05 2 pm - -1
+Nov 4, 2026: 4
 
 @endgoal
 ```
 
-- [x] `goal.ts`: `parseGoal`, `formatGoal`, `writeGoal` (replace in place, append, or remove), `logProgress` (merge into the day's line; drop a day that nets to 0) and `goalProgress` (done, and today's share).
+- [x] `goal.ts`: `parseGoal`, `formatGoal` and `appendGoal` (new blocks), `setGoalHeader`, `removeGoal`, `logProgress` and `goalProgress` (done, and today's share).
 - [x] **Add a goal** checkbox in Add Task and Edit Task:
   - It reveals **Total** (required, above 0) and **Units**.
   - When the task isn't a goal yet, it also reveals **Current**, plus **Last Completed** (default today) when Current is above 0.
@@ -181,6 +181,18 @@ Goals aren't a 2Do feature, so the extension stores them in the notes, staying a
 - [x] Task rows show a progress ring as the icon: earlier progress in green, today's share in blue. It's built like `getProgressIcon`'s SVG, with "13/32 pages" as an accessory.
 - [x] **View Tasks: Goals:** open tasks with a goal block, with the usual list and smart-list dropdown.
 - [x] Tests in `tests/goal.test.ts`, plus `ensureTag` and `applyGoal` tests that mock `open`, so tests never reach 2Do.
+
+**Follow-up: flexible dates.**
+
+- [x] `dates.ts` reads timestamps with chrono-node's strict English parser, which ignores relative words like "today". It handles `2026-11-05`, `Nov 6, 2026 11:00 am`, `6 Nov 2026 2pm` and `11/5/26`.
+  - Ambiguous slash dates follow the Mac's region, from `defaults read -g AppleLocale`: `en_US` reads month first.
+  - A timestamp only counts when it makes up the whole text before the separator.
+- [x] Goal entries are `<timestamp>` then `:` or ` - ` then an amount. Each separator is tried in turn, since times contain colons. A dash must have spaces around it, so `2026-11-05 -1` is ignored rather than misread as +1.
+- [x] Entries with times count toward their day.
+- [x] The extension never rewrites lines it didn't write:
+  - Logging adds to the day's date-only line, keeping its format, or inserts a new one before the first older entry.
+  - Editing a goal only changes the header line.
+- [x] The **Goal Date Format** preference sets how the extension writes dates: Nov 6, 2026 (default), 6 Nov 2026, or 2026-11-06.
 
 ### 5. Dated notes
 
