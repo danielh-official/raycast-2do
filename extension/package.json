@@ -70,6 +70,12 @@
       "mode": "view"
     },
     {
+      "name": "view-tasks-paused",
+      "title": "View Tasks: Paused",
+      "description": "Browse 2Do tasks hidden by paused tags, optionally narrowed to a paused tag, list, or smart list.",
+      "mode": "view"
+    },
+    {
       "name": "view-tasks-done",
       "title": "View Tasks: Done",
       "description": "Browse completed 2Do tasks, optionally narrowed to a list or smart list.",

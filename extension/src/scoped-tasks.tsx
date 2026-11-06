@@ -1,17 +1,25 @@
 import { Icon, List } from "@raycast/api";
 import { useCachedPromise } from "@raycast/utils";
 import { useState } from "react";
-import { List as TwoDoList, SmartList, Task, twoDo } from "./2do";
+import { List as TwoDoList, SmartList, Tag, Task, twoDo } from "./2do";
 import { TaskItem } from "./task-item";
 
-export type Scope = { focus: string; include_completed: boolean };
+export type Scope = { focus: string; include_completed: boolean; paused_filter?: "only" };
 
 type Filter = { value: string; title: string; match: (t: Task) => boolean };
 
 // One 2Do scope, optionally cut down by `where`, then narrowed from the dropdown. 2Do can't query a
 // scope and a list together, so lists filter by the task's list, and smart lists by the task IDs a
 // separate query of each smart list returns. The dropdown offers only filters with tasks in scope.
-export function ScopedTasks({ scope, where = () => true }: { scope: Scope; where?: (t: Task) => boolean }) {
+export function ScopedTasks({
+  scope,
+  where = () => true,
+  byPausedTag = false,
+}: {
+  scope: Scope;
+  where?: (t: Task) => boolean;
+  byPausedTag?: boolean;
+}) {
   const [filter, setFilter] = useState("all");
   const tasks = useCachedPromise(
     // ponytail: capped at 200, as in View Tasks
@@ -19,6 +27,11 @@ export function ScopedTasks({ scope, where = () => true }: { scope: Scope; where
     [scope],
   );
   const lists = useCachedPromise(() => twoDo<{ list: TwoDoList[] }>("list_lists").then((r) => r.list));
+  const pausedTags = useCachedPromise(
+    () => twoDo<{ tags: (Tag & { paused: boolean })[] }>("list_tags").then((r) => r.tags.filter((t) => t.paused)),
+    [],
+    { execute: byPausedTag },
+  );
   const smartLists = useCachedPromise(
     async (scope: Scope) => {
       const { smart_lists } = await twoDo<{ smart_lists: SmartList[] }>("list_smart_lists");
@@ -27,6 +40,7 @@ export function ScopedTasks({ scope, where = () => true }: { scope: Scope; where
           const { tasks } = await twoDo<{ tasks: Task[] }>("query_tasks", {
             smart_list_id: l.smart_list_id,
             include_completed: scope.include_completed,
+            ...(scope.paused_filter && { paused_filter: "include" }),
             limit: 200,
           });
           return { ...l, task_ids: tasks.map((t) => t.task_id) };
@@ -38,6 +52,14 @@ export function ScopedTasks({ scope, where = () => true }: { scope: Scope; where
 
   const inScope = (tasks.data ?? []).filter((t) => where(t));
   const sections: [string, Filter[]][] = [
+    [
+      "Paused Tags",
+      (byPausedTag ? (pausedTags.data ?? []) : []).map((tag) => ({
+        value: `tag:${tag.tag_id}`,
+        title: tag.title,
+        match: (t) => t.tags.some((x) => x.tag_id === tag.tag_id),
+      })),
+    ],
     [
       "Lists",
       (lists.data ?? []).map((l) => ({
@@ -70,11 +92,11 @@ export function ScopedTasks({ scope, where = () => true }: { scope: Scope; where
 
   return (
     <List
-      isLoading={tasks.isLoading || lists.isLoading || smartLists.isLoading}
+      isLoading={tasks.isLoading || lists.isLoading || smartLists.isLoading || pausedTags.isLoading}
       searchBarPlaceholder="Filter tasks"
       searchBarAccessory={
         <List.Dropdown tooltip="Filter" value={active?.value ?? "all"} onChange={setFilter}>
-          <List.Dropdown.Item value="all" title="All Lists" icon={Icon.Tray} />
+          <List.Dropdown.Item value="all" title={byPausedTag ? "All Paused" : "All Lists"} icon={Icon.Tray} />
           {offered.map(
             ([title, filters]) =>
               filters.length > 0 && (
