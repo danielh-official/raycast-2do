@@ -120,3 +120,5 @@ By default, Cancel Task follows 2Do's convention: it adds the **Cancelled** tag 
 - **Cancel List:** the list to move cancelled tasks to, for Move to List and Complete.
 
 Cancelling a project or checklist that still has open subtasks asks first, because completing it completes them too.
+
+For a repeating task, Cancel Task cancels only this occurrence. It completes the task, then tags, moves or deletes only the completed occurrence, so the next one is left as it was.

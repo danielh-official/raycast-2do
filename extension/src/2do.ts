@@ -22,6 +22,8 @@ export type Task = {
   due_time?: string;
   tags: Tag[];
   task_type: "normal" | "project" | "checklist";
+  recurrence?: { frequency?: string } | null;
+  completion_date?: string;
   action: { type: string; value?: string };
   presentation: { due_date_formatted?: string; is_overdue: boolean };
 };
@@ -273,30 +275,53 @@ export async function requireTag(title: string, fix: string): Promise<Tag> {
   return tag;
 }
 
-// 2Do's own convention is a completed task carrying a "Cancelled" tag. 2Do automation can't create
-// tags or lists, so a missing one is an error naming the preference.
+export const isRepeating = (task: Task) => !!task.recurrence?.frequency && task.recurrence.frequency !== "none";
+
+// Completes `task` and returns the ID of the completed occurrence. For a repeating task, 2Do keeps the
+// open task (moved to its next date) and adds a completed copy, which only a search by title finds.
+async function completeOccurrence(task: Task) {
+  const { task: after } = await twoDo<{ task: Task }>("complete_task", { task_id: task.task_id });
+  if (after.completed) return after.task_id;
+  const { tasks } = await twoDo<{ tasks: Task[] }>("query_tasks", {
+    search: task.title,
+    include_completed: true,
+    paused_filter: "include",
+  });
+  const [copy] = tasks
+    .filter((t) => t.completed && t.title === task.title && t.task_id !== task.task_id)
+    .sort((a, b) => (b.completion_date ?? "").localeCompare(a.completion_date ?? ""));
+  if (!copy)
+    throw new Error("Completed this occurrence, but couldn't find it to finish cancelling. Check 2Do's Done view.");
+  return copy.task_id;
+}
+
+// 2Do's own convention is a completed task carrying a "Cancelled" tag. The task is completed first,
+// then only the completed occurrence is tagged, moved, or deleted, so a repeating task's next
+// occurrence stays untouched. 2Do automation can't create tags or lists, so a missing one is an
+// error naming the preference, raised before anything changes.
 export async function cancelTask(task: Task, p: CancelPrefs) {
-  if (p.cancelBehavior === "delete") {
-    await twoDo("delete_task", { task_id: task.task_id });
-    return;
-  }
-  let taskId = task.task_id;
+  const needsTag = p.cancelBehavior === "complete-and-tag" || p.cancelBehavior === "tag";
+  const tag = needsTag
+    ? await requireTag(
+        p.cancelTag,
+        "Add it in 2Do, or set Cancel Tag in the extension's settings to the tag you use for cancelled tasks.",
+      )
+    : undefined;
+  let target: List | undefined;
   if (p.cancelBehavior === "move") {
     if (!p.cancelList.trim()) throw new Error("Set the Cancel List preference to the list cancelled tasks move to.");
     const { list } = await twoDo<{ list: List[] }>("list_lists");
-    const target = list.find((l) => sameTitle(l.title, p.cancelList));
+    target = list.find((l) => sameTitle(l.title, p.cancelList));
     if (!target) throw new Error(`No 2Do list named "${p.cancelList}". Check the Cancel List preference.`);
-    // A move gives the task a new ID.
-    const moved = await twoDo<{ task: { task_id: string } }>("move_task", { task_id: taskId, list_id: target.list_id });
-    taskId = moved.task.task_id;
-  } else {
-    const tag = await requireTag(
-      p.cancelTag,
-      "Add it in 2Do, or set Cancel Tag in the extension's settings to the tag you use for cancelled tasks.",
-    );
-    await twoDo("update_task", { task_id: taskId, tag_update: { operation: "append", tag_ids: [tag.tag_id] } });
   }
-  if (p.cancelBehavior !== "tag") await twoDo("complete_task", { task_id: taskId });
+  if (p.cancelBehavior === "delete" && !isRepeating(task)) {
+    await twoDo("delete_task", { task_id: task.task_id });
+    return;
+  }
+  const taskId = p.cancelBehavior === "tag" ? task.task_id : await completeOccurrence(task);
+  if (tag) await twoDo("update_task", { task_id: taskId, tag_update: { operation: "append", tag_ids: [tag.tag_id] } });
+  if (target) await twoDo("move_task", { task_id: taskId, list_id: target.list_id });
+  if (p.cancelBehavior === "delete") await twoDo("delete_task", { task_id: taskId });
 }
 
 export function isCancelled(task: Task, p: CancelPrefs) {

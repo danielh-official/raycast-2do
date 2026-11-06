@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import {
   actionURL,
   actionValueError,
@@ -263,23 +263,46 @@ describe("hasStarted", () => {
 
 describe("cancelTask", () => {
   const prefs: CancelPrefs = { cancelBehavior: "complete-and-tag", cancelTag: "Cancelled", cancelList: "" };
-  // Answers list_tags, list_lists, and move_task; everything else gets "{}".
+  const repeating = { ...task, recurrence: { frequency: "daily" } };
+  // A fake 2Do: completing a repeating task leaves it open and adds a completed copy, as 2Do does,
+  // and search finds that copy (plus an older one from a previous day).
   beforeEach(() => {
-    runAppleScript.mockImplementation(async (_script: string, [command]: string[]) => {
+    runAppleScript.mockImplementation(async (_script: string, [command, json]: string[]) => {
+      const args = JSON.parse(json);
       if (command === "list_tags") return JSON.stringify({ tags: [{ tag_id: "c1", title: "Cancelled" }] });
       if (command === "list_lists") return JSON.stringify({ list: [{ list_id: "l9", title: "Graveyard" }] });
-      if (command === "move_task") return JSON.stringify({ task: { task_id: "t1-moved" } });
+      if (command === "complete_task")
+        return JSON.stringify({ task: { ...task, task_id: args.task_id, completed: !isRepeatingRun } });
+      if (command === "query_tasks")
+        return JSON.stringify({
+          tasks: [
+            { ...task, completed: false },
+            { ...task, task_id: "old", completed: true, completion_date: "2026-11-05T10:00:00Z" },
+            { ...task, task_id: "copy", completed: true, completion_date: "2026-11-06T10:00:00Z" },
+          ],
+        });
       return "{}";
     });
   });
+  let isRepeatingRun = false;
+  afterEach(() => {
+    isRepeatingRun = false;
+  });
 
-  it("appends the cancel tag, then completes the task", async () => {
+  it("completes the task, then tags it", async () => {
     await cancelTask(task, prefs);
     expect(sent()).toEqual([
       ["list_tags", {}],
-      ["update_task", { task_id: "t1", tag_update: { operation: "append", tag_ids: ["c1"] } }],
       ["complete_task", { task_id: "t1" }],
+      ["update_task", { task_id: "t1", tag_update: { operation: "append", tag_ids: ["c1"] } }],
     ]);
+  });
+
+  it("tags only this occurrence's completed copy of a repeating task, leaving the next one clean", async () => {
+    isRepeatingRun = true;
+    await cancelTask(repeating, prefs);
+    expect(sent().map(([command]) => command)).toEqual(["list_tags", "complete_task", "query_tasks", "update_task"]);
+    expect(sent()[3][1]).toEqual({ task_id: "copy", tag_update: { operation: "append", tag_ids: ["c1"] } });
   });
 
   it("only tags with Tag Only, matching the tag title case-insensitively", async () => {
@@ -287,18 +310,27 @@ describe("cancelTask", () => {
     expect(sent().map(([command]) => command)).toEqual(["list_tags", "update_task"]);
   });
 
-  it("moves to the cancel list, then completes the task under its new ID", async () => {
+  it("completes, then moves the completed occurrence to the cancel list", async () => {
     await cancelTask(task, { ...prefs, cancelBehavior: "move", cancelList: "graveyard" });
     expect(sent()).toEqual([
       ["list_lists", {}],
+      ["complete_task", { task_id: "t1" }],
       ["move_task", { task_id: "t1", list_id: "l9" }],
-      ["complete_task", { task_id: "t1-moved" }],
     ]);
+    runAppleScript.mockClear();
+    isRepeatingRun = true;
+    await cancelTask(repeating, { ...prefs, cancelBehavior: "move", cancelList: "graveyard" });
+    expect(sent().at(-1)).toEqual(["move_task", { task_id: "copy", list_id: "l9" }]);
   });
 
-  it("deletes with Delete", async () => {
+  it("deletes with Delete, or for a repeating task deletes only this occurrence", async () => {
     await cancelTask(task, { ...prefs, cancelBehavior: "delete" });
     expect(sent()).toEqual([["delete_task", { task_id: "t1" }]]);
+    runAppleScript.mockClear();
+    isRepeatingRun = true;
+    await cancelTask(repeating, { ...prefs, cancelBehavior: "delete" });
+    expect(sent().map(([command]) => command)).toEqual(["complete_task", "query_tasks", "delete_task"]);
+    expect(sent().at(-1)).toEqual(["delete_task", { task_id: "copy" }]);
   });
 
   it("names the preference when the list is missing, without changing the task", async () => {

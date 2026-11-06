@@ -252,6 +252,41 @@ Called again, discussed policy.
 
 ---
 
+## Repeating tasks, projects, and checklists
+
+The data, checked on Nov 6 (54 open tasks):
+- **Repeating (18 tasks):** completing one keeps the same task ID, moved to its next date, and adds a completed copy with a new ID. Both keep the notes and tags. `complete_task` returns only the open task, so the copy has to be found by searching its title and taking the latest `completion_date`. Recurrence needs `based_on` (for example `{ frequency: "daily", based_on: "due_date" }`).
+- **Projects (2) and checklists (4):** their items never appear in `query_tasks`, in any scope, and only come back from `list_subtasks` (`{ item_count, tasks }`). Completing a parent completes its open items (`recursive` defaults to true).
+
+### Build now (touches Cancel Task)
+
+- [x] **Cancel only this occurrence of a repeating task.** Tagging before completing tagged the next occurrence too, which was confirmed on a scratch task. `cancelTask` now does this, verified live: the completed copy got the tag, and the next occurrence stayed clean.
+  - Complete first, then act on the completed occurrence: the copy for a repeating task, the task itself otherwise.
+  - **Complete and Tag:** complete, then tag the copy, so the next occurrence stays clean. That's one step instead of tagging, completing, then untagging by hand.
+  - **Move to List and Complete:** complete, then move the copy. Moving first would move the whole series.
+  - **Delete:** complete, then delete the copy, which skips this occurrence. Deleting the task itself would delete the series.
+  - **Tag Only** has no completion, so it tags the open task, as now.
+
+### Planned
+
+- [ ] **Completing a goal task** (Complete Task on a task with a goal):
+  - If the goal isn't reached, ask whether to log the remaining progress first.
+  - For a repeating goal task, also ask whether the next occurrence starts fresh (its goal reset to 0, with the history kept on the completed copy) or keeps the running total, as now. Both are valid uses: each occurrence with its own goal, or one running goal across occurrences.
+- [ ] **Repeat indicator:** a repeat icon on repeating tasks, with the rule ("Daily", "Every 2 weeks") as its tooltip. No editing of repetition in the forms for now.
+- [ ] **Projects and checklists:**
+  - A **Show Items** action lists a parent's items, with the usual task actions.
+  - The parent shows its items' progress, like "3/6", as a ring.
+  - If the parent is also a goal, the goal still displays and Log Progress still works, but **the ring shows item progress, not goal progress.**
+- [ ] **Completing a parent with open items:** ask whether to **complete** or **cancel** the remaining items (cancelling uses the Cancel Task preferences), with a way to back out without deciding. It always asks when there are open items.
+- [ ] **Creating:** an **Add Item** action on projects and checklists (`create_task` under the parent), and a **Type** field (Task, Project or Checklist) in Add Task.
+
+### Later questions
+
+- If a project or checklist is a goal, does the goal ever override item progress for the ring?
+- If an item is itself a goal, does it count as one item toward its parent, or by its goal's progress?
+
+---
+
 ## Open questions
 
 The plan assumes the answer in bold for each question. Change these before starting if the defaults are wrong.
