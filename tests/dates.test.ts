@@ -35,13 +35,20 @@ describe("formatDisplay", () => {
   const dateOnly = { ...parseTimestamp("2026-11-05", false)!, stamp: "2026-11-05" };
 
   it("defaults to the weekday, long date, short time, and relative time", () => {
-    expect(formatDisplay(timed, "weekday", true, now)).toBe("Friday, November 6, 2026 3 pm (2 hours ago)");
-    expect(formatDisplay(dateOnly, "weekday", true, now)).toBe("Thursday, November 5, 2026 (yesterday)");
+    expect(formatDisplay(timed, "weekday", true, now)).toBe("Friday, November 6 3 pm (2 hours ago)");
+    expect(formatDisplay(dateOnly, "weekday", true, now)).toBe("Thursday, November 5 (yesterday)");
+  });
+
+  it("shows the year only when it isn't the current one, except in ISO", () => {
+    const lastYear = { ...parseTimestamp("Nov 6, 2025 3 pm", false)!, stamp: "Nov 6, 2025 3 pm" };
+    expect(formatDisplay(lastYear, "weekday", false, now)).toBe("Thursday, November 6, 2025 3 pm");
+    expect(formatDisplay(lastYear, "short", false, now)).toBe("Nov 6, 2025 3 pm");
+    expect(formatDisplay(timed, "iso", false, now)).toBe("2026-11-06 3 pm");
   });
 
   it("offers other date styles, with or without relative time", () => {
-    expect(formatDisplay(timed, "long", false, now)).toBe("November 6, 2026 3 pm");
-    expect(formatDisplay(timed, "short", false, now)).toBe("Nov 6, 2026 3 pm");
+    expect(formatDisplay(timed, "long", false, now)).toBe("November 6 3 pm");
+    expect(formatDisplay(timed, "short", false, now)).toBe("Nov 6 3 pm");
     expect(formatDisplay(dateOnly, "iso", true, now)).toBe("2026-11-05 (yesterday)");
     expect(formatDisplay(timed, "written", true, now)).toBe("Nov 6, 2026 3 pm (2 hours ago)");
   });
