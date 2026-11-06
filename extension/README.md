@@ -52,7 +52,16 @@ Projects show a folder icon, and checklists a checklist icon. Open ones show the
 | Run Action (or open the first link) | ⌘L       |
 | Choose Link (2 or more)             | ⇧⌘L      |
 | Complete / Mark as Not Done         | ⌘D       |
-| Show Items (projects, checklists)   | ⌘I       |
-| Add Item (projects, checklists)     | ⌘N       |
+| Cancel Task                         | ⇧⌘D      |
 | Star / Unstar                       | ⌘.       |
 | Open in 2Do                         | ⌘O       |
+
+### Cancel Task
+
+By default, Cancel Task follows 2Do's convention: it adds the **Cancelled** tag and completes the task, so it shows in Done with an ✕ instead of a check. Change what it does in the extension's preferences:
+
+- **Cancel Task:** Complete and Tag (default), Tag Only, Move to List and Complete, or Delete. Delete always asks first.
+- **Cancel Tag:** the tag to add (default "Cancelled"). It must already exist in 2Do.
+- **Cancel List:** the list to move cancelled tasks to, for Move to List and Complete.
+
+Cancelling a project or checklist that still has open subtasks asks first, because completing it completes them too.
