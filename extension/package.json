@@ -38,6 +38,12 @@
       "title": "View Tasks",
       "description": "Browse 2Do tasks by scope, list, or smart list, and edit, complete, or open them.",
       "mode": "view"
+    },
+    {
+      "name": "view-tasks-today",
+      "title": "View Tasks: Today",
+      "description": "Browse today's 2Do tasks, optionally narrowed to a list or smart list.",
+      "mode": "view"
     }
   ],
   "preferences": [
