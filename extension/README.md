@@ -75,7 +75,7 @@ Each line is a date, then `:` or `-`, then an amount; a negative number corrects
 
 The extension writes one date-only line per day, newest first, in the **Goal Date Format** preference ("November 6, 2026" by default). It never rewrites lines you typed: logging adds to that day's date-only line, or adds one. The rest of the notes are left alone.
 
-- **Make a goal:** check **Add a goal** in Add Task or Edit Task, and fill in **Total**, **Units** and, optionally, **Current**. When Current is above 0, **Last Completed** sets its date (today by default). The task also gets the **Goal** tag, so goals show up in 2Do too. The tag is created in 2Do if needed, and its name is set in the extension's preferences. Goals work without the tag, so you can turn off **Tag goals** there.
+- **Make a goal:** check **Add a goal** in Add Task or Edit Task, and fill in **Total**, **Units** and, optionally, **Current**. When Current is above 0, **Last Completed** sets its date (today by default). To also tag goals in 2Do, set **Goal Tag** in the extension's preferences to a tag that already exists in 2Do. It's empty by default, so goals aren't tagged.
 - **Change a goal:** Edit Task changes Total and Units, keeping its history. Unchecking **Add a goal** removes the goal and its history, after asking.
 - **Log Progress (⌘G):** add an amount for a day (today by default). Logging twice on one day adds to that day's date-only line. When the total is reached, a toast offers to complete the task.
 - **In task lists:** a goal task shows a progress ring, with today's share in a second color, and "13/32 pages".
@@ -118,7 +118,7 @@ One command per scope, so you can open it straight from Raycast's root search or
 By default, Cancel Task follows 2Do's convention: it adds the **Cancelled** tag and completes the task, so it shows in Done with an ✕ instead of a check. Change what it does in the extension's preferences:
 
 - **Cancel Task:** Complete and Tag (default), Tag Only, Move to List and Complete, or Delete. Delete always asks first.
-- **Cancel Tag:** the tag to add (default "Cancelled"). If it doesn't exist yet, it's created in 2Do the first time a task is cancelled.
+- **Cancel Tag:** the tag to add (default "Cancelled"). It must already exist in 2Do; if it doesn't, Cancel Task says so. Add it in 2Do, or set this to the tag you use for cancelled tasks.
 - **Cancel List:** the list to move cancelled tasks to, for Move to List and Complete.
 
 Cancelling a project or checklist that still has open subtasks asks first, because completing it completes them too.

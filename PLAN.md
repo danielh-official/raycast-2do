@@ -24,7 +24,7 @@ The Automation Suite was checked against 2Do 2026.4.3 with read-only calls and c
   - The suite has `list_tags` but no `create_tag`, and `tag_update` takes only tag IDs. Its operations are `set`, `append` and `remove`.
   - Writing a tag name into the notes doesn't create the tag. 2Do's "detect details" only runs as you type in Quick Entry or the task editor.
   - `twodo://x-callback-url/add?task=…&tags=Name&ignoredefaults=1`, opened with `open -g`, does create a missing tag. This was confirmed by creating the Goal tag, with 2Do staying in the background.
-  - `ensureTag` uses this: it adds a placeholder task carrying the tag, waits for the tag to appear, then deletes the placeholder.
+  - `ensureTag` used this, adding a placeholder task with the tag and then deleting it. It was **removed** so that Store review isn't worried by shell calls and placeholder tasks. Missing tags are now errors (`requireTag`).
 - **Notes are plain text.** Whatever syntax we use has to read well in 2Do on Mac and iOS, because the 2Do app won't render or understand it.
 
 ## Code layout
@@ -154,7 +154,7 @@ Details:
 
 Goals aren't a 2Do feature, so the extension stores them in the notes, staying as close to 2Do as possible:
 
-- **A tag can mirror the feature**, so it's visible and filterable in 2Do itself. For goals, it's on by default and can be turned off. The default name is "Goal", set in preferences. A missing tag is created on first use through `ensureTag`, as Cancel Task now does too. The journal has no tag.
+- **A tag can mirror the feature**, so it's visible and filterable in 2Do itself. For goals, it's off by default: the Goal Tag preference is empty until the user names a tag. A tag that's set must already exist in 2Do, or saving fails with a message, as Cancel Task's tag does. The journal has no tag.
 - **The data is a block in the notes:** an `@name:` header line through an `@endname` line. Text outside the block is left alone. Lines inside it that aren't entries are ignored. A missing end line means the block runs to the end of the notes.
 - **One line per date, newest first**, as local `yyyy-MM-dd`. Dates only, no times, to keep the notes short. A second entry on the same day merges into that day's line.
 - **Read-modify-write:** actions that change the block call `get_task` first and write back from that fresh copy.
@@ -236,7 +236,7 @@ Called again, discussed policy.
 **Follow-up: nitpicks.**
 
 - [x] **Multiple blocks:** only the topmost goal and topmost journal count, everywhere: parsing, logging, adding entries, header edits, removal, and Edit Task's hidden blocks (`splitNotes`). Later blocks are ordinary notes text. Removing the topmost goal promotes the next one.
-- [x] **Tag goals** preference, a checkbox that's on by default. When it's off, `applyGoal` neither adds nor creates the Goal tag. Removing a goal still removes an existing tag, as cleanup.
+- [x] ~~**Tag goals** checkbox~~. It was replaced by an optional **Goal Tag**, empty by default. When it's set, the tag must exist in 2Do. Removing a goal still removes that tag, as cleanup.
 - [x] `removeGoal` removes the blank line after a block at the top of the notes, so no blank line is left at the start.
 
 ---
