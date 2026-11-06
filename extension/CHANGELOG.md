@@ -7,7 +7,7 @@
 - Run a task's action (⌘L), or choose from all of its links (⇧⌘L)
 - Cancel Task action (⇧⌘D), with preferences for what cancelling does
 - View Tasks: Today, Now, Later Today, Starred, Scheduled, Paused, Goals, and Done commands, each narrowed by the lists and smart lists that have tasks in that scope
-- Goals: track progress toward a number in a task's notes, log progress (⌘G), and see a progress ring, with an optional Goal tag
+- Goals: track progress toward a number in a task's notes, log progress (⌘G), and see a progress ring, optionally tagged in 2Do
 - Journal: timestamped entries in a task's notes, added with ⌘J and read with ⇧⌘J
 
 ## [Initial Version] - 2026-11-01

@@ -1,8 +1,5 @@
 import { Form } from "@raycast/api";
 import { runAppleScript } from "@raycast/utils";
-import { execFile } from "node:child_process";
-import { setTimeout as sleep } from "node:timers/promises";
-import { promisify } from "node:util";
 import { DayFormat, ymd } from "./dates";
 import { appendGoal, formatGoal, parseGoal, removeGoal, setGoalHeader } from "./goal";
 import { splitNotes } from "./notes";
@@ -169,17 +166,18 @@ export function taskLinks(task: Task): string[] {
   return [...new Set([link, ...inNotes].filter((u): u is string => !!u))];
 }
 
-export type GoalPrefs = { goalTagEnabled: boolean; goalTag: string; goalDateFormat: DayFormat };
+// `goalTag` is empty unless the user wants goals tagged in 2Do.
+export type GoalPrefs = { goalTag: string; goalDateFormat: DayFormat };
 
 // The notes and tags to save once the goal fields are applied: a new goal block is added, an
 // existing one only gets its header changed (its entries stay as typed), or the block is removed.
-// The goal tag mirrors the block for 2Do, unless turned off; removing a goal removes the tag either way.
+// When a goal tag is set, it follows the block, and it must already exist in 2Do.
 export async function applyGoal(v: TaskValues, p: GoalPrefs): Promise<TaskValues> {
   if (v.is_goal === undefined) return v;
   const existing = parseGoal(v.notes);
   if (!v.is_goal) {
     if (!existing) return v;
-    const tag = await findTag(p.goalTag);
+    const tag = p.goalTag.trim() ? await findTag(p.goalTag) : undefined;
     return { ...v, notes: removeGoal(v.notes), tag_ids: v.tag_ids.filter((id) => id !== tag?.tag_id) };
   }
   const total = Number(v.goal_total);
@@ -196,8 +194,8 @@ export async function applyGoal(v: TaskValues, p: GoalPrefs): Promise<TaskValues
           p.goalDateFormat,
         ),
       );
-  if (!p.goalTagEnabled) return { ...v, notes };
-  const tag = await ensureTag(p.goalTag);
+  if (!p.goalTag.trim()) return { ...v, notes };
+  const tag = await requireTag(p.goalTag, "Create it in 2Do, or change or clear the Goal Tag preference.");
   return { ...v, notes, tag_ids: [...new Set([...v.tag_ids, tag.tag_id])] };
 }
 
@@ -250,29 +248,15 @@ export async function findTag(title: string) {
   return tags.find((t) => sameTitle(t.title, title));
 }
 
-// 2Do automation can't create tags, but 2Do's URL scheme creates missing tags when it adds a task.
-// So a missing tag is made by adding a placeholder task carrying it (2Do stays in the background),
-// then deleting the placeholder once the tag shows up.
-export async function ensureTag(title: string): Promise<Tag> {
-  const existing = await findTag(title);
-  if (existing) return existing;
-  const placeholder = `Raycast is creating the ${title.trim()} tag (${Date.now()})`;
-  const url = `twodo://x-callback-url/add?task=${encodeURIComponent(placeholder)}&tags=${encodeURIComponent(title.trim())}&ignoredefaults=1`;
-  await promisify(execFile)("open", ["-g", url]);
-  for (let i = 0; i < 20; i++) {
-    await sleep(250);
-    const tag = await findTag(title);
-    const { tasks } = await twoDo<{ tasks: Task[] }>("query_tasks", { search: placeholder, paused_filter: "include" });
-    const added = tasks.filter((t) => t.title === placeholder);
-    if (!tag || added.length === 0) continue;
-    for (const t of added) await twoDo("delete_task", { task_id: t.task_id });
-    return tag;
-  }
-  throw new Error(`Couldn't create the 2Do tag "${title}". Create it in 2Do, then try again.`);
+// 2Do automation can't create tags, so a missing tag is an error saying how to fix it.
+export async function requireTag(title: string, fix: string): Promise<Tag> {
+  const tag = await findTag(title);
+  if (!tag) throw new Error(`No 2Do tag named "${title.trim()}". ${fix}`);
+  return tag;
 }
 
-// 2Do's own convention is a completed task carrying a "Cancelled" tag. A missing cancel tag is
-// created; 2Do automation can't create lists, so a missing list is an error naming the preference.
+// 2Do's own convention is a completed task carrying a "Cancelled" tag. 2Do automation can't create
+// tags or lists, so a missing one is an error naming the preference.
 export async function cancelTask(task: Task, p: CancelPrefs) {
   if (p.cancelBehavior === "delete") {
     await twoDo("delete_task", { task_id: task.task_id });
@@ -288,7 +272,10 @@ export async function cancelTask(task: Task, p: CancelPrefs) {
     const moved = await twoDo<{ task: { task_id: string } }>("move_task", { task_id: taskId, list_id: target.list_id });
     taskId = moved.task.task_id;
   } else {
-    const tag = await ensureTag(p.cancelTag);
+    const tag = await requireTag(
+      p.cancelTag,
+      "Add it in 2Do, or set Cancel Tag in the extension's settings to the tag you use for cancelled tasks.",
+    );
     await twoDo("update_task", { task_id: taskId, tag_update: { operation: "append", tag_ids: [tag.tag_id] } });
   }
   if (p.cancelBehavior !== "tag") await twoDo("complete_task", { task_id: taskId });
