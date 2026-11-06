@@ -231,6 +231,13 @@ export function toDate(date?: string, time?: string) {
   return new Date(`${date}T00:00:00.001`);
 }
 
+// Splits Today into Now and Later Today: a task has started unless it has a start time still ahead.
+export function hasStarted(task: Task, now = new Date()) {
+  if (!task.start_time) return true;
+  const start = toDate(task.start_date, task.start_time);
+  return !start || start <= now;
+}
+
 // Tag picker choices: all tags plus the task's own. 2Do can leave a task's tag out of list_tags,
 // and a picker value with no matching item is dropped on save, which would remove the tag.
 export function tagOptions(tags: Tag[] = [], task?: Task): Tag[] {

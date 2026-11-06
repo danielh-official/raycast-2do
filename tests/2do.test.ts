@@ -5,6 +5,7 @@ import {
   CancelPrefs,
   cancelTask,
   dateFields,
+  hasStarted,
   isCancelled,
   saveTask,
   scopeArgs,
@@ -249,6 +250,19 @@ describe("actionValueError", () => {
     expect(actionValueError("url", "example.com")).toMatch("full link");
     expect(actionValueError("url", "x-apple-health://Meds")).toBeUndefined();
     expect(actionValueError("google", "anything")).toBeUndefined();
+  });
+});
+
+describe("hasStarted", () => {
+  const at = new Date(2026, 10, 6, 15, 0);
+  it("counts tasks without a start time, or with one that has passed, as started", () => {
+    expect(hasStarted({ ...task, start_date: "2026-11-06", start_time: undefined }, at)).toBe(true);
+    expect(hasStarted({ ...task, start_date: "2026-11-06", start_time: "15:00" }, at)).toBe(true);
+    expect(hasStarted({ ...task, start_date: "2026-11-05", start_time: "20:00" }, at)).toBe(true);
+  });
+
+  it("leaves tasks starting later for Later Today", () => {
+    expect(hasStarted({ ...task, start_date: "2026-11-06", start_time: "17:00" }, at)).toBe(false);
   });
 });
 
