@@ -2,10 +2,23 @@ import * as chrono from "chrono-node";
 import { execFileSync } from "node:child_process";
 
 export type Timestamp = { day: string; hasTime: boolean };
-export type DayFormat = "MMM d, yyyy" | "d MMM yyyy" | "yyyy-MM-dd";
+export type DayFormat = "MMMM d, yyyy" | "MMM d, yyyy" | "d MMM yyyy" | "yyyy-MM-dd";
 
 const pad = (n: number) => String(n).padStart(2, "0");
-const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+const MONTHS = [
+  "January",
+  "February",
+  "March",
+  "April",
+  "May",
+  "June",
+  "July",
+  "August",
+  "September",
+  "October",
+  "November",
+  "December",
+];
 
 // Whether the Mac's region writes the day before the month, which decides how 05/11/2026 reads.
 function regionIsDayFirst() {
@@ -43,7 +56,9 @@ export function parseTimestamp(text: string, dayFirst = (regionDayFirst ??= regi
 // `day` is "yyyy-MM-dd".
 export function formatDay(day: string, format: DayFormat) {
   const [y, m, d] = day.split("-").map(Number);
+  const month = MONTHS[m - 1];
   if (format === "yyyy-MM-dd") return day;
-  if (format === "d MMM yyyy") return `${d} ${MONTHS[m - 1]} ${y}`;
-  return `${MONTHS[m - 1]} ${d}, ${y}`;
+  if (format === "d MMM yyyy") return `${d} ${month.slice(0, 3)} ${y}`;
+  if (format === "MMM d, yyyy") return `${month.slice(0, 3)} ${d}, ${y}`;
+  return `${month} ${d}, ${y}`;
 }

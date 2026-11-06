@@ -7,6 +7,7 @@ describe("parseTimestamp", () => {
     expect(parseTimestamp("Nov 6, 2026", false)).toEqual({ day: "2026-11-06", hasTime: false });
     expect(parseTimestamp("6 Nov 2026", false)).toEqual({ day: "2026-11-06", hasTime: false });
     expect(parseTimestamp("November 6 2026", false)).toEqual({ day: "2026-11-06", hasTime: false });
+    expect(parseTimestamp("November 6, 2026", false)).toEqual({ day: "2026-11-06", hasTime: false });
     expect(parseTimestamp("2026-11-05 2 pm", false)).toEqual({ day: "2026-11-05", hasTime: true });
     expect(parseTimestamp("2026-11-05 14:00", false)).toEqual({ day: "2026-11-05", hasTime: true });
     expect(parseTimestamp("Nov 6, 2026 11:00 am", false)).toEqual({ day: "2026-11-06", hasTime: true });
@@ -26,6 +27,8 @@ describe("parseTimestamp", () => {
 
 describe("formatDay", () => {
   it("writes each format", () => {
+    expect(formatDay("2026-11-06", "MMMM d, yyyy")).toBe("November 6, 2026");
+    expect(formatDay("2026-09-06", "MMMM d, yyyy")).toBe("September 6, 2026");
     expect(formatDay("2026-11-06", "MMM d, yyyy")).toBe("Nov 6, 2026");
     expect(formatDay("2026-11-06", "d MMM yyyy")).toBe("6 Nov 2026");
     expect(formatDay("2026-11-06", "yyyy-MM-dd")).toBe("2026-11-06");
