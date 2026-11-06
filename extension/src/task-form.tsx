@@ -28,7 +28,8 @@ import {
 } from "./2do";
 import { parseGoal } from "./goal";
 import { PageInfo } from "./link";
-import { joinNotes, splitNotes } from "./notes";
+import { checkNotes, joinNotes, splitNotes } from "./notes";
+import { dayFirst } from "./preferences";
 
 // Creates a task, or edits `task` when given. `link` prefills a new task from a web page, with
 // the page as the task's link.
@@ -45,6 +46,7 @@ export function TaskForm({
   const lists = useCachedPromise(() => twoDo<{ list: List[] }>("list_lists").then((r) => r.list));
   const tags = useCachedPromise(() => twoDo<{ tags: Tag[] }>("list_tags").then((r) => r.tags));
   const hidden = task ? splitNotes(task.notes).blocks : [];
+  const issues = task ? checkNotes(task.notes, dayFirst()) : [];
 
   const { handleSubmit, itemProps, values } = useForm<TaskValues>({
     initialValues: task
@@ -102,6 +104,19 @@ export function TaskForm({
         </ActionPanel>
       }
     >
+      {issues.length > 0 && (
+        <Form.Description
+          title="⚠️ Notes Syntax"
+          text={[
+            ...issues.map((i) => i.message),
+            ...(issues.some((i) => i.fixable)
+              ? [
+                  "Saving keeps the goal and journal as they are. To fix them, use Fix Goal and Journal Syntax on the task.",
+                ]
+              : []),
+          ].join("\n")}
+        />
+      )}
       <Form.TextField title="Title" placeholder="Task" {...itemProps.title} />
       <Form.TextArea
         title="Notes"

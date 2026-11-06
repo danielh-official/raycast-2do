@@ -27,6 +27,16 @@ export function splitNotes(notes: string) {
   return { text: text.join("\n").trim(), blocks };
 }
 
+// Problems with the goal and journal syntax that make part of it be ignored, worst first per block.
+export function checkNotes(notes: string, dayFirst?: boolean) {
+  return [...goal.checkGoal(notes, dayFirst), ...journal.checkJournal(notes, dayFirst)];
+}
+
+// Fixes what can be fixed: adds missing @endgoal and @endjournal lines.
+export function fixNotes(notes: string, dayFirst?: boolean) {
+  return journal.closeJournal(goal.closeGoal(notes, dayFirst), dayFirst);
+}
+
 // The notes to save: the Notes field's text, then the hidden blocks.
 export function joinNotes(text: string, blocks: string[]) {
   return [text.trim(), ...blocks].filter(Boolean).join("\n\n");

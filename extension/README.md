@@ -99,6 +99,10 @@ Edit Task's Notes field leaves out the goal and journal blocks and saves them as
 
 If notes have more than one goal or journal block, the topmost of each is used, and the rest are treated as ordinary notes.
 
+If a goal or journal's syntax is off, the task shows a ⚠️ explaining what's ignored. Examples: a missing `@endgoal` or `@endjournal`, `@goal` without a total, or a line that isn't a readable entry. A missing end line can be fixed with **Fix Goal and Journal Syntax** on the task. Log Progress and Add Journal Entry offer to fix it before they write.
+
+Repeating tasks keep their notes when 2Do creates the next occurrence, so a repeating goal carries its progress forward.
+
 ### View Tasks: Today, Now, Later Today, Starred, Scheduled, Paused, Goals, Done
 
 One command per scope, so you can open it straight from Raycast's root search or give it a hotkey. Each has the same task actions as View Tasks. Its dropdown narrows the scope to one list or smart list, and only offers those that contain at least one of the scope's tasks. Which smart lists hold which tasks is cached and refreshed at most every 10 minutes, or after a task action. A smart list you pick is always checked fresh.

@@ -235,9 +235,14 @@ Called again, discussed policy.
 
 **Follow-up: hardening before publishing.**
 
+- [x] **Syntax checks** (`checkGoal`, `checkJournal`, `checkNotes`), because worst cases are silently ignored text, not lost text:
+  - A missing end line is fixable (`closeGoal` after the last entry; `closeJournal` after the last entry's paragraph).
+  - A header without a total, unreadable goal lines, and text before the first journal entry are warnings only.
+  - **Where they show:** a ⚠️ accessory with the messages, and a "Fix Goal and Journal Syntax" action. Log Progress and Add Journal Entry ask "Fix and Continue" first (`remediate.ts`). Edit Task and Show Journal show the warnings, and Edit Task's saves keep blocks as they are.
 - [x] **2Do too old or missing:** `twoDo` rewords "Message not understood" (-1708) as "update 2Do to the latest version", and "Application can't be found" (-2700) as "2Do isn't installed".
 - [x] **Smart-list results** are cached per scope in Raycast's `Cache`, re-queried when a command opens only if they're more than 10 minutes old, and after task actions. The smart list picked in the dropdown is queried fresh, so filtering is never stale.
 - [x] **Dates:** chrono-node already reads weekdays, ordinals (6th), abbreviations (Nov.), ISO times and "at 2:05 PM". Dotted dates (6.11.2026) are now always day-first. Still not read: compact dates (20261106), "14h05", ISO weeks, and non-English month names.
+- [x] **Repeating tasks:** confirmed on a scratch task. Completing one keeps the open task, moved to its next date, and leaves a completed copy, and both keep the notes. A repeating goal carries its progress forward; it doesn't reset.
 
 **Follow-up: nitpicks.**
 
