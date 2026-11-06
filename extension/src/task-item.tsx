@@ -13,7 +13,7 @@ import {
   Toast,
 } from "@raycast/api";
 import { showFailureToast } from "@raycast/utils";
-import { actionURL, CancelPrefs, cancelTask, isCancelled, Task, taskLinks, twoDo, ymd } from "./2do";
+import { actionURL, CancelPrefs, cancelTask, isCancelled, isRepeating, Task, taskLinks, twoDo, ymd } from "./2do";
 import { goalProgress, parseGoal } from "./goal";
 import { parseJournal } from "./journal";
 import { AddJournalEntryForm, JournalView } from "./journal-view";
@@ -101,8 +101,10 @@ export function TaskItem({ task: t, onChange }: { task: Task; onChange: () => vo
     try {
       if (deletes) {
         const ok = await confirmAlert({
-          title: `Delete "${t.title}"?`,
-          message: "Cancel Task is set to delete tasks. This can't be undone from Raycast.",
+          title: isRepeating(t) ? `Delete this occurrence of "${t.title}"?` : `Delete "${t.title}"?`,
+          message: isRepeating(t)
+            ? "Cancel Task is set to delete tasks. This occurrence is deleted and the next one stays. This can't be undone from Raycast."
+            : "Cancel Task is set to delete tasks. This can't be undone from Raycast.",
           primaryAction: { title: "Delete", style: Alert.ActionStyle.Destructive },
         });
         if (!ok) return;
