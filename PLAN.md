@@ -131,6 +131,21 @@ Details:
 - [x] The Done view gives completed tasks carrying the cancel tag a gray ✕.
 - [ ] Not built: an "Uncancel" action. It would need `tag_update` with `remove`, which is still unverified.
 
+## Extra: a View Tasks command per scope (added mid-plan)
+
+- [x] Seven commands: **View Tasks: Today**, **Now**, **Later Today**, **Starred**, **Scheduled**, **Paused** and **Done**. The original View Tasks stays, and covers what a "View Tasks: All" would.
+  - 2Do has no "now" or "later today" scope, so both query Today and split it by start time (`hasStarted`). Now has no start time, or a start time that has passed; Later Today has a start time still ahead.
+  - **Paused** queries `paused_filter: "only"`, and its dropdown adds a **Paused Tags** section. Smart-list lookups for Paused add `paused_filter: "include"`, since smart lists leave out paused tasks by default.
+- [x] Each command's dropdown has **All Lists**, then the lists and smart lists that contain at least one task in that scope.
+  - 2Do's `query_tasks` "accepts only one target identifier", so a scope and a list can't be queried together.
+  - Lists filter by the task's `list_id`.
+  - Smart lists use one extra `query_tasks` per smart list, matching task IDs. That's about 0.3 s for 10 smart lists.
+  - If the chosen filter no longer has tasks in the scope, it falls back to All Lists.
+- [x] The task row and its actions moved to `task-item.tsx`, shared by View Tasks and the scoped commands. The shared scoped view is `scoped-tasks.tsx`.
+- [ ] **Tabled:** in Paused, filter by a paused tag *and* a list or smart list at the same time.
+  - Raycast allows one search-bar dropdown, so the tag would need another control.
+  - The likely approach: a "Filter by Paused Tag" action (⌘T) sets the tag, the navigation title shows it, and the dropdown offers only lists with tasks under that tag.
+
 ## Notes syntax (shared by features 4 and 5)
 
 Both features use **sections** in the notes. A section is a header line followed by `-`  bullet lines, and it ends at the first blank line or the first line that isn't a bullet. Everything else in the notes is left exactly as it was. Headers are matched case-insensitively at the start of a line, and a task has at most one section of each kind (the first one wins).
