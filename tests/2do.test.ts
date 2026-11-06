@@ -21,12 +21,6 @@ import {
 
 const { runAppleScript } = vi.hoisted(() => ({ runAppleScript: vi.fn() }));
 vi.mock("@raycast/utils", () => ({ runAppleScript }));
-// Date parsing reads the Mac's region with `defaults`; tests read dates month first instead.
-vi.mock("node:child_process", () => ({
-  execFileSync: () => {
-    throw new Error("not in tests");
-  },
-}));
 // Same check as Raycast's runtime: full-day dates carry exactly 1 millisecond.
 vi.mock("@raycast/api", () => ({
   Form: { DatePicker: { isFullDay: (d?: Date | null) => !!d && d.getMilliseconds() === 1 } },
