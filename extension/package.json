@@ -52,6 +52,12 @@
       "mode": "view"
     },
     {
+      "name": "view-tasks-later-today",
+      "title": "View Tasks: Later Today",
+      "description": "Browse today's 2Do tasks whose start time is still ahead.",
+      "mode": "view"
+    },
+    {
       "name": "view-tasks-starred",
       "title": "View Tasks: Starred",
       "description": "Browse starred 2Do tasks, optionally narrowed to a list or smart list.",
