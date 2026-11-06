@@ -17,8 +17,8 @@ import { DayFormat, formatDay, parseTimestamp } from "./dates";
 export type GoalEntry = { day: string; amount: number; hasTime: boolean; line: number };
 export type Goal = { total: number; unit: string; entries: GoalEntry[] };
 
-const HEADER = /^@goal:\s*(\d+(?:\.\d+)?)\s*(.*)$/i;
-const END = /^@endgoal$/i;
+export const HEADER = /^@goal:\s*(\d+(?:\.\d+)?)\s*(.*)$/i;
+export const END = /^@endgoal$/i;
 const AMOUNT = /^[+-]?\d+(?:\.\d+)?$/;
 
 // Header line through @endgoal, or through the last line when @endgoal is missing.

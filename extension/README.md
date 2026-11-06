@@ -95,6 +95,8 @@ An entry starts with a date and optional time in any common format. Short entrie
 - **Add Journal Entry (⌘J):** on any task. Write the entry and pick when it happened (now by default). Leave the time out for a date-only entry. The entry is written in the **Journal Date Format** preference ("November 6, 2026 2:05 pm" by default) and slotted in by time. Lines you typed are never rewritten.
 - **Show Journal (⇧⌘J):** reads a task's entries, newest first. Tasks with a journal show a book icon.
 
+Edit Task's Notes field leaves out the goal and journal blocks and saves them as they are, after the rest of the notes. Use Log Progress and Add Journal Entry to change them.
+
 ### View Tasks: Today, Now, Later Today, Starred, Scheduled, Paused, Goals, Done
 
 One command per scope, so you can open it straight from Raycast's root search or give it a hotkey. Each has the same task actions as View Tasks. Its dropdown narrows the scope to one list or smart list, and only offers those that contain at least one of the scope's tasks.

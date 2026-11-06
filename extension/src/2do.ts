@@ -5,6 +5,7 @@ import { setTimeout as sleep } from "node:timers/promises";
 import { promisify } from "node:util";
 import { DayFormat, ymd } from "./dates";
 import { appendGoal, formatGoal, parseGoal, removeGoal, setGoalHeader } from "./goal";
+import { splitNotes } from "./notes";
 
 export type List = { list_id: string; collection_id: string; title: string };
 export type SmartList = { smart_list_id: string; collection_id: string; title: string };
@@ -131,10 +132,11 @@ export function tagOptions(tags: Tag[] = [], task?: Task): Tag[] {
   return [...tags, ...(task?.tags ?? []).filter((t) => !known.has(t.tag_id))];
 }
 
+// The Notes field leaves out the goal and journal blocks; TaskForm puts them back on save.
 export function taskToValues(task: Task): TaskValues {
   return {
     title: task.title,
-    notes: task.notes,
+    notes: splitNotes(task.notes).text,
     list_id: task.list_id,
     start: toDate(task.start_date, task.start_time),
     due: toDate(task.due_date, task.due_time),
