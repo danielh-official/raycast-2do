@@ -38,6 +38,36 @@
       "title": "View Tasks",
       "description": "Browse 2Do tasks by scope, list, or smart list, and edit, complete, or open them.",
       "mode": "view"
+    },
+    {
+      "name": "view-tasks-today",
+      "title": "View Tasks: Today",
+      "description": "Browse today's 2Do tasks, optionally narrowed to a list or smart list.",
+      "mode": "view"
+    },
+    {
+      "name": "view-tasks-now",
+      "title": "View Tasks: Now",
+      "description": "Browse today's 2Do tasks that have started: no start time, or a start time that has passed.",
+      "mode": "view"
+    },
+    {
+      "name": "view-tasks-starred",
+      "title": "View Tasks: Starred",
+      "description": "Browse starred 2Do tasks, optionally narrowed to a list or smart list.",
+      "mode": "view"
+    },
+    {
+      "name": "view-tasks-scheduled",
+      "title": "View Tasks: Scheduled",
+      "description": "Browse scheduled 2Do tasks, optionally narrowed to a list or smart list.",
+      "mode": "view"
+    },
+    {
+      "name": "view-tasks-done",
+      "title": "View Tasks: Done",
+      "description": "Browse completed 2Do tasks, optionally narrowed to a list or smart list.",
+      "mode": "view"
     }
   ],
   "preferences": [

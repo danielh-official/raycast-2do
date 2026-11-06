@@ -8,10 +8,10 @@ export type Scope = { focus: string; include_completed: boolean };
 
 type Filter = { value: string; title: string; match: (t: Task) => boolean };
 
-// One 2Do scope, narrowed from the dropdown. 2Do can't query a scope and a list together, so lists
-// filter by the task's list, and smart lists by the task IDs a separate query of each smart list
-// returns. The dropdown offers only filters with tasks in scope.
-export function ScopedTasks({ scope }: { scope: Scope }) {
+// One 2Do scope, optionally cut down by `where`, then narrowed from the dropdown. 2Do can't query a
+// scope and a list together, so lists filter by the task's list, and smart lists by the task IDs a
+// separate query of each smart list returns. The dropdown offers only filters with tasks in scope.
+export function ScopedTasks({ scope, where = () => true }: { scope: Scope; where?: (t: Task) => boolean }) {
   const [filter, setFilter] = useState("all");
   const tasks = useCachedPromise(
     // ponytail: capped at 200, as in View Tasks
@@ -36,7 +36,7 @@ export function ScopedTasks({ scope }: { scope: Scope }) {
     [scope],
   );
 
-  const inScope = tasks.data ?? [];
+  const inScope = (tasks.data ?? []).filter((t) => where(t));
   const sections: [string, Filter[]][] = [
     [
       "Lists",
