@@ -18,6 +18,7 @@ export type Task = {
   due_date?: string;
   due_time?: string;
   tags: Tag[];
+  task_type: "normal" | "project" | "checklist";
   action: { type: string; value?: string };
   presentation: { due_date_formatted?: string; is_overdue: boolean };
 };
@@ -161,6 +162,45 @@ export async function saveTask(v: TaskValues, task?: Task) {
       (action.type !== task.action.type || action.value !== task.action.value) && { action }),
   });
   if (v.list_id !== task.list_id) await twoDo("move_task", { task_id: task.task_id, list_id: v.list_id });
+}
+
+// Extension preferences that set what Cancel Task does.
+export type CancelPrefs = {
+  cancelBehavior: "complete-and-tag" | "tag" | "move" | "delete";
+  cancelTag: string;
+  cancelList: string;
+};
+
+const sameTitle = (a: string, b: string) => a.trim().toLowerCase() === b.trim().toLowerCase();
+
+// 2Do's own convention is a completed task carrying a "Cancelled" tag. 2Do automation can't create
+// tags or lists, so a missing one is an error naming the preference to fix.
+export async function cancelTask(task: Task, p: CancelPrefs) {
+  if (p.cancelBehavior === "delete") {
+    await twoDo("delete_task", { task_id: task.task_id });
+    return;
+  }
+  let taskId = task.task_id;
+  if (p.cancelBehavior === "move") {
+    if (!p.cancelList.trim()) throw new Error("Set the Cancel List preference to the list cancelled tasks move to.");
+    const { list } = await twoDo<{ list: List[] }>("list_lists");
+    const target = list.find((l) => sameTitle(l.title, p.cancelList));
+    if (!target) throw new Error(`No 2Do list named "${p.cancelList}". Check the Cancel List preference.`);
+    // A move gives the task a new ID.
+    const moved = await twoDo<{ task: { task_id: string } }>("move_task", { task_id: taskId, list_id: target.list_id });
+    taskId = moved.task.task_id;
+  } else {
+    const { tags } = await twoDo<{ tags: Tag[] }>("list_tags");
+    const tag = tags.find((t) => sameTitle(t.title, p.cancelTag));
+    if (!tag)
+      throw new Error(`No 2Do tag named "${p.cancelTag}". Create it in 2Do or check the Cancel Tag preference.`);
+    await twoDo("update_task", { task_id: taskId, tag_update: { operation: "append", tag_ids: [tag.tag_id] } });
+  }
+  if (p.cancelBehavior !== "tag") await twoDo("complete_task", { task_id: taskId });
+}
+
+export function isCancelled(task: Task, p: CancelPrefs) {
+  return task.completed && task.tags.some((t) => sameTitle(t.title, p.cancelTag));
 }
 
 // Scope values are 2Do collection ids ("list:<id>", "smart-list:<id>") or "focus:<name>".

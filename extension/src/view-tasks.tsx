@@ -1,7 +1,30 @@
-import { Action, ActionPanel, Color, Icon, Keyboard, List, showToast, Toast } from "@raycast/api";
+import {
+  Action,
+  ActionPanel,
+  Alert,
+  Color,
+  confirmAlert,
+  getPreferenceValues,
+  Icon,
+  Keyboard,
+  List,
+  showToast,
+  Toast,
+} from "@raycast/api";
 import { showFailureToast, useCachedPromise } from "@raycast/utils";
 import { useState } from "react";
-import { actionURL, List as TwoDoList, scopeArgs, SmartList, Task, taskLinks, twoDo } from "./2do";
+import {
+  actionURL,
+  CancelPrefs,
+  cancelTask,
+  isCancelled,
+  List as TwoDoList,
+  scopeArgs,
+  SmartList,
+  Task,
+  taskLinks,
+  twoDo,
+} from "./2do";
 import { TaskForm } from "./task-form";
 
 const FOCUSES = [
@@ -52,6 +75,39 @@ export default function Command() {
     }
   }
 
+  const prefs = getPreferenceValues<CancelPrefs>();
+
+  async function cancel(t: Task) {
+    const deletes = prefs.cancelBehavior === "delete";
+    try {
+      if (deletes) {
+        const ok = await confirmAlert({
+          title: `Delete "${t.title}"?`,
+          message: "Cancel Task is set to delete tasks. This can't be undone from Raycast.",
+          primaryAction: { title: "Delete", style: Alert.ActionStyle.Destructive },
+        });
+        if (!ok) return;
+      } else if (prefs.cancelBehavior !== "tag" && t.task_type !== "normal") {
+        const { tasks: subtasks } = await twoDo<{ tasks: Task[] }>("list_subtasks", { task_id: t.task_id });
+        const open = subtasks.filter((s) => !s.completed).length;
+        const ok =
+          open === 0 ||
+          (await confirmAlert({
+            title: `Cancel "${t.title}"?`,
+            message: `Its ${open === 1 ? "open subtask" : `${open} open subtasks`} will be completed too.`,
+            primaryAction: { title: "Cancel Task" },
+            dismissAction: { title: "Keep Task" },
+          }));
+        if (!ok) return;
+      }
+      await cancelTask(t, prefs);
+      await showToast({ style: Toast.Style.Success, title: deletes ? "Deleted" : "Cancelled" });
+      tasks.revalidate();
+    } catch (error) {
+      await showFailureToast(error, { title: "Could not cancel task" });
+    }
+  }
+
   return (
     <List
       isLoading={tasks.isLoading || lists.isLoading}
@@ -94,7 +150,13 @@ export default function Command() {
               ...links,
               ...(t.action.value ? [t.action.value] : []),
             ]}
-            icon={t.completed ? { source: Icon.CheckCircle, tintColor: Color.Green } : Icon.Circle}
+            icon={
+              isCancelled(t, prefs)
+                ? { source: Icon.XMarkCircle, tintColor: Color.SecondaryText }
+                : t.completed
+                  ? { source: Icon.CheckCircle, tintColor: Color.Green }
+                  : Icon.Circle
+            }
             accessories={[
               ...t.tags.map((tag) => ({ tag: tag.title })),
               ...(t.priority !== "none" ? [{ tag: PRIORITY_TAGS[t.priority] }] : []),
@@ -151,6 +213,14 @@ export default function Command() {
                     )
                   }
                 />
+                {!t.completed && (
+                  <Action
+                    title="Cancel Task"
+                    icon={Icon.XMarkCircle}
+                    shortcut={{ modifiers: ["cmd", "shift"], key: "d" }}
+                    onAction={() => cancel(t)}
+                  />
+                )}
                 <Action
                   title={t.starred ? "Unstar" : "Star"}
                   icon={Icon.Star}

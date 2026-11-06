@@ -3,8 +3,8 @@
 Five features for the 2Do Raycast extension:
 
 1. [x] Add a link
-2. [ ] Bulk add links
-3. [ ] Cancel a task**,** with a preference for what cancelling does
+2. [ ] Bulk add links (tabled for now)
+3. [x] Cancel a task**,** with a preference for what cancelling does
 4. [ ] Track goal progress on a task, driven by syntax in the notes, with a history of each bit of progress
 5. [ ] Add dated notes to a task, driven by syntax in the notes
 
@@ -81,6 +81,8 @@ The Automation Suite was checked against 2Do 2026.4.3 with read-only calls and c
 
 ## 2. Bulk add links
 
+**Tabled for now.** Skipped in favor of feature 3; the design below still stands.
+
 **Goal:** paste many URLs and get one task per URL.
 
 - New command **Add Links** (`add-links.tsx`), as a form with:
@@ -119,6 +121,15 @@ Details:
 - In the Done view, give tasks that carry the cancel tag an ✕ icon instead of the green check.
 
 **Tests:** for each behavior, the exact sequence of 2Do commands, plus the missing-tag and missing-list errors and the use of the new `task_id` after a move.
+
+**Done**, as planned above, with these details settled:
+
+- [x] The behavior values are `complete-and-tag`, `tag`, `move` and `delete`, shown as Complete and Tag, Tag Only, Move to List and Complete, and Delete.
+- [x] Tag and list titles are matched case-insensitively. An empty Cancel List gets its own error.
+- [x] On a scratch task, `move_task` returned `{ task: { task_id } }` with a **new** ID, which `cancelTask` uses to complete the task.
+- [x] The open-subtask check uses `list_subtasks`, which returns `{ tasks: [{ completed, … }] }`. It applies to the two behaviors that complete the task.
+- [x] The Done view gives completed tasks carrying the cancel tag a gray ✕.
+- [ ] Not built: an "Uncancel" action. It would need `tag_update` with `remove`, which is still unverified.
 
 ## Notes syntax (shared by features 4 and 5)
 
@@ -194,4 +205,4 @@ The plan assumes the answer in bold for each question. Change these before start
 
 - Which operations `tag_update` accepts besides `set` and `append` (`remove`?). Validation only happens after the task is found, so check it on a scratch task. This is needed if "Uncancel" is added later.
 - That `create_task` with `action.type: "url"` accepts custom schemes (`readdle-spark://`, `x-apple-health://`), since existing tasks use them.
-- That `move_task` returns the new `task_id` in the shape documented in the sdef.
+- ~~That `move_task` returns the new `task_id` in the shape documented in the sdef.~~ Confirmed: it returns `{ task: { task_id } }`, and the ID changes.

@@ -6,5 +6,6 @@
 - Add Link command that creates a task from a web address, optionally reading the page's title and description
 - Set a task's 2Do action (link, call, message, email, visit, or Google search) when adding or editing it
 - Run a task's action, or choose from all of its links
+- Cancel Task action, with preferences for what cancelling does
 - View Tasks command with All, Today, Starred, Scheduled, Done, list, and smart list scopes
 - Edit, complete, star, and open tasks from the list
