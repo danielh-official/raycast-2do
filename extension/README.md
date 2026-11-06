@@ -71,7 +71,7 @@ November 4, 2026: 4
 @endgoal
 ```
 
-Each line is a date, then `:` or `-`, then an amount; a negative number corrects a mistake. Dates can be in any common format, like `2026-11-05`, `Nov 6, 2026` or `6 Nov 2026`, with or without a time. Ambiguous dates like `05/11/2026` follow your Mac's region. Lines with times count toward their day.
+Each line is a date, then `:` or `-`, then an amount; a negative number corrects a mistake. Dates can be in any common format, like `2026-11-05`, `Nov 6, 2026` or `6 Nov 2026`, with or without a time. Ambiguous dates like `05/11/2026` read month first (May 11) unless you set **Ambiguous Dates** to day first in the extension's preferences. That also applies to journals. Lines with times count toward their day.
 
 The extension writes one date-only line per day, newest first, in the **Goal Date Format** preference ("November 6, 2026" by default). It never rewrites lines you typed: logging adds to that day's date-only line, or adds one. The rest of the notes are left alone.
 

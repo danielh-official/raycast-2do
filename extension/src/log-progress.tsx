@@ -2,6 +2,7 @@ import { Action, ActionPanel, Form, getPreferenceValues, showToast, Toast, useNa
 import { showFailureToast, useForm } from "@raycast/utils";
 import { GoalPrefs, Task, twoDo, ymd } from "./2do";
 import { goalProgress, logProgress, parseGoal } from "./goal";
+import { dayFirst } from "./preferences";
 
 // Logs progress on a goal task. Reads the task fresh before writing so edits made in 2Do since the
 // list loaded aren't lost.
@@ -18,9 +19,9 @@ export function LogProgressForm({ task, onLogged }: { task: Task; onLogged: () =
         const { task: fresh } = await twoDo<{ task: Task }>("get_task", { task_id: task.task_id });
         if (!parseGoal(fresh.notes)) throw new Error("The task's notes no longer have a @goal block.");
         const { goalDateFormat } = getPreferenceValues<GoalPrefs>();
-        const notes = logProgress(fresh.notes, ymd(date ?? new Date()), Number(amount), goalDateFormat);
+        const notes = logProgress(fresh.notes, ymd(date ?? new Date()), Number(amount), goalDateFormat, dayFirst());
         await twoDo("update_task", { task_id: task.task_id, notes });
-        const goal = parseGoal(notes)!;
+        const goal = parseGoal(notes, dayFirst())!;
         const { done } = goalProgress(goal, ymd(new Date()));
         const progress = `${done}/${goal.total}${goal.unit ? ` ${goal.unit}` : ""}`;
         onLogged();

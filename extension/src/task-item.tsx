@@ -19,6 +19,7 @@ import { parseJournal } from "./journal";
 import { AddJournalEntryForm, JournalView } from "./journal-view";
 import { LogProgressForm } from "./log-progress";
 import { TaskForm } from "./task-form";
+import { dayFirst } from "./preferences";
 
 // A progress ring like getProgressIcon's, with today's share of the progress in a second color.
 function goalIcon(done: number, today: number, total: number) {
@@ -60,9 +61,9 @@ export function TaskItem({ task: t, onChange }: { task: Task; onChange: () => vo
   const primary = actionTarget
     ? { ...RUN_ACTION[t.action.type], target: actionTarget, value: t.action.value }
     : links[0] && { ...RUN_ACTION.url, target: links[0], value: links[0] };
-  const goal = parseGoal(t.notes);
+  const goal = parseGoal(t.notes, dayFirst());
   const progress = goal && goalProgress(goal, ymd(new Date()));
-  const journal = parseJournal(t.notes);
+  const journal = parseJournal(t.notes, dayFirst());
 
   async function run(title: string, command: string, args: object) {
     try {
