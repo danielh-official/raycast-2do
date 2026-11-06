@@ -218,6 +218,13 @@ Called again, discussed policy.
 - [x] **Add Journal Entry** (⌘J) on any task, reading the task fresh first. **Show Journal** (⇧⌘J) is a Detail view, newest first, with timestamps as written, that reloads after an entry is added. Tasks with a journal show a book icon.
 - [x] Tests in `tests/journal.test.ts`.
 
+**Follow-up: hide the blocks from Edit Task.**
+
+- [x] `notes.ts`: `splitNotes` separates the Notes field's text from the goal and journal blocks, using the same header and end lines as `goal.ts` and `journal.ts`. `joinNotes` puts the blocks back after the text.
+- [x] `taskToValues` fills Notes with the text only. On save, `TaskForm` re-reads the task and joins its current blocks back, so progress or journal entries added while the form was open aren't lost. Goal changes then apply to the joined notes.
+- [x] Blocks end up after the text. Notes that already end with their blocks, which is how the extension writes them, round-trip unchanged. Text typed below a block in 2Do moves above it on the next save.
+- [x] The Notes field shows an info note when blocks are hidden.
+
 ---
 
 ## Open questions

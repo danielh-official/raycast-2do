@@ -32,6 +32,7 @@ import {
 } from "./2do";
 import { parseGoal } from "./goal";
 import { PageInfo } from "./link";
+import { joinNotes, splitNotes } from "./notes";
 
 const capitalize = (s: string) => s.slice(0, 1).toUpperCase() + s.slice(1);
 const ORDINALS = [
@@ -62,6 +63,7 @@ export function TaskForm({
   const { pop } = useNavigation();
   const lists = useCachedPromise(() => twoDo<{ list: List[] }>("list_lists").then((r) => r.list));
   const tags = useCachedPromise(() => twoDo<{ tags: Tag[] }>("list_tags").then((r) => r.tags));
+  const hidden = task ? splitNotes(task.notes).blocks : [];
 
   const { handleSubmit, itemProps, values, setValue } = useForm<TaskValues>({
     initialValues: task
@@ -81,16 +83,22 @@ export function TaskForm({
       goal_current: (v): string | undefined => (values.is_goal ? goalValueError("current", v) : undefined),
     },
     async onSubmit(v) {
-      if (!v.is_goal && parseGoal(v.notes ?? "")) {
-        const ok = await confirmAlert({
-          title: "Remove the goal?",
-          message: "Its progress history in the notes will be deleted.",
-          primaryAction: { title: "Remove Goal", style: Alert.ActionStyle.Destructive },
-        });
-        if (!ok) return;
-      }
       try {
-        await saveTask(await applyGoal(v, getPreferenceValues<GoalPrefs>()), task);
+        // The hidden blocks come from the task as it is now, so progress or journal entries added
+        // since the form opened aren't lost.
+        const blocks = task
+          ? splitNotes((await twoDo<{ task: Task }>("get_task", { task_id: task.task_id })).task.notes).blocks
+          : [];
+        const full = { ...v, notes: joinNotes(v.notes ?? "", blocks) };
+        if (!v.is_goal && parseGoal(full.notes)) {
+          const ok = await confirmAlert({
+            title: "Remove the goal?",
+            message: "Its progress history in the notes will be deleted.",
+            primaryAction: { title: "Remove Goal", style: Alert.ActionStyle.Destructive },
+          });
+          if (!ok) return;
+        }
+        await saveTask(await applyGoal(full, getPreferenceValues<GoalPrefs>()), task);
         if (task) {
           await showToast({ style: Toast.Style.Success, title: "Task updated" });
           onSaved?.();
@@ -127,14 +135,16 @@ export function TaskForm({
       }
     >
       <Form.TextField title="Title" placeholder="Task" {...itemProps.title} />
-      {!task && !addTo && (
-        <Form.Dropdown title="Type" {...itemProps.task_type}>
-          <Form.Dropdown.Item value="normal" title="Task" icon={Icon.Circle} />
-          <Form.Dropdown.Item value="project" title="Project" icon={Icon.Folder} />
-          <Form.Dropdown.Item value="checklist" title="Checklist" icon={Icon.CheckList} />
-        </Form.Dropdown>
-      )}
-      <Form.TextArea title="Notes" placeholder="Notes" {...itemProps.notes} />
+      <Form.TextArea
+        title="Notes"
+        placeholder="Notes"
+        info={
+          hidden.length
+            ? "The goal and journal are kept out of this field and saved as they are. Update them with Log Progress and Add Journal Entry."
+            : undefined
+        }
+        {...itemProps.notes}
+      />
       {values.action_type !== undefined && (
         <Form.Dropdown title="Action" {...itemProps.action_type}>
           <Form.Dropdown.Item value="none" title="None" />
@@ -275,7 +285,7 @@ export function TaskForm({
         <>
           <Form.TextField title="Total" placeholder="32" {...itemProps.goal_total} />
           <Form.TextField title="Units" placeholder="pages" {...itemProps.goal_unit} />
-          {!parseGoal(values.notes ?? "") && (
+          {!(task && parseGoal(task.notes)) && !parseGoal(values.notes ?? "") && (
             <>
               <Form.TextField title="Current" placeholder="0" {...itemProps.goal_current} />
               {Number(values.goal_current) > 0 && (

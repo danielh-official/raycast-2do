@@ -12,5 +12,6 @@
 - Goal entries can use any common date format, with or without times, and the date format the extension writes is a preference
 - Missing Goal and Cancel tags are created in 2Do on first use
 - Journal: timestamped entries in a task's notes, added with Add Journal Entry and read with Show Journal
+- Edit Task keeps the goal and journal blocks out of its Notes field
 - View Tasks command with All, Today, Starred, Scheduled, Done, list, and smart list scopes
 - Edit, complete, star, and open tasks from the list

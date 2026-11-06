@@ -18,8 +18,8 @@ import { DayFormat, formatDay, formatTime, parseTimestamp, Timestamp, ymd } from
 // the block is left alone.
 export type JournalEntry = Timestamp & { stamp: string; text: string; start: number; end: number };
 
-const HEADER = /^@journal$/i;
-const END = /^@endjournal$/i;
+export const HEADER = /^@journal$/i;
+export const END = /^@endjournal$/i;
 
 function findBlock(lines: string[]) {
   const start = lines.findIndex((l) => HEADER.test(l.trim()));
