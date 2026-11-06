@@ -1,16 +1,34 @@
-import { Icon, List } from "@raycast/api";
-import { useCachedPromise } from "@raycast/utils";
-import { useState } from "react";
+import { Cache, Icon, List } from "@raycast/api";
+import { useCachedPromise, usePromise } from "@raycast/utils";
+import { useMemo, useState } from "react";
 import { List as TwoDoList, SmartList, Tag, Task, twoDo } from "./2do";
 import { TaskItem } from "./task-item";
 
 export type Scope = { focus: string; include_completed: boolean; paused_filter?: "only" };
 
 type Filter = { value: string; title: string; match: (t: Task) => boolean };
+type SmartListTasks = SmartList & { task_ids: string[] };
+
+const cache = new Cache();
+const SMART_LISTS_REFRESH = 10 * 60_000;
+
+async function smartListTaskIds(smartListId: string, scope: Scope) {
+  const { tasks } = await twoDo<{ tasks: Task[] }>("query_tasks", {
+    smart_list_id: smartListId,
+    include_completed: scope.include_completed,
+    // Smart lists leave out paused tasks unless asked.
+    ...(scope.paused_filter && { paused_filter: "include" }),
+    limit: 200,
+  });
+  return tasks.map((t) => t.task_id);
+}
 
 // One 2Do scope, optionally cut down by `where`, then narrowed from the dropdown. 2Do can't query a
 // scope and a list together, so lists filter by the task's list, and smart lists by the task IDs a
 // separate query of each smart list returns. The dropdown offers only filters with tasks in scope.
+// Querying every smart list is slow with many of them, so their task IDs are cached per scope and
+// refreshed when a command opens at most every 10 minutes, or after a task action. A smart list
+// picked in the dropdown is always queried fresh, so its filtering is never stale.
 export function ScopedTasks({
   scope,
   where = () => true,
@@ -32,23 +50,27 @@ export function ScopedTasks({
     [],
     { execute: byPausedTag },
   );
-  const smartLists = useCachedPromise(
-    async (scope: Scope) => {
+  const cacheKey = `smart-lists:${JSON.stringify(scope)}`;
+  const cached = useMemo(() => {
+    const json = cache.get(cacheKey);
+    return json ? (JSON.parse(json) as { at: number; lists: SmartListTasks[] }) : undefined;
+  }, [cacheKey]);
+  const smartLists = usePromise(
+    async (scope: Scope): Promise<SmartListTasks[]> => {
       const { smart_lists } = await twoDo<{ smart_lists: SmartList[] }>("list_smart_lists");
       return Promise.all(
-        smart_lists.map(async (l) => {
-          const { tasks } = await twoDo<{ tasks: Task[] }>("query_tasks", {
-            smart_list_id: l.smart_list_id,
-            include_completed: scope.include_completed,
-            ...(scope.paused_filter && { paused_filter: "include" }),
-            limit: 200,
-          });
-          return { ...l, task_ids: tasks.map((t) => t.task_id) };
-        }),
+        smart_lists.map(async (l) => ({ ...l, task_ids: await smartListTaskIds(l.smart_list_id, scope) })),
       );
     },
     [scope],
+    {
+      execute: !cached || Date.now() - cached.at > SMART_LISTS_REFRESH,
+      onData: (lists) => cache.set(cacheKey, JSON.stringify({ at: Date.now(), lists })),
+    },
   );
+  const smartListData = smartLists.data ?? cached?.lists ?? [];
+  const picked = filter.startsWith("smart-list:") ? smartListData.find((l) => l.collection_id === filter) : undefined;
+  const pickedTasks = usePromise(smartListTaskIds, [picked?.smart_list_id ?? "", scope], { execute: !!picked });
 
   const inScope = (tasks.data ?? []).filter((t) => where(t));
   const sections: [string, Filter[]][] = [
@@ -70,11 +92,10 @@ export function ScopedTasks({
     ],
     [
       "Smart Lists",
-      (smartLists.data ?? []).map((l) => ({
-        value: l.collection_id,
-        title: l.title,
-        match: (t) => l.task_ids.includes(t.task_id),
-      })),
+      smartListData.map((l) => {
+        const ids = l === picked && pickedTasks.data ? pickedTasks.data : l.task_ids;
+        return { value: l.collection_id, title: l.title, match: (t: Task) => ids.includes(t.task_id) };
+      }),
     ],
   ];
   const offered = sections.map(([title, filters]): [string, Filter[]] => [
@@ -88,11 +109,14 @@ export function ScopedTasks({
   function reload() {
     tasks.revalidate();
     smartLists.revalidate();
+    if (picked) pickedTasks.revalidate();
   }
 
   return (
     <List
-      isLoading={tasks.isLoading || lists.isLoading || smartLists.isLoading || pausedTags.isLoading}
+      isLoading={
+        tasks.isLoading || lists.isLoading || smartLists.isLoading || pickedTasks.isLoading || pausedTags.isLoading
+      }
       searchBarPlaceholder="Filter tasks"
       searchBarAccessory={
         <List.Dropdown tooltip="Filter" value={active?.value ?? "all"} onChange={setFilter}>
