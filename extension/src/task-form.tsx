@@ -1,19 +1,29 @@
 import { Action, ActionPanel, Form, showHUD, showToast, Toast, useNavigation } from "@raycast/api";
 import { FormValidation, showFailureToast, useCachedPromise, useForm } from "@raycast/utils";
 import { List, saveTask, Tag, tagOptions, Task, taskToValues, TaskValues, twoDo } from "./2do";
+import { PageInfo } from "./link";
 
-// Creates a task, or edits `task` when given.
-export function TaskForm({ task, onSaved }: { task?: Task; onSaved?: () => void }) {
+// Creates a task, or edits `task` when given. `link` prefills a new task from a web page and
+// sets the page as the task's link action.
+export function TaskForm({
+  task,
+  link,
+  onSaved,
+}: {
+  task?: Task;
+  link?: PageInfo & { url: string };
+  onSaved?: () => void;
+}) {
   const { pop } = useNavigation();
   const lists = useCachedPromise(() => twoDo<{ list: List[] }>("list_lists").then((r) => r.list));
   const tags = useCachedPromise(() => twoDo<{ tags: Tag[] }>("list_tags").then((r) => r.tags));
 
   const { handleSubmit, itemProps } = useForm<TaskValues>({
-    initialValues: task && taskToValues(task),
+    initialValues: task ? taskToValues(task) : link && { title: link.title, notes: link.description },
     validation: { title: FormValidation.Required },
     async onSubmit(v) {
       try {
-        await saveTask(v, task);
+        await saveTask({ ...v, url: link?.url }, task);
         if (task) {
           await showToast({ style: Toast.Style.Success, title: "Task updated" });
           onSaved?.();
@@ -37,6 +47,7 @@ export function TaskForm({ task, onSaved }: { task?: Task; onSaved?: () => void 
         </ActionPanel>
       }
     >
+      {link && <Form.Description title="Link" text={link.url} />}
       <Form.TextField title="Title" placeholder="Task" {...itemProps.title} />
       <Form.TextArea title="Notes" placeholder="Notes" {...itemProps.notes} />
       <Form.Dropdown title="List" storeValue={!task} {...itemProps.list_id}>

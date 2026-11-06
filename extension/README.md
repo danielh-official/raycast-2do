@@ -22,6 +22,10 @@ If you clicked **Don't Allow**, turn it back on in **System Settings → Privacy
 
 Create a task with a title, notes, list, start and due dates (with optional times), priority, star, and tags. The list you pick is remembered for next time.
 
+### Add Link
+
+Enter a web address and the extension reads the page. The task form then opens with the page title as the task title and the page's description (if it has one) in the notes. The address is saved as the task's link, so 2Do can open it.
+
 ### View Tasks
 
 Browse tasks by scope: All, Today, Starred, Scheduled, Done, any list, or any smart list. Type to filter by title, notes, or tag.

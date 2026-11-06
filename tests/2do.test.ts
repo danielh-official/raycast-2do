@@ -101,6 +101,11 @@ describe("saveTask", () => {
     expect(sent()[0][1].tag_update).toEqual({ operation: "set", tag_ids: ["tag1"] });
   });
 
+  it("sets the link action when creating with a url", async () => {
+    await saveTask({ ...values, url: "https://example.com" });
+    expect(sent()[0][1].action).toEqual({ type: "url", value: "https://example.com" });
+  });
+
   it("updates a task, clearing removed fields", async () => {
     await saveTask(values, task);
     expect(sent()).toEqual([

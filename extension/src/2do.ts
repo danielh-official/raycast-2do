@@ -30,6 +30,7 @@ export type TaskValues = {
   priority: string;
   starred: boolean;
   tag_ids: string[];
+  url?: string;
 };
 
 // Calls a command from 2Do's AppleScript "Automation Suite" (same commands and arguments as 2Do's MCP server).
@@ -98,6 +99,7 @@ export async function saveTask(v: TaskValues, task?: Task) {
       list_id: v.list_id,
       notes: v.notes || undefined,
       ...(v.tag_ids.length > 0 && { tag_update: { operation: "set", tag_ids: v.tag_ids } }),
+      ...(v.url && { action: { type: "url", value: v.url } }),
     });
     return;
   }
