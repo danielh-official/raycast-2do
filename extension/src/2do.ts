@@ -18,7 +18,7 @@ export type Task = {
   due_date?: string;
   due_time?: string;
   tags: Tag[];
-  recurrence?: RawRecurrence | null;
+  task_type: "normal" | "project" | "checklist";
   action: { type: string; value?: string };
   presentation: { due_date_formatted?: string; is_overdue: boolean };
 };
@@ -309,67 +309,43 @@ export async function saveTask(v: TaskValues, task?: Task) {
   if (v.list_id !== task.list_id) await twoDo("move_task", { task_id: task.task_id, list_id: v.list_id });
 }
 
-const sameTitle = (a: string, b: string) => a.trim().toLowerCase() === b.trim().toLowerCase();
-
-// The New Tags field's names, trimmed, without blanks or repeats.
-export function tagNames(text = "") {
-  const names = text
-    .split(",")
-    .map((n) => n.trim())
-    .filter(Boolean);
-  return names.filter((n, i) => names.findIndex((m) => sameTitle(m, n)) === i);
-}
-
-// The tag_update for the picked tags plus the New Tags names. A name matching an existing tag
-// (case-insensitively) adds that tag's ID, so only names with no tag yet go to 2Do to be created.
-// tag_names only works with "set", and tag_ids is required even when empty.
-async function tagUpdateFor(
-  v: TaskValues,
-  task?: Task,
-): Promise<{ operation: "set"; tag_ids: string[]; tag_names?: string[] }> {
-  const names = tagNames(v.new_tags);
-  if (names.length === 0) return { operation: "set", tag_ids: v.tag_ids };
-  const { tags } = await twoDo<{ tags: Tag[] }>("list_tags");
-  const known = tagOptions(tags, task);
-  const ids = new Set(v.tag_ids);
-  const missing: string[] = [];
-  for (const name of names) {
-    const tag = known.find((t) => sameTitle(t.title, name));
-    if (tag) ids.add(tag.tag_id);
-    else missing.push(name);
-  }
-  return { operation: "set", tag_ids: [...ids], ...(missing.length > 0 && { tag_names: missing }) };
-}
-
-export const isRepeating = (task: Task) => !!task.recurrence?.frequency && task.recurrence.frequency !== "none";
-
-const day3 = (d: string) => d.slice(0, 1).toUpperCase() + d.slice(1, 3);
-const ordinal = (n: number | string) => {
-  const v = Number(n);
-  if (!Number.isInteger(v)) return String(n);
-  if (v === -1) return "last";
-  const teen = v % 100 >= 11 && v % 100 <= 13;
-  return `${v}${teen ? "th" : (({ 1: "st", 2: "nd", 3: "rd" } as Record<number, string>)[v % 10] ?? "th")}`;
+// Extension preferences that set what Cancel Task does.
+export type CancelPrefs = {
+  cancelBehavior: "complete-and-tag" | "tag" | "move" | "delete";
+  cancelTag: string;
+  cancelList: string;
 };
 
-// A repeating task's rule in words, like "Every 3 days" or "Weekly on Mon, Tue, after completion".
-export function repeatRule(task: Task) {
-  const r = recurrenceOf(task);
-  if (!r || !isRepeating(task)) return;
-  const base: Record<string, string> = { daily: "Daily", weekly: "Weekly", monthly: "Monthly", yearly: "Yearly" };
-  let rule =
-    r.frequency === "custom" && r.interval
-      ? `Every ${r.interval === 1 ? "" : `${r.interval} `}${r.unit ?? "day"}${r.interval === 1 ? "" : "s"}`
-      : r.frequency === "weekdays"
-        ? "On weekdays"
-        : (base[r.frequency!] ?? r.frequency!.slice(0, 1).toUpperCase() + r.frequency!.slice(1));
-  if (r.weekdays?.length) rule += ` on ${r.weekdays.map(day3).join(", ")}`;
-  else if (r.weekday && r.ordinal !== undefined) rule += ` on the ${ordinal(r.ordinal)} ${day3(r.weekday)}`;
-  if (r.based_on === "completion") rule += ", after completion";
-  if (r.end_rule?.type === "after_count" && r.end_rule.occurrence_count)
-    rule += `, ${r.end_rule.occurrence_count} times`;
-  if (r.end_rule?.type === "on_date" && r.end_rule.date) rule += `, until ${r.end_rule.date}`;
-  return rule;
+const sameTitle = (a: string, b: string) => a.trim().toLowerCase() === b.trim().toLowerCase();
+
+// 2Do's own convention is a completed task carrying a "Cancelled" tag. 2Do automation can't create
+// tags or lists, so a missing one is an error naming the preference to fix.
+export async function cancelTask(task: Task, p: CancelPrefs) {
+  if (p.cancelBehavior === "delete") {
+    await twoDo("delete_task", { task_id: task.task_id });
+    return;
+  }
+  let taskId = task.task_id;
+  if (p.cancelBehavior === "move") {
+    if (!p.cancelList.trim()) throw new Error("Set the Cancel List preference to the list cancelled tasks move to.");
+    const { list } = await twoDo<{ list: List[] }>("list_lists");
+    const target = list.find((l) => sameTitle(l.title, p.cancelList));
+    if (!target) throw new Error(`No 2Do list named "${p.cancelList}". Check the Cancel List preference.`);
+    // A move gives the task a new ID.
+    const moved = await twoDo<{ task: { task_id: string } }>("move_task", { task_id: taskId, list_id: target.list_id });
+    taskId = moved.task.task_id;
+  } else {
+    const { tags } = await twoDo<{ tags: Tag[] }>("list_tags");
+    const tag = tags.find((t) => sameTitle(t.title, p.cancelTag));
+    if (!tag)
+      throw new Error(`No 2Do tag named "${p.cancelTag}". Create it in 2Do or check the Cancel Tag preference.`);
+    await twoDo("update_task", { task_id: taskId, tag_update: { operation: "append", tag_ids: [tag.tag_id] } });
+  }
+  if (p.cancelBehavior !== "tag") await twoDo("complete_task", { task_id: taskId });
+}
+
+export function isCancelled(task: Task, p: CancelPrefs) {
+  return task.completed && task.tags.some((t) => sameTitle(t.title, p.cancelTag));
 }
 
 // Scope values are 2Do collection ids ("list:<id>", "smart-list:<id>") or "focus:<name>".

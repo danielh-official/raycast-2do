@@ -2,11 +2,10 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import {
   actionURL,
   actionValueError,
+  CancelPrefs,
+  cancelTask,
   dateFields,
-  recurrenceArgs,
-  repeatRule,
-  repeatValueError,
-  repeatValues,
+  isCancelled,
   saveTask,
   scopeArgs,
   tagOptions,
@@ -42,6 +41,7 @@ const task: Task = {
   start_time: "12:00",
   due_date: "2026-10-25",
   tags: [{ tag_id: "tag1", title: "Family" }],
+  task_type: "normal",
   action: { type: "none" },
   presentation: { is_overdue: false },
 };
@@ -249,6 +249,70 @@ describe("actionValueError", () => {
     expect(actionValueError("url", "example.com")).toMatch("full link");
     expect(actionValueError("url", "x-apple-health://Meds")).toBeUndefined();
     expect(actionValueError("google", "anything")).toBeUndefined();
+  });
+});
+
+describe("cancelTask", () => {
+  const prefs: CancelPrefs = { cancelBehavior: "complete-and-tag", cancelTag: "Cancelled", cancelList: "" };
+  // Answers list_tags, list_lists, and move_task; everything else gets "{}".
+  beforeEach(() => {
+    runAppleScript.mockImplementation(async (_script: string, [command]: string[]) => {
+      if (command === "list_tags") return JSON.stringify({ tags: [{ tag_id: "c1", title: "Cancelled" }] });
+      if (command === "list_lists") return JSON.stringify({ list: [{ list_id: "l9", title: "Graveyard" }] });
+      if (command === "move_task") return JSON.stringify({ task: { task_id: "t1-moved" } });
+      return "{}";
+    });
+  });
+
+  it("appends the cancel tag, then completes the task", async () => {
+    await cancelTask(task, prefs);
+    expect(sent()).toEqual([
+      ["list_tags", {}],
+      ["update_task", { task_id: "t1", tag_update: { operation: "append", tag_ids: ["c1"] } }],
+      ["complete_task", { task_id: "t1" }],
+    ]);
+  });
+
+  it("only tags with Tag Only, matching the tag title case-insensitively", async () => {
+    await cancelTask(task, { ...prefs, cancelBehavior: "tag", cancelTag: " cancelled " });
+    expect(sent().map(([command]) => command)).toEqual(["list_tags", "update_task"]);
+  });
+
+  it("moves to the cancel list, then completes the task under its new ID", async () => {
+    await cancelTask(task, { ...prefs, cancelBehavior: "move", cancelList: "graveyard" });
+    expect(sent()).toEqual([
+      ["list_lists", {}],
+      ["move_task", { task_id: "t1", list_id: "l9" }],
+      ["complete_task", { task_id: "t1-moved" }],
+    ]);
+  });
+
+  it("deletes with Delete", async () => {
+    await cancelTask(task, { ...prefs, cancelBehavior: "delete" });
+    expect(sent()).toEqual([["delete_task", { task_id: "t1" }]]);
+  });
+
+  it("names the preference when the tag or list is missing, without changing the task", async () => {
+    await expect(cancelTask(task, { ...prefs, cancelTag: "Dropped" })).rejects.toThrow(
+      'No 2Do tag named "Dropped". Create it in 2Do or check the Cancel Tag preference.',
+    );
+    await expect(cancelTask(task, { ...prefs, cancelBehavior: "move", cancelList: "Nope" })).rejects.toThrow(
+      'No 2Do list named "Nope"',
+    );
+    await expect(cancelTask(task, { ...prefs, cancelBehavior: "move" })).rejects.toThrow(
+      "Set the Cancel List preference",
+    );
+    expect(sent().map(([command]) => command)).toEqual(["list_tags", "list_lists"]);
+  });
+});
+
+describe("isCancelled", () => {
+  it("is a completed task carrying the cancel tag", () => {
+    const prefs: CancelPrefs = { cancelBehavior: "complete-and-tag", cancelTag: "cancelled", cancelList: "" };
+    const tagged = { ...task, tags: [{ tag_id: "c1", title: "Cancelled" }] };
+    expect(isCancelled({ ...tagged, completed: true }, prefs)).toBe(true);
+    expect(isCancelled(tagged, prefs)).toBe(false);
+    expect(isCancelled({ ...task, completed: true }, prefs)).toBe(false);
   });
 });
 
