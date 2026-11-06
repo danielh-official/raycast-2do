@@ -1,7 +1,18 @@
-import { Action, ActionPanel, Color, confirmAlert, Icon, Keyboard, List, showToast, Toast } from "@raycast/api";
-import { getProgressIcon, showFailureToast, useCachedPromise } from "@raycast/utils";
-import { actionURL, repeatRule, Task, taskLinks, twoDo } from "./2do";
-import { ItemsView } from "./items-view";
+import {
+  Action,
+  ActionPanel,
+  Alert,
+  Color,
+  confirmAlert,
+  getPreferenceValues,
+  Icon,
+  Keyboard,
+  List,
+  showToast,
+  Toast,
+} from "@raycast/api";
+import { showFailureToast } from "@raycast/utils";
+import { actionURL, CancelPrefs, cancelTask, isCancelled, Task, taskLinks, twoDo } from "./2do";
 import { TaskForm } from "./task-form";
 
 const PRIORITY_TAGS = {
@@ -9,8 +20,6 @@ const PRIORITY_TAGS = {
   medium: { value: "Medium", color: Color.Orange },
   low: { value: "Low", color: Color.Blue },
 };
-
-const PARENT_ICONS = { project: Icon.Folder, checklist: Icon.CheckList };
 
 // The ⌘L action for each 2Do action type.
 const RUN_ACTION: Record<string, { title: string; icon: Icon }> = {
@@ -23,33 +32,13 @@ const RUN_ACTION: Record<string, { title: string; icon: Icon }> = {
 };
 
 // A task row with its actions. `onChange` reloads the list after an action changes the task.
-// `parent` is set for a project's or checklist's items.
-export function TaskItem({
-  task: t,
-  parent,
-  onChange: reloadList,
-}: {
-  task: Task;
-  parent?: Task;
-  onChange: () => void;
-}) {
-  const isParent = t.task_type !== "normal";
-  const items = useCachedPromise(
-    (id: string) => twoDo<{ tasks: Task[] }>("list_subtasks", { task_id: id }).then((r) => r.tasks),
-    [t.task_id],
-    { execute: isParent && !t.completed },
-  );
-  const itemsDone = items.data?.filter((i) => i.completed).length ?? 0;
-  const onChange = () => {
-    reloadList();
-    if (isParent) items.revalidate();
-  };
+export function TaskItem({ task: t, onChange }: { task: Task; onChange: () => void }) {
+  const prefs = getPreferenceValues<CancelPrefs>();
   const links = taskLinks(t);
   const actionTarget = actionURL(t.action);
   const primary = actionTarget
     ? { ...RUN_ACTION[t.action.type], target: actionTarget, value: t.action.value }
     : links[0] && { ...RUN_ACTION.url, target: links[0], value: links[0] };
-  const repeat = repeatRule(t);
 
   async function run(title: string, command: string, args: object) {
     try {
@@ -61,25 +50,34 @@ export function TaskItem({
     }
   }
 
-  // 2Do completes a project's or checklist's open items along with it, so this asks first when the
-  // items, read fresh from 2Do rather than from the cached ring, include open ones.
-  async function completeWithItems() {
+  async function cancel() {
+    const deletes = prefs.cancelBehavior === "delete";
     try {
-      const { tasks } = await twoDo<{ tasks: Task[] }>("list_subtasks", { task_id: t.task_id });
-      const open = tasks.filter((i) => !i.completed).length;
-      const ok =
-        open === 0 ||
-        (await confirmAlert({
-          title: `Complete "${t.title}" and ${open === 1 ? "its open item" : `its ${open} open items`}?`,
-          primaryAction: { title: "Complete All" },
-          dismissAction: { title: "Not Now" },
-        }));
-      if (!ok) return;
-      await twoDo("complete_task", { task_id: t.task_id });
-      await showToast({ style: Toast.Style.Success, title: "Completed" });
+      if (deletes) {
+        const ok = await confirmAlert({
+          title: `Delete "${t.title}"?`,
+          message: "Cancel Task is set to delete tasks. This can't be undone from Raycast.",
+          primaryAction: { title: "Delete", style: Alert.ActionStyle.Destructive },
+        });
+        if (!ok) return;
+      } else if (prefs.cancelBehavior !== "tag" && t.task_type !== "normal") {
+        const { tasks: subtasks } = await twoDo<{ tasks: Task[] }>("list_subtasks", { task_id: t.task_id });
+        const open = subtasks.filter((s) => !s.completed).length;
+        const ok =
+          open === 0 ||
+          (await confirmAlert({
+            title: `Cancel "${t.title}"?`,
+            message: `Its ${open === 1 ? "open subtask" : `${open} open subtasks`} will be completed too.`,
+            primaryAction: { title: "Cancel Task" },
+            dismissAction: { title: "Keep Task" },
+          }));
+        if (!ok) return;
+      }
+      await cancelTask(t, prefs);
+      await showToast({ style: Toast.Style.Success, title: deletes ? "Deleted" : "Cancelled" });
       onChange();
     } catch (error) {
-      await showFailureToast(error, { title: "Could not complete task" });
+      await showFailureToast(error, { title: "Could not cancel task" });
     }
   }
 
@@ -89,22 +87,13 @@ export function TaskItem({
       subtitle={t.list_title}
       keywords={[t.notes, ...t.tags.map((tag) => tag.title), ...links, ...(t.action.value ? [t.action.value] : [])]}
       icon={
-        t.completed
-          ? { source: Icon.CheckCircle, tintColor: Color.Green }
-          : t.task_type !== "normal"
-            ? { source: PARENT_ICONS[t.task_type], tooltip: t.task_type === "project" ? "Project" : "Checklist" }
+        isCancelled(t, prefs)
+          ? { source: Icon.XMarkCircle, tintColor: Color.SecondaryText }
+          : t.completed
+            ? { source: Icon.CheckCircle, tintColor: Color.Green }
             : Icon.Circle
       }
       accessories={[
-        ...(isParent && !t.completed && items.data?.length
-          ? [
-              {
-                icon: getProgressIcon(itemsDone / items.data.length, Color.Green),
-                text: `${itemsDone}/${items.data.length}`,
-                tooltip: `${itemsDone} of ${items.data.length} items done`,
-              },
-            ]
-          : []),
         ...t.tags.map((tag) => ({ tag: tag.title })),
         ...(t.priority !== "none" ? [{ tag: PRIORITY_TAGS[t.priority] }] : []),
         ...(t.presentation.due_date_formatted
@@ -118,16 +107,11 @@ export function TaskItem({
             ]
           : []),
         ...(primary ? [{ icon: primary.icon, tooltip: `${primary.title}: ${primary.value}` }] : []),
-        ...(repeat ? [{ icon: Icon.Repeat, tooltip: `Repeats: ${repeat}` }] : []),
         ...(t.starred ? [{ icon: { source: Icon.Star, tintColor: Color.Yellow } }] : []),
       ]}
       actions={
         <ActionPanel>
-          <Action.Push
-            title="Edit Task"
-            icon={Icon.Pencil}
-            target={<TaskForm task={t} parent={parent} onSaved={onChange} />}
-          />
+          <Action.Push title="Edit Task" icon={Icon.Pencil} target={<TaskForm task={t} onSaved={onChange} />} />
           {primary && (
             <Action.Open
               title={primary.title}
@@ -147,23 +131,22 @@ export function TaskItem({
               ))}
             </ActionPanel.Submenu>
           )}
-          {isParent && !t.completed ? (
+          <Action
+            title={t.completed ? "Mark as Not Done" : "Complete Task"}
+            icon={t.completed ? Icon.Circle : Icon.CheckCircle}
+            shortcut={{ modifiers: ["cmd"], key: "d" }}
+            onAction={() =>
+              run(t.completed ? "Marked not done" : "Completed", t.completed ? "uncomplete_task" : "complete_task", {
+                task_id: t.task_id,
+              })
+            }
+          />
+          {!t.completed && (
             <Action
-              title="Complete Task"
-              icon={Icon.CheckCircle}
-              shortcut={{ modifiers: ["cmd"], key: "d" }}
-              onAction={completeWithItems}
-            />
-          ) : (
-            <Action
-              title={t.completed ? "Mark as Not Done" : "Complete Task"}
-              icon={t.completed ? Icon.Circle : Icon.CheckCircle}
-              shortcut={{ modifiers: ["cmd"], key: "d" }}
-              onAction={() =>
-                run(t.completed ? "Marked not done" : "Completed", t.completed ? "uncomplete_task" : "complete_task", {
-                  task_id: t.task_id,
-                })
-              }
+              title="Cancel Task"
+              icon={Icon.XMarkCircle}
+              shortcut={{ modifiers: ["cmd", "shift"], key: "d" }}
+              onAction={cancel}
             />
           )}
           {/* Below the first two actions, where Raycast shows custom shortcuts. */}
