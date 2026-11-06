@@ -107,7 +107,7 @@ If notes have more than one goal or journal block, the topmost of each is used, 
 
 ### View Tasks: Today, Now, Later Today, Starred, Scheduled, Paused, Goals, Done
 
-One command per scope, so you can open it straight from Raycast's root search or give it a hotkey. Each has the same task actions as View Tasks. Its dropdown narrows the scope to one list or smart list, and only offers those that contain at least one of the scope's tasks.
+One command per scope, so you can open it straight from Raycast's root search or give it a hotkey. Each has the same task actions as View Tasks. Its dropdown narrows the scope to one list or smart list, and only offers those that contain at least one of the scope's tasks. Which smart lists hold which tasks is cached and refreshed at most every 10 minutes, or after a task action. A smart list you pick is always checked fresh.
 
 - **Now** is today's tasks that have started: no start time, or a start time that has passed. **Later Today** is the rest of today's tasks.
 - **Paused** is the tasks hidden by paused tags. Its dropdown can also narrow to one paused tag.
