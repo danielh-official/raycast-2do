@@ -132,9 +132,18 @@
       "default": ""
     },
     {
+      "name": "goalTagEnabled",
+      "title": "Goals",
+      "label": "Tag goals",
+      "description": "Adds the Goal Tag when a task becomes a goal or a goal is edited, so goals show up as tagged in 2Do. Goals work without it.",
+      "type": "checkbox",
+      "required": false,
+      "default": true
+    },
+    {
       "name": "goalTag",
       "title": "Goal Tag",
-      "description": "The 2Do tag that marks a goal task. It's created in 2Do the first time it's needed.",
+      "description": "The 2Do tag that marks a goal task, when Tag goals is on. It's created in 2Do the first time it's needed.",
       "type": "textfield",
       "required": false,
       "default": "Goal"

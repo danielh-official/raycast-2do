@@ -45,6 +45,15 @@ describe("parseGoal", () => {
     expect(parse("@goal: 3\n2026-11-06: 1")).toMatchObject({ total: 3, unit: "", entries: [{ amount: 1 }] });
   });
 
+  it("uses the topmost block and ignores later ones, for reading and writing", () => {
+    const notes = `${block}\n\n@goal: 99 laps\n\nNov 6, 2026: 50\n\n@endgoal`;
+    expect(parse(notes)).toMatchObject({ total: 32, unit: "pages" });
+    expect(goalProgress(parse(notes)!, "2026-11-06")).toEqual({ done: 13, today: 10 });
+    expect(log(notes, "2026-11-06", 1)).toBe(notes.replace("Nov 6, 2026: 10", "Nov 6, 2026: 11"));
+    expect(setGoalHeader(notes, 40, "pages")).toBe(notes.replace("@goal: 32 pages", "@goal: 40 pages"));
+    expect(removeGoal(notes)).toBe("@goal: 99 laps\n\nNov 6, 2026: 50\n\n@endgoal");
+  });
+
   it("is undefined without a @goal line", () => {
     expect(parse("Just notes\n2026-11-06: 1")).toBeUndefined();
   });
@@ -84,6 +93,7 @@ describe("appendGoal, setGoalHeader, removeGoal", () => {
   it("removes the block and the blank line before it", () => {
     expect(removeGoal(`Before\n\n${block}\n\nAfter`)).toBe("Before\n\nAfter");
     expect(removeGoal(`Before\n\n${block}`)).toBe("Before");
+    expect(removeGoal(`${block}\n\nAfter`)).toBe("After");
     expect(removeGoal("No goal")).toBe("No goal");
   });
 });
