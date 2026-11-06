@@ -19,6 +19,7 @@ import { parseJournal } from "./journal";
 import { AddJournalEntryForm, JournalView } from "./journal-view";
 import { LogProgressForm } from "./log-progress";
 import { TaskForm } from "./task-form";
+import { checkNotes, fixNotes } from "./notes";
 import { dayFirst } from "./preferences";
 
 // A progress ring like getProgressIcon's, with today's share of the progress in a second color.
@@ -64,6 +65,26 @@ export function TaskItem({ task: t, onChange }: { task: Task; onChange: () => vo
   const goal = parseGoal(t.notes, dayFirst());
   const progress = goal && goalProgress(goal, ymd(new Date()));
   const journal = parseJournal(t.notes, dayFirst());
+  const issues = checkNotes(t.notes, dayFirst());
+
+  async function fixSyntax() {
+    try {
+      const { task: fresh } = await twoDo<{ task: Task }>("get_task", { task_id: t.task_id });
+      const fixable = checkNotes(fresh.notes, dayFirst()).filter((i) => i.fixable);
+      if (!fixable.length) return showToast({ style: Toast.Style.Success, title: "Nothing to fix" });
+      const ok = await confirmAlert({
+        title: "Fix the notes' syntax?",
+        message: `${fixable.map((i) => i.message).join("\n")}\n\nFixing adds the missing end line.`,
+        primaryAction: { title: "Fix" },
+      });
+      if (!ok) return;
+      await twoDo("update_task", { task_id: t.task_id, notes: fixNotes(fresh.notes, dayFirst()) });
+      await showToast({ style: Toast.Style.Success, title: "Syntax fixed" });
+      onChange();
+    } catch (error) {
+      await showFailureToast(error, { title: "Could not fix the syntax" });
+    }
+  }
 
   async function run(title: string, command: string, args: object) {
     try {
@@ -121,6 +142,14 @@ export function TaskItem({ task: t, onChange }: { task: Task; onChange: () => vo
               : Icon.Circle
       }
       accessories={[
+        ...(issues.length
+          ? [
+              {
+                icon: { source: Icon.Warning, tintColor: Color.Orange },
+                tooltip: issues.map((i) => i.message).join("\n"),
+              },
+            ]
+          : []),
         ...(goal && progress
           ? [
               {
@@ -164,6 +193,9 @@ export function TaskItem({ task: t, onChange }: { task: Task; onChange: () => vo
             shortcut={{ modifiers: ["cmd"], key: "j" }}
             target={<AddJournalEntryForm task={t} onAdded={onChange} />}
           />
+          {issues.some((i) => i.fixable) && (
+            <Action title="Fix Goal and Journal Syntax" icon={Icon.WrenchScrewdriver} onAction={fixSyntax} />
+          )}
           {journal?.length ? (
             <Action.Push
               title="Show Journal"
