@@ -5,7 +5,7 @@ Refer to PLAN.md.
 - **`main`** holds what's in the Raycast Store, plus the release being prepared. Store PRs are published from `main`.
 - **`experimental`** holds all other work, kept rebased onto `main`. New work lands here first.
 - **Sizing rule:** if it's too much for a human reviewer to parse, it needs to be smaller.
-- **Docs:** `PLAN.md` and `AGENTS.md` are identical on `main` and `experimental`. Change them on both. `PLAN.md`'s Releases section lists what's released and the order of the next releases.
+- **Docs:** `PLAN.md`, `AGENTS.md` and `SCREENSHOTS.md` are identical on `main` and `experimental`. Change them on both. `PLAN.md`'s Releases section lists what's released and the order of the next releases.
 
 ### Preparing a release, on `main`
 
