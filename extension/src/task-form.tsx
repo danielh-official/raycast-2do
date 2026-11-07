@@ -66,11 +66,11 @@ export function TaskForm({
     },
     async onSubmit(v) {
       try {
-        // The hidden blocks come from the task as it is now, so progress or journal entries added
-        // since the form opened aren't lost.
-        const blocks = task
-          ? splitNotes((await twoDo<{ task: Task }>("get_task", { task_id: task.task_id })).task.notes).blocks
-          : [];
+        // Compare and merge with the task as it is now, not as the list loaded it: the hidden blocks
+        // keep progress or journal entries added since, and an action or list changed in 2Do since
+        // still counts as changed when the form sets it back.
+        const current = task && (await twoDo<{ task: Task }>("get_task", { task_id: task.task_id })).task;
+        const blocks = current ? splitNotes(current.notes).blocks : [];
         const full = { ...v, notes: joinNotes(v.notes ?? "", blocks) };
         if (!v.is_goal && parseGoal(full.notes)) {
           const ok = await confirmAlert({
@@ -80,7 +80,7 @@ export function TaskForm({
           });
           if (!ok) return;
         }
-        await saveTask(await applyGoal(full, getPreferenceValues<GoalPrefs>()), task);
+        await saveTask(await applyGoal(full, getPreferenceValues<GoalPrefs>()), current);
         if (task) {
           await showToast({ style: Toast.Style.Success, title: "Task updated" });
           onSaved?.();
