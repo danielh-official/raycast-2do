@@ -35,7 +35,7 @@ The edge cases are in a separate **Live Testing** list, for `npm run test:live`.
 - [ ] **Scoped command:** View Tasks: Today, or Now, with the dropdown open on lists and smart lists that have tasks in that scope.
 - [ ] **Log Progress:** the Amount and Date form for a goal task.
 - [ ] **Task actions:** the Actions panel (⌘K) on a task, showing Run Action (⌘L), Choose Link (⇧⌘L), Log Progress (⌘G), Add Journal Entry (⌘J), Cancel Task (⇧⌘D) and the rest.
-- [ ] **Paused:** View Tasks: Paused, with the dropdown on its Paused Tags section.
+- [ ] **Paused:** View Tasks: Paused, filtered to the Someday tag (⌘T), with "(Someday)" in the title.
 - [ ] **Cancelled in Done:** View Tasks: Done, with cancelled tasks showing a gray ✕ next to completed ones.
 
 ## Suggested final six
