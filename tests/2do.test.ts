@@ -214,6 +214,20 @@ describe("saveTask", () => {
     expect(sent()[0][1]).not.toHaveProperty("action");
   });
 
+  it("creates a task inside a project or checklist instead of the list", async () => {
+    await saveTask({ ...values, parent_id: "p1" });
+    expect(sent()[0][1]).toMatchObject({ parent_task_id: "p1" });
+    expect(sent()[0][1]).not.toHaveProperty("list_id");
+  });
+
+  it("moves an edited task into a project or checklist, rather than to the list", async () => {
+    await saveTask({ ...taskToValues(task), list_id: "work", parent_id: "p1" }, task);
+    expect(sent().map(([command, args]) => [command, args.parent_task_id ?? args.list_id])).toEqual([
+      ["update_task", undefined],
+      ["move_task", "p1"],
+    ]);
+  });
+
   it("moves the task when its list changed", async () => {
     await saveTask({ ...values, list_id: "work" }, task);
     expect(sent().map(([command]) => command)).toEqual(["update_task", "move_task"]);

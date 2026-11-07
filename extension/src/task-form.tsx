@@ -5,6 +5,7 @@ import {
   confirmAlert,
   Form,
   getPreferenceValues,
+  Icon,
   showHUD,
   showToast,
   Toast,
@@ -18,8 +19,7 @@ import {
   GoalPrefs,
   goalValueError,
   List,
-  repeatValueError,
-  repeatValues,
+  listParents,
   saveTask,
   Tag,
   tagOptions,
@@ -61,13 +61,14 @@ export function TaskForm({
   const hidden = task ? splitNotes(task.notes).blocks : [];
   const issues = task ? checkNotes(task.notes, dayFirst()) : [];
 
-  const { handleSubmit, itemProps, values } = useForm<TaskValues>({
+  const { handleSubmit, itemProps, values, setValue } = useForm<TaskValues>({
     initialValues: task
       ? { ...taskToValues(task), new_tags: "" }
       : {
           new_tags: "",
           action_type: link ? "url" : "none",
           action_value: link?.url ?? "",
+          parent_id: "",
           is_goal: false,
           goal_last: new Date(),
           ...(link && { title: link.title, notes: link.description }),
@@ -108,7 +109,11 @@ export function TaskForm({
     },
   });
 
-  const repeats = !!values.is_repeating && values.repeat !== undefined;
+  // A project or checklist put in another becomes a normal task in 2Do, so they aren't offered one.
+  const canNest = !task || task.task_type === "normal";
+  const parents = useCachedPromise(listParents, [values.list_id ?? ""], {
+    execute: canNest && !!values.list_id,
+  });
 
   return (
     <Form
@@ -159,13 +164,32 @@ export function TaskForm({
           {...itemProps.action_value}
         />
       )}
-      <Form.Separator />
-      <Form.Dropdown title="List" storeValue={!task} {...itemProps.list_id}>
+      <Form.Dropdown
+        title="List"
+        storeValue={!task}
+        {...itemProps.list_id}
+        onChange={(listId) => {
+          itemProps.list_id.onChange?.(listId);
+          if (listId !== values.list_id) setValue("parent_id", "");
+        }}
+      >
         {lists.data?.map((l) => (
           <Form.Dropdown.Item key={l.list_id} value={l.list_id} title={l.title} />
         ))}
       </Form.Dropdown>
-      <Form.Separator />
+      {(parents.data?.length ?? 0) > 0 && (
+        <Form.Dropdown title="Project or Checklist" {...itemProps.parent_id}>
+          <Form.Dropdown.Item value="" title="None" icon={Icon.Minus} />
+          {parents.data?.map((p) => (
+            <Form.Dropdown.Item
+              key={p.task_id}
+              value={p.task_id}
+              title={p.title}
+              icon={p.task_type === "project" ? Icon.Folder : Icon.CheckList}
+            />
+          ))}
+        </Form.Dropdown>
+      )}
       <Form.DatePicker title="Start" {...itemProps.start} />
       <Form.DatePicker title="Due" {...itemProps.due} />
       {values.repeat !== undefined && (
