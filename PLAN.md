@@ -310,11 +310,12 @@ In this order, one commit each.
 
 - [x] **New Tags field** in Add Task and Edit Task, under Tags: comma-separated names for tags not yet in 2Do. Saving sends them as `tag_update: { operation: "set", tag_ids, tag_names }`, which creates the missing ones. Names matching an existing tag reuse it.
 - [x] **Paused tag and list together** in View Tasks: Paused. Raycast allows one search-bar dropdown, so the dropdown keeps the lists and smart lists, and a **Filter by Paused Tag** action (⌘T) sets the tag. The navigation title shows the tag, and the dropdown offers only lists with tasks under it. A tag with no tasks left falls back to all paused tags.
-- [ ] **Repeat settings** in Add Task and Edit Task. Checked on a scratch task:
+- [x] **Repeat settings** in Add Task and Edit Task. Edit Task sends the recurrence only when it changed, and leaves a repeat it can't show alone. Checked on a scratch task:
   - `frequency`: `daily`, `weekdays`, `weekly` (optional `weekdays`), `monthly` (optional `weekday` with an integer `ordinal`, `-1` for last), `yearly`, or `custom` with `interval` and `unit` (`day`, `week`, `month`, `year`). `custom` takes no `weekdays`, and every 1 year comes back as `yearly`.
   - `based_on` is required: `due_date` or `completion`.
   - `end_rule`: `never`, `after_count` with `occurrence_count`, or `on_date` with `date`.
-  - A repeat needs a start or due date. `frequency: "none"` clears it; `recurrence: null` is rejected.
+  - Limits: `interval` 1–999, `ordinal` 1–5 or -1, `occurrence_count` 1–99, and `weekdays` can't be empty.
+  - A repeat needs a start or due date, and clearing both dates silently drops it. `frequency: "none"` clears it; `recurrence: null` is rejected.
   - 2Do reports the monthly weekday as `wkdy` and the end date as `ldt `, so reading handles both names.
   - Items in a checklist have no dates, so they can't repeat.
 - [ ] **Reopening a cancelled task:** Mark as Not Done on a cancelled task also undoes the cancel, per the Cancel Task preference:

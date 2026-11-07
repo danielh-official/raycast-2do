@@ -20,6 +20,8 @@ import {
   goalValueError,
   List,
   listParents,
+  repeatValueError,
+  repeatValues,
   saveTask,
   Tag,
   tagOptions,
@@ -27,11 +29,22 @@ import {
   taskToValues,
   TaskValues,
   twoDo,
+  WEEKDAYS,
 } from "./2do";
 import { parseGoal } from "./goal";
 import { PageInfo } from "./link";
 import { checkNotes, joinNotes, splitNotes } from "./notes";
 import { dayFirst } from "./preferences";
+
+const capitalize = (s: string) => s.slice(0, 1).toUpperCase() + s.slice(1);
+const ORDINALS = [
+  ["1", "First"],
+  ["2", "Second"],
+  ["3", "Third"],
+  ["4", "Fourth"],
+  ["5", "Fifth"],
+  ["-1", "Last"],
+];
 
 // Creates a task, or edits `task` when given. `link` prefills a new task from a web page, with
 // the page as the task's link. `parentId` is the project or checklist an edited item is in.
@@ -67,6 +80,7 @@ export function TaskForm({
           ...(addTo && { list_id: addTo.list_id }),
           is_goal: false,
           goal_last: new Date(),
+          ...repeatValues(),
           ...(link && { title: link.title, notes: link.description }),
         },
     validation: {
@@ -74,6 +88,15 @@ export function TaskForm({
       action_value: (v): string | undefined => actionValueError(values.action_type, v),
       goal_total: (v): string | undefined => (values.is_goal ? goalValueError("total", v) : undefined),
       goal_current: (v): string | undefined => (values.is_goal ? goalValueError("current", v) : undefined),
+      // 2Do can't repeat a task without dates, and clearing a repeating task's dates drops its repeat.
+      repeat: (v): string | undefined =>
+        v && v !== "none" && !values.start && !values.due ? "Set a start or due date to repeat" : undefined,
+      repeat_interval: (v): string | undefined =>
+        values.repeat === "custom" ? repeatValueError("interval", v) : undefined,
+      repeat_count: (v): string | undefined =>
+        repeats && values.repeat_end === "after_count" ? repeatValueError("count", v) : undefined,
+      repeat_until: (v): string | undefined =>
+        repeats && values.repeat_end === "on_date" && !v ? "Required" : undefined,
     },
     async onSubmit(v) {
       try {
@@ -104,6 +127,8 @@ export function TaskForm({
       }
     },
   });
+
+  const repeats = !!values.repeat && values.repeat !== "none";
 
   // A project or checklist put in another becomes a normal task in 2Do, so they aren't offered one.
   const canNest = !task || task.task_type === "normal";
@@ -199,6 +224,69 @@ export function TaskForm({
         <>
           <Form.DatePicker title="Start" {...itemProps.start} />
           <Form.DatePicker title="Due" {...itemProps.due} />
+          {values.repeat !== undefined && (
+            <Form.Dropdown title="Repeat" {...itemProps.repeat}>
+              <Form.Dropdown.Item value="none" title="Never" />
+              <Form.Dropdown.Item value="daily" title="Daily" />
+              <Form.Dropdown.Item value="weekdays" title="Weekdays" />
+              <Form.Dropdown.Item value="weekly" title="Weekly" />
+              <Form.Dropdown.Item value="monthly" title="Monthly" />
+              <Form.Dropdown.Item value="yearly" title="Yearly" />
+              <Form.Dropdown.Item value="custom" title="Custom" />
+            </Form.Dropdown>
+          )}
+          {values.repeat === "custom" && (
+            <>
+              <Form.TextField title="Every" placeholder="2" {...itemProps.repeat_interval} />
+              <Form.Dropdown title="Unit" {...itemProps.repeat_unit}>
+                <Form.Dropdown.Item value="day" title="Days" />
+                <Form.Dropdown.Item value="week" title="Weeks" />
+                <Form.Dropdown.Item value="month" title="Months" />
+                <Form.Dropdown.Item value="year" title="Years" />
+              </Form.Dropdown>
+            </>
+          )}
+          {values.repeat === "weekly" && (
+            <Form.TagPicker title="On" placeholder="The date's weekday" {...itemProps.repeat_days}>
+              {WEEKDAYS.map((d) => (
+                <Form.TagPicker.Item key={d} value={d} title={capitalize(d)} />
+              ))}
+            </Form.TagPicker>
+          )}
+          {values.repeat === "monthly" && (
+            <Form.Dropdown title="On" {...itemProps.repeat_ordinal}>
+              <Form.Dropdown.Item value="" title="The Date's Day of the Month" />
+              {ORDINALS.map(([value, title]) => (
+                <Form.Dropdown.Item key={value} value={value} title={`The ${title}`} />
+              ))}
+            </Form.Dropdown>
+          )}
+          {values.repeat === "monthly" && values.repeat_ordinal && (
+            <Form.Dropdown title="Weekday" {...itemProps.repeat_weekday}>
+              {WEEKDAYS.map((d) => (
+                <Form.Dropdown.Item key={d} value={d} title={capitalize(d)} />
+              ))}
+            </Form.Dropdown>
+          )}
+          {repeats && (
+            <>
+              <Form.Dropdown title="Repeat From" {...itemProps.repeat_from}>
+                <Form.Dropdown.Item value="due_date" title="Due Date" />
+                <Form.Dropdown.Item value="completion" title="Completion Date" />
+              </Form.Dropdown>
+              <Form.Dropdown title="Ends" {...itemProps.repeat_end}>
+                <Form.Dropdown.Item value="never" title="Never" />
+                <Form.Dropdown.Item value="after_count" title="After a Number of Times" />
+                <Form.Dropdown.Item value="on_date" title="On a Date" />
+              </Form.Dropdown>
+              {values.repeat_end === "after_count" && (
+                <Form.TextField title="Times" placeholder="10" {...itemProps.repeat_count} />
+              )}
+              {values.repeat_end === "on_date" && (
+                <Form.DatePicker title="End Date" type={Form.DatePicker.Type.Date} {...itemProps.repeat_until} />
+              )}
+            </>
+          )}
         </>
       )}
       <Form.Dropdown title="Priority" {...itemProps.priority}>
