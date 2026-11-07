@@ -34,14 +34,16 @@ import { checkNotes, joinNotes, splitNotes } from "./notes";
 import { dayFirst } from "./preferences";
 
 // Creates a task, or edits `task` when given. `link` prefills a new task from a web page, with
-// the page as the task's link.
+// the page as the task's link. `parentId` is the project or checklist an edited item is in.
 export function TaskForm({
   task,
   link,
+  parentId,
   onSaved,
 }: {
   task?: Task;
   link?: PageInfo & { url: string };
+  parentId?: string;
   onSaved?: () => void;
 }) {
   const { pop } = useNavigation();
@@ -52,7 +54,7 @@ export function TaskForm({
 
   const { handleSubmit, itemProps, values, setValue } = useForm<TaskValues>({
     initialValues: task
-      ? taskToValues(task)
+      ? { ...taskToValues(task), parent_id: parentId ?? "" }
       : {
           action_type: link ? "url" : "none",
           action_value: link?.url ?? "",
@@ -83,7 +85,7 @@ export function TaskForm({
           });
           if (!ok) return;
         }
-        await saveTask(await applyGoal(full, getPreferenceValues<GoalPrefs>()), current);
+        await saveTask(await applyGoal(full, getPreferenceValues<GoalPrefs>()), current, parentId);
         if (task) {
           await showToast({ style: Toast.Style.Success, title: "Task updated" });
           onSaved?.();

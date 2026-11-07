@@ -233,7 +233,8 @@ export async function applyGoal(v: TaskValues, p: GoalPrefs): Promise<TaskValues
 
 // Creates a task, or updates `task` (moving it if the list changed). With `parent_id`, the task goes
 // into that project or checklist instead: 2Do takes exactly one destination, list or parent.
-export async function saveTask(v: TaskValues, task?: Task) {
+// `parentId` is the project or checklist an edited task is already in, if any.
+export async function saveTask(v: TaskValues, task?: Task, parentId?: string) {
   const fields = {
     title: v.title,
     priority: v.priority,
@@ -264,8 +265,10 @@ export async function saveTask(v: TaskValues, task?: Task) {
     ...(v.action_type !== undefined &&
       (action.type !== task.action.type || action.value !== task.action.value) && { action }),
   });
-  if (v.parent_id) await twoDo("move_task", { task_id: task.task_id, parent_task_id: v.parent_id });
-  else if (v.list_id !== task.list_id) await twoDo("move_task", { task_id: task.task_id, list_id: v.list_id });
+  if (v.parent_id) {
+    if (v.parent_id !== parentId) await twoDo("move_task", { task_id: task.task_id, parent_task_id: v.parent_id });
+  } else if (parentId || v.list_id !== task.list_id)
+    await twoDo("move_task", { task_id: task.task_id, list_id: v.list_id });
 }
 
 // Projects and checklists in a list, which a task can be put in. 2Do turns a project or checklist
