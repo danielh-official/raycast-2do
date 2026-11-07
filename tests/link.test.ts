@@ -124,6 +124,11 @@ describe("parsePage", () => {
     expect(parsePage(html)).toEqual({ title: "Tom & Jerry – 😀", description: '"Hi" there' });
   });
 
+  it("decodes every named entity", () => {
+    const html = `<title>Caf&eacute; &mdash; Menu</title><meta name="description" content="&copy; 2026 &hellip;">`;
+    expect(parsePage(html)).toEqual({ title: "Café — Menu", description: "© 2026 …" });
+  });
+
   it("returns empty strings when the page has neither", () => {
     expect(parsePage("<html><body>Hello</body></html>")).toEqual({ title: "", description: "" });
   });
