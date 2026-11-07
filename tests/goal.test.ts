@@ -1,6 +1,8 @@
 import { describe, expect, it } from "vitest";
 import {
   appendGoal,
+  deleteGoalEntry,
+  editGoalEntry,
   formatGoal,
   goalProgress,
   logProgress,
@@ -64,6 +66,33 @@ describe("parseGoal", () => {
 
   it("is undefined without a @goal line", () => {
     expect(parse("Just notes\n2026-11-06: 1")).toBeUndefined();
+  });
+});
+
+describe("editGoalEntry and deleteGoalEntry", () => {
+  const notes = "@goal: 10\n\nNov 6, 2026 8 am: 3\n2026-11-05: 4\n\n@endgoal";
+  const [timed, dateOnly] = parse(notes)!.entries;
+
+  it("changes the amount in place, keeping the timestamp as written", () => {
+    expect(editGoalEntry(notes, timed, { day: "2026-11-06", amount: 5 }, "MMMM d, yyyy", false)).toBe(
+      notes.replace("8 am: 3", "8 am: 5"),
+    );
+  });
+
+  it("rewrites the line date-only in the chosen format when the day changes", () => {
+    expect(editGoalEntry(notes, dateOnly, { day: "2026-11-04", amount: -1 }, "MMMM d, yyyy", false)).toBe(
+      notes.replace("2026-11-05: 4", "November 4, 2026: -1"),
+    );
+  });
+
+  it("deletes just that line", () => {
+    expect(deleteGoalEntry(notes, timed, false)).toBe(notes.replace("Nov 6, 2026 8 am: 3\n", ""));
+  });
+
+  it("refuses when the entry changed since it was read", () => {
+    const changed = notes.replace("2026-11-05: 4", "2026-11-05: 6");
+    expect(editGoalEntry(changed, dateOnly, { day: "2026-11-05", amount: 1 }, "yyyy-MM-dd", false)).toBeUndefined();
+    expect(deleteGoalEntry(changed, dateOnly, false)).toBeUndefined();
   });
 });
 
