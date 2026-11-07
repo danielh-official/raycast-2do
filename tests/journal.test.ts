@@ -1,5 +1,11 @@
 import { describe, expect, it } from "vitest";
-import { addJournalEntry, formatEntry, parseJournal } from "../extension/src/journal";
+import {
+  addJournalEntry,
+  deleteJournalEntry,
+  editJournalEntry,
+  formatEntry,
+  parseJournal,
+} from "../extension/src/journal";
 
 const block = [
   "@journal",
@@ -51,6 +57,48 @@ describe("parseJournal", () => {
   it("is undefined without a block, and empty for an empty one", () => {
     expect(parse("Just notes")).toBeUndefined();
     expect(parse("@journal\n\n@endjournal")).toEqual([]);
+  });
+});
+
+describe("editJournalEntry and deleteJournalEntry", () => {
+  const [oneLine, multi, older] = parse(block)!;
+  const edit = (entry: typeof oneLine, change: { text: string; when: Date; hasTime: boolean }, notes = block) =>
+    editJournalEntry(notes, entry, change, "MMMM d, yyyy", false);
+
+  it("replaces the text in place when the moment is unchanged, keeping the timestamp as written", () => {
+    expect(edit(oneLine, { text: "Left a voicemail", when: new Date(oneLine.at), hasTime: true })).toBe(
+      block.replace("Called the president, went to voicemail", "Left a voicemail"),
+    );
+  });
+
+  it("turns a one-line entry into a multi-line one with blank lines around it", () => {
+    expect(
+      edit(older, { text: "Emailed the office\nNo reply yet", when: new Date(older.at), hasTime: false }),
+    ).toContain("November 4, 2026\n\nEmailed the office\nNo reply yet\n\n@endjournal");
+  });
+
+  it("moves an entry into time order when its moment changes", () => {
+    const moved = edit(oneLine, { text: "Called the president", when: new Date(2026, 10, 3, 9, 0), hasTime: true })!;
+    expect(parse(moved)?.map((e) => e.text.split("\n")[0])).toEqual([
+      "Called again, discussed policy.",
+      "Emailed the office",
+      "Called the president",
+    ]);
+  });
+
+  it("deletes an entry without leaving doubled blank lines", () => {
+    const deleted = deleteJournalEntry(block, multi, false)!;
+    expect(parse(deleted)?.map((e) => e.text)).toEqual([
+      "Called the president, went to voicemail",
+      "Emailed the office",
+    ]);
+    expect(deleted).not.toContain("\n\n\n");
+  });
+
+  it("refuses when the entry changed since it was read", () => {
+    const changed = block.replace("Nov 6, 2026 11:00 am", "Nov 6, 2026 11:30 am");
+    expect(edit(oneLine, { text: "x", when: new Date(oneLine.at), hasTime: true }, changed)).toBeUndefined();
+    expect(deleteJournalEntry(changed, oneLine, false)).toBeUndefined();
   });
 });
 
