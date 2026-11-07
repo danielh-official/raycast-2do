@@ -147,7 +147,7 @@ Details:
   - Smart lists use one extra `query_tasks` per smart list, matching task IDs. That's about 0.3 s for 10 smart lists.
   - If the chosen filter no longer has tasks in the scope, it falls back to All Lists.
 - [x] The task row and its actions moved to `task-item.tsx`, shared by View Tasks and the scoped commands. The shared scoped view is `scoped-tasks.tsx`.
-- [ ] In Paused, filter by a paused tag *and* a list or smart list at the same time. Planned (see "Next").
+- [x] In Paused, filter by a paused tag *and* a list or smart list at the same time (see "Next").
 
 ## Notes convention (set by goals, the template for dated notes)
 
@@ -309,7 +309,7 @@ The data, checked on Nov 6 (54 open tasks):
 In this order, one commit each.
 
 - [x] **New Tags field** in Add Task and Edit Task, under Tags: comma-separated names for tags not yet in 2Do. Saving sends them as `tag_update: { operation: "set", tag_ids, tag_names }`, which creates the missing ones. Names matching an existing tag reuse it.
-- [ ] **Paused tag and list together** in View Tasks: Paused. Raycast allows one search-bar dropdown, so the dropdown keeps the lists and smart lists, and a **Filter by Paused Tag** action (⌘T) sets the tag. The navigation title shows the tag, and the dropdown offers only lists with tasks under it.
+- [x] **Paused tag and list together** in View Tasks: Paused. Raycast allows one search-bar dropdown, so the dropdown keeps the lists and smart lists, and a **Filter by Paused Tag** action (⌘T) sets the tag. The navigation title shows the tag, and the dropdown offers only lists with tasks under it. A tag with no tasks left falls back to all paused tags.
 - [ ] **Repeat settings** in Add Task and Edit Task. Checked on a scratch task:
   - `frequency`: `daily`, `weekdays`, `weekly` (optional `weekdays`), `monthly` (optional `weekday` with an integer `ordinal`, `-1` for last), `yearly`, or `custom` with `interval` and `unit` (`day`, `week`, `month`, `year`). `custom` takes no `weekdays`, and every 1 year comes back as `yearly`.
   - `based_on` is required: `due_date` or `completion`.
