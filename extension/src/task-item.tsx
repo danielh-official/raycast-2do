@@ -30,7 +30,7 @@ import { goalProgress, parseGoal } from "./goal";
 import { parseJournal } from "./journal";
 import { AddJournalEntryForm, JournalView } from "./journal-view";
 import { ItemsView } from "./items-view";
-import { GoalProgressView, LogProgressForm } from "./log-progress";
+import { CompleteGoalForm, GoalProgressView, LogProgressForm } from "./log-progress";
 import { TaskForm } from "./task-form";
 import { checkNotes, fixNotes } from "./notes";
 import { dayFirst } from "./preferences";
@@ -333,6 +333,13 @@ export function TaskItem({
               <Action title="Complete Task and Its Items" onAction={() => completeWithItems(false)} />
               <Action title="Complete Task and Cancel Remaining Items" onAction={() => completeWithItems(true)} />
             </ActionPanel.Submenu>
+          ) : goal && progress && !t.completed && !isParent && (progress.done < goal.total || isRepeating(t)) ? (
+            <Action.Push
+              title="Complete Task"
+              icon={Icon.CheckCircle}
+              shortcut={{ modifiers: ["cmd"], key: "d" }}
+              target={<CompleteGoalForm task={t} onCompleted={onChange} />}
+            />
           ) : (
             <Action
               title={t.completed ? "Mark as Not Done" : "Complete Task"}

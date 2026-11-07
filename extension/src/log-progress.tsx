@@ -10,7 +10,7 @@ import {
   useNavigation,
 } from "@raycast/api";
 import { showFailureToast, useCachedPromise, useForm } from "@raycast/utils";
-import { GoalPrefs, Task, twoDo, ymd } from "./2do";
+import { completeGoalTask, GoalPrefs, isRepeating, Task, twoDo, ymd } from "./2do";
 import { DisplayFormat, formatDisplay } from "./dates";
 import { checkGoal, goalProgress, logProgress, parseGoal, progressHistory } from "./goal";
 import { dayFirst } from "./preferences";
@@ -75,6 +75,58 @@ export function LogProgressForm({ task, onLogged }: { task: Task; onLogged: () =
       <Form.Description title="Task" text={task.title} />
       <Form.TextField title={unit ? `Amount (${unit})` : "Amount"} placeholder="1" {...itemProps.amount} />
       <Form.DatePicker title="Date" type={Form.DatePicker.Type.Date} {...itemProps.date} />
+    </Form>
+  );
+}
+
+// Completing a goal task that isn't reached, or repeats: whether to log what's left first, and for a
+// repeating task whether the next occurrence keeps the running total or starts fresh.
+export function CompleteGoalForm({ task, onCompleted }: { task: Task; onCompleted: () => void }) {
+  const { pop } = useNavigation();
+  const goal = parseGoal(task.notes, dayFirst())!;
+  const remaining = Math.round((goal.total - goalProgress(goal, ymd(new Date())).done) * 1000) / 1000;
+  const repeating = isRepeating(task);
+  const { handleSubmit, itemProps } = useForm<{ logRemaining: boolean; next: string }>({
+    initialValues: { logRemaining: false, next: "keep" },
+    async onSubmit({ logRemaining, next }) {
+      try {
+        const { goalDateFormat } = getPreferenceValues<GoalPrefs>();
+        await completeGoalTask(
+          task,
+          { logRemaining: !!logRemaining, fresh: next === "fresh" },
+          { goalDateFormat, dayFirst: dayFirst() },
+        );
+        onCompleted();
+        pop();
+        await showToast({ style: Toast.Style.Success, title: "Completed" });
+      } catch (error) {
+        await showFailureToast(error, { title: "Could not complete task" });
+      }
+    },
+  });
+
+  return (
+    <Form
+      navigationTitle="Complete Goal Task"
+      actions={
+        <ActionPanel>
+          <Action.SubmitForm title="Complete Task" icon={Icon.CheckCircle} onSubmit={handleSubmit} />
+        </ActionPanel>
+      }
+    >
+      <Form.Description title="Task" text={task.title} />
+      {remaining > 0 && (
+        <Form.Checkbox
+          label={`Log the remaining ${remaining}${goal.unit ? ` ${goal.unit}` : ""} for today`}
+          {...itemProps.logRemaining}
+        />
+      )}
+      {repeating && (
+        <Form.Dropdown title="Next Occurrence" {...itemProps.next}>
+          <Form.Dropdown.Item value="keep" title="Keep the running total" />
+          <Form.Dropdown.Item value="fresh" title="Start fresh from 0" />
+        </Form.Dropdown>
+      )}
     </Form>
   );
 }

@@ -78,6 +78,16 @@ export function setGoalHeader(notes: string, total: number, unit: string) {
   return lines.join("\n");
 }
 
+// Empties the goal's entries in place, keeping its total and unit: a fresh start.
+export function resetGoal(notes: string, dayFirst?: boolean) {
+  const lines = notes.split("\n");
+  const block = findBlock(lines);
+  const goal = parseGoal(notes, dayFirst);
+  if (!block || !goal) return notes;
+  lines.splice(block.start, block.end - block.start + 1, formatGoal(goal.total, goal.unit, [], "yyyy-MM-dd"));
+  return lines.join("\n");
+}
+
 // Removes the block and one blank line beside it: the one before, or after when it's at the top.
 export function removeGoal(notes: string) {
   const lines = notes.split("\n");
