@@ -79,6 +79,7 @@ The extension writes one date-only line per day, newest first, in the **Goal Dat
 - **Make a goal:** check **Add a goal** in Add Task or Edit Task, and fill in **Total**, **Units** and, optionally, **Current**. When Current is above 0, **Last Completed** sets its date (today by default). To also tag goals in 2Do, set **Goal Tag** in the extension's preferences to a tag that already exists in 2Do. It's empty by default, so goals aren't tagged.
 - **Change a goal:** Edit Task changes Total and Units, keeping its history. Unchecking **Add a goal** removes the goal and its history, after asking.
 - **Log Progress (⌘G):** add an amount for a day (today by default). Logging twice on one day adds to that day's date-only line. When the total is reached, a toast offers to complete the task.
+- **Completing a goal (⌘D):** if the goal isn't reached, or the task repeats, a short form asks whether to log what's left for today first, and for a repeating task whether the next occurrence keeps the running total or starts fresh from 0. The completed occurrence keeps its history either way.
 - **Show Progress (⇧⌘G):** the goal's summary ("24 of 40 pages · 60% · +6 today"), then each entry, newest first, with its amount and the running total. Dates follow the same display preferences as Show Journal.
 - **In task lists:** a goal task shows a progress ring, with today's share in a second color, and "13/32 pages".
 
@@ -109,7 +110,7 @@ If notes have more than one goal or journal block, the topmost of each is used, 
 
 If a goal or journal's syntax is off, the task shows a ⚠️ explaining what's ignored. Examples: a missing `@endgoal` or `@endjournal`, `@goal` without a total, or a line that isn't a readable entry. A missing end line can be fixed with **Fix Goal and Journal Syntax** on the task. Log Progress and Add Journal Entry offer to fix it before they write.
 
-Repeating tasks keep their notes when 2Do creates the next occurrence, so a repeating goal carries its progress forward.
+Repeating tasks keep their notes when 2Do creates the next occurrence, so a repeating goal carries its progress forward, unless you choose to start fresh when completing it.
 
 ### View Tasks: Today, Now, Later Today, Starred, Scheduled, Paused, Goals, Done
 

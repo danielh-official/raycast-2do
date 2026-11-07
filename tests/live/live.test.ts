@@ -16,6 +16,7 @@ import {
   actionURL,
   applyGoal,
   cancelTask,
+  completeGoalTask,
   completeParent,
   hasStarted,
   isRepeating,
@@ -235,6 +236,20 @@ describe("writing to the live-test tasks", () => {
     });
     const items = (await twoDo<{ tasks: Task[] }>("list_subtasks", { task_id: checklist.task_id })).tasks;
     expect(items.map((t) => t.title)).toContain("Sunglasses");
+  });
+
+  it("completes a repeating goal, logging what's left, with a fresh next occurrence", async () => {
+    const pushups = await find("Daily push-ups");
+    await completeGoalTask(
+      pushups,
+      { logRemaining: true, fresh: true },
+      { goalDateFormat: "MMMM d, yyyy", dayFirst: false },
+    );
+    const copies = (await all()).filter((t) => t.title === pushups.title);
+    const done = copies.find((t) => t.completed)!;
+    const next = copies.find((t) => !t.completed)!;
+    expect(goalProgress(parseGoal(done.notes, false)!, today).done).toBe(50);
+    expect(parseGoal(next.notes, false)).toMatchObject({ total: 50, unit: "push-ups", entries: [] });
   });
 
   it("completes a project and cancels only its open items", async () => {

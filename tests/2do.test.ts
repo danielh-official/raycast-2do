@@ -5,6 +5,7 @@ import {
   applyGoal,
   CancelPrefs,
   cancelTask,
+  completeGoalTask,
   completeParent,
   dateFields,
   GoalPrefs,
@@ -474,6 +475,46 @@ describe("applyGoal", () => {
     expect(await applyGoal({ ...base, is_goal: undefined }, prefs)).toEqual({ ...base, is_goal: undefined });
     expect(await applyGoal({ ...base, is_goal: false }, prefs)).toEqual({ ...base, is_goal: false });
     expect(runAppleScript).not.toHaveBeenCalled();
+  });
+});
+
+describe("completeGoalTask", () => {
+  const today = new Date();
+  const day = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}-${String(today.getDate()).padStart(2, "0")}`;
+  const notes = `@goal: 10 pages\n\n${day}: 4\n\n@endgoal`;
+  const goalTask = { ...task, notes };
+  function fake2Do({ repeating }: { repeating: boolean }) {
+    runAppleScript.mockImplementation(async (_script: string, [command, json]: string[]) => {
+      const args = JSON.parse(json);
+      if (command === "get_task") return JSON.stringify({ task: goalTask });
+      if (command === "complete_task")
+        return JSON.stringify({ task: { ...goalTask, task_id: args.task_id, completed: !repeating } });
+      return "{}";
+    });
+  }
+  const p = { goalDateFormat: "yyyy-MM-dd" as const, dayFirst: false };
+  const updates = () =>
+    sent()
+      .filter(([c]) => c === "update_task")
+      .map(([, a]) => a.notes);
+
+  it("logs what's left before completing", async () => {
+    fake2Do({ repeating: false });
+    await completeGoalTask(goalTask, { logRemaining: true, fresh: false }, p);
+    expect(updates()).toEqual([notes.replace(`${day}: 4`, `${day}: 10`)]);
+    expect(sent().at(-1)?.[0]).toBe("complete_task");
+  });
+
+  it("completes without logging, and leaves a non-repeating task's goal alone", async () => {
+    fake2Do({ repeating: false });
+    await completeGoalTask(goalTask, { logRemaining: false, fresh: true }, p);
+    expect(updates()).toEqual([]);
+  });
+
+  it("starts the next occurrence of a repeating goal fresh", async () => {
+    fake2Do({ repeating: true });
+    await completeGoalTask(goalTask, { logRemaining: false, fresh: true }, p);
+    expect(updates()).toEqual(["@goal: 10 pages\n\n@endgoal"]);
   });
 });
 

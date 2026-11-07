@@ -7,6 +7,7 @@ import {
   parseGoal,
   progressHistory,
   removeGoal,
+  resetGoal,
   setGoalHeader,
 } from "../extension/src/goal";
 
@@ -63,6 +64,13 @@ describe("parseGoal", () => {
 
   it("is undefined without a @goal line", () => {
     expect(parse("Just notes\n2026-11-06: 1")).toBeUndefined();
+  });
+});
+
+describe("resetGoal", () => {
+  it("empties the entries, keeping the total, unit, and the rest of the notes", () => {
+    expect(resetGoal(`Before\n\n${block}\n\nAfter`, false)).toBe("Before\n\n@goal: 32 pages\n\n@endgoal\n\nAfter");
+    expect(resetGoal("No goal", false)).toBe("No goal");
   });
 });
 
