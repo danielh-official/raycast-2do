@@ -332,7 +332,7 @@ In this order, one commit each.
 
 ## Releases
 
-Adopted: a `release` branch for Store PRs, released in small chunks. The process is in [AGENTS.md](AGENTS.md#releases), and what ships when is in [RELEASE_SCHEDULE.md](RELEASE_SCHEDULE.md). Screenshots wait until a release needs them.
+Adopted: `main` holds the Store version plus the release in progress, and `experimental` holds the rest of the work, rebased onto `main`, released to the Store in small chunks. The process is in [AGENTS.md](AGENTS.md#releases). Screenshots wait until a release needs them.
 
 ---
 
