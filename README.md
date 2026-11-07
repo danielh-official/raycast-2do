@@ -26,3 +26,19 @@ cd tests
 npm install
 npm test
 ```
+
+### Live tests
+
+The extension relies on how 2Do's automation behaves. `tests/live/` checks those assumptions against the real 2Do. Run it now and then, especially after 2Do updates. It never runs with `npm test`.
+
+1. Create a list named **Live Testing** in 2Do, and keep it for the live tests only. 2Do's automation can't create lists.
+2. Run the suite:
+
+```bash
+cd tests
+npm run test:live
+```
+
+It empties the Live Testing list, seeds it with one task per feature, covering both happy and unhappy paths (`live/seed.js`), then runs `live/live.test.ts`, which changes those tasks. If there's no Live Testing list, it stops before changing anything.
+
+For what only Raycast's interface shows, like rings, warnings, dropdowns and forms, go through [tests/live/CHECKLIST.md](tests/live/CHECKLIST.md) by hand.
