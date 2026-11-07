@@ -43,7 +43,10 @@ export function TaskForm({
     },
     async onSubmit(v) {
       try {
-        await saveTask(v, task);
+        // Compare with the task as it is now, not as the list loaded it: an action or list changed in
+        // 2Do since still counts as changed when the form sets it back.
+        const current = task && (await twoDo<{ task: Task }>("get_task", { task_id: task.task_id })).task;
+        await saveTask(v, current);
         if (task) {
           await showToast({ style: Toast.Style.Success, title: "Task updated" });
           onSaved?.();
