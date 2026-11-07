@@ -35,15 +35,18 @@ import { dayFirst } from "./preferences";
 
 // Creates a task, or edits `task` when given. `link` prefills a new task from a web page, with
 // the page as the task's link. `parentId` is the project or checklist an edited item is in.
+// `addTo` adds a new item to that project or checklist; checklist items have no dates.
 export function TaskForm({
   task,
   link,
   parentId,
+  addTo,
   onSaved,
 }: {
   task?: Task;
   link?: PageInfo & { url: string };
   parentId?: string;
+  addTo?: Task;
   onSaved?: () => void;
 }) {
   const { pop } = useNavigation();
@@ -58,7 +61,8 @@ export function TaskForm({
       : {
           action_type: link ? "url" : "none",
           action_value: link?.url ?? "",
-          parent_id: "",
+          parent_id: addTo?.task_id ?? "",
+          ...(addTo && { list_id: addTo.list_id }),
           is_goal: false,
           goal_last: new Date(),
           ...(link && { title: link.title, notes: link.description }),
@@ -76,7 +80,7 @@ export function TaskForm({
         // still counts as changed when the form sets it back.
         const current = task && (await twoDo<{ task: Task }>("get_task", { task_id: task.task_id })).task;
         const blocks = current ? splitNotes(current.notes).blocks : [];
-        const full = { ...v, notes: joinNotes(v.notes ?? "", blocks) };
+        const full = { ...v, notes: joinNotes(v.notes ?? "", blocks), ...(addTo && { parent_id: addTo.task_id }) };
         if (!v.is_goal && parseGoal(full.notes)) {
           const ok = await confirmAlert({
             title: "Remove the goal?",
@@ -86,8 +90,8 @@ export function TaskForm({
           if (!ok) return;
         }
         await saveTask(await applyGoal(full, getPreferenceValues<GoalPrefs>()), current, parentId);
-        if (task) {
-          await showToast({ style: Toast.Style.Success, title: "Task updated" });
+        if (task || addTo) {
+          await showToast({ style: Toast.Style.Success, title: task ? "Task updated" : "Item added" });
           onSaved?.();
           pop();
         } else {
@@ -102,16 +106,16 @@ export function TaskForm({
   // A project or checklist put in another becomes a normal task in 2Do, so they aren't offered one.
   const canNest = !task || task.task_type === "normal";
   const parents = useCachedPromise(listParents, [values.list_id ?? ""], {
-    execute: canNest && !!values.list_id,
+    execute: canNest && !addTo && !!values.list_id,
   });
 
   return (
     <Form
-      navigationTitle={task ? "Edit Task" : undefined}
+      navigationTitle={task ? "Edit Task" : addTo ? `Add Item to ${addTo.title}` : undefined}
       isLoading={lists.isLoading || tags.isLoading}
       actions={
         <ActionPanel>
-          <Action.SubmitForm title={task ? "Save Task" : "Add Task"} onSubmit={handleSubmit} />
+          <Action.SubmitForm title={task ? "Save Task" : addTo ? "Add Item" : "Add Task"} onSubmit={handleSubmit} />
         </ActionPanel>
       }
     >
@@ -154,19 +158,21 @@ export function TaskForm({
           {...itemProps.action_value}
         />
       )}
-      <Form.Dropdown
-        title="List"
-        storeValue={!task}
-        {...itemProps.list_id}
-        onChange={(listId) => {
-          itemProps.list_id.onChange?.(listId);
-          if (listId !== values.list_id) setValue("parent_id", "");
-        }}
-      >
-        {lists.data?.map((l) => (
-          <Form.Dropdown.Item key={l.list_id} value={l.list_id} title={l.title} />
-        ))}
-      </Form.Dropdown>
+      {!addTo && (
+        <Form.Dropdown
+          title="List"
+          storeValue={!task}
+          {...itemProps.list_id}
+          onChange={(listId) => {
+            itemProps.list_id.onChange?.(listId);
+            if (listId !== values.list_id) setValue("parent_id", "");
+          }}
+        >
+          {lists.data?.map((l) => (
+            <Form.Dropdown.Item key={l.list_id} value={l.list_id} title={l.title} />
+          ))}
+        </Form.Dropdown>
+      )}
       {(parents.data?.length ?? 0) > 0 && (
         <Form.Dropdown title="Project or Checklist" {...itemProps.parent_id}>
           <Form.Dropdown.Item value="" title="None" icon={Icon.Minus} />
@@ -180,8 +186,12 @@ export function TaskForm({
           ))}
         </Form.Dropdown>
       )}
-      <Form.DatePicker title="Start" {...itemProps.start} />
-      <Form.DatePicker title="Due" {...itemProps.due} />
+      {addTo?.task_type !== "checklist" && (
+        <>
+          <Form.DatePicker title="Start" {...itemProps.start} />
+          <Form.DatePicker title="Due" {...itemProps.due} />
+        </>
+      )}
       <Form.Dropdown title="Priority" {...itemProps.priority}>
         <Form.Dropdown.Item value="none" title="None" />
         <Form.Dropdown.Item value="low" title="Low" />
