@@ -82,6 +82,12 @@
       "mode": "view"
     },
     {
+      "name": "view-tasks-deadlines",
+      "title": "View Tasks: Deadlines",
+      "description": "Browse open 2Do tasks with a due date, overdue first, then by due date, optionally narrowed to a list or smart list.",
+      "mode": "view"
+    },
+    {
       "name": "view-tasks-done",
       "title": "View Tasks: Done",
       "description": "Browse completed 2Do tasks, optionally narrowed to a list or smart list.",

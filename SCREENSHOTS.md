@@ -36,6 +36,7 @@ The edge cases are in a separate **Live Testing** list, for `npm run test:live`.
 - [ ] **Log Progress:** the Amount and Date form for a goal task.
 - [ ] **Task actions:** the Actions panel (⌘K) on a task, showing Run Action (⌘L), Choose Link (⇧⌘L), Log Progress (⌘G), Add Journal Entry (⌘J), Cancel Task (⇧⌘D) and the rest.
 - [ ] **Paused:** View Tasks: Paused, filtered to the Someday tag (⌘T), with "(Someday)" in the title.
+- [ ] **Deadlines:** View Tasks: Deadlines, with "Return the library books" under Overdue and the upcoming tasks below it.
 - [ ] **Cancelled in Done:** View Tasks: Done, with cancelled tasks showing a gray ✕ next to completed ones.
 
 ## Suggested final six

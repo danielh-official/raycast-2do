@@ -8,6 +8,7 @@ import {
   completeGoalTask,
   completeParent,
   dateFields,
+  deadlineSections,
   GoalPrefs,
   hasStarted,
   inCancelList,
@@ -719,6 +720,29 @@ describe("reopenTask", () => {
   it("moves it to the chosen list", async () => {
     await reopenTask({ ...task, completed: true }, prefs, "home");
     expect(sent()[1]).toEqual(["move_task", { task_id: "t1", list_id: "home" }]);
+  });
+});
+
+describe("deadlineSections", () => {
+  it("puts overdue tasks first, each section by due date, timed before full-day on the same day", () => {
+    const due = (task_id: string, due_date: string, due_time?: string, is_overdue = false): Task => ({
+      ...task,
+      task_id,
+      due_date,
+      due_time,
+      presentation: { is_overdue },
+    });
+    const sections = deadlineSections([
+      due("later", "2026-11-20"),
+      due("old", "2026-11-01", undefined, true),
+      due("today", "2026-11-07"),
+      due("today 9am", "2026-11-07", "09:00"),
+      due("older", "2026-10-15", "18:00", true),
+    ]);
+    expect(sections.map(([title, tasks]) => [title, tasks.map((t) => t.task_id)])).toEqual([
+      ["Overdue", ["older", "old"]],
+      ["Upcoming", ["today 9am", "today", "later"]],
+    ]);
   });
 });
 

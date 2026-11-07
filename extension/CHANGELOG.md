@@ -7,7 +7,8 @@
 - Run a task's action (⌘L), or choose from all of its links (⇧⌘L)
 - Cancel Task action (⇧⌘D), with preferences for what cancelling does
 - Mark as Not Done on a cancelled task removes the cancel tag, or moves it out of the Cancel List
-- View Tasks: Today, Now, Later Today, Starred, Scheduled, Paused, Goals, and Done commands, each narrowed by the lists and smart lists that have tasks in that scope
+- View Tasks: Today, Now, Later Today, Starred, Scheduled, Paused, Goals, Deadlines, and Done commands, each narrowed by the lists and smart lists that have tasks in that scope
+- View Tasks: Deadlines lists tasks with a due date, overdue first, then by due date
 - View Tasks: Paused filters by a paused tag (⌘T) and a list or smart list together
 - Goals: track progress toward a number in a task's notes, log progress (⌘G), see a progress ring, and list entries (⇧⌘G), optionally tagged in 2Do
 - Edit or delete goal and journal entries from their lists

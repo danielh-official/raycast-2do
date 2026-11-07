@@ -18,6 +18,7 @@ import {
   cancelTask,
   completeGoalTask,
   completeParent,
+  deadlineSections,
   hasStarted,
   isRepeating,
   listParents,
@@ -134,6 +135,18 @@ describe("reading the live-test tasks", () => {
     };
     expect(await items("Plan the team offsite")).toBe("1/3");
     expect(await items("Pack for the trip")).toBe("2/4");
+  });
+
+  it("finds exactly the open tasks with a due date for Deadlines, with overdue ones first", async () => {
+    const { tasks } = await twoDo<{ tasks: Task[] }>("query_tasks", {
+      list_id: listId,
+      include_completed: false,
+      due_on_or_before: "9999-12-31",
+    });
+    const open = (await all()).filter((t) => !t.completed && t.due_date);
+    expect(tasks.map((t) => t.task_id).sort()).toEqual(open.map((t) => t.task_id).sort());
+    const [[, overdue]] = deadlineSections(tasks);
+    expect(overdue.map((t) => t.title)).toContain("Pay the electricity bill (overdue)");
   });
 });
 
