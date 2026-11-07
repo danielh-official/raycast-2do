@@ -330,6 +330,20 @@ In this order, one commit each.
 - Whether `create_task` with a `url` action accepts custom schemes (`readdle-spark://`, `x-apple-health://`). The form accepts them; creating one hasn't been tested.
 - Dates chrono-node doesn't read: compact dates (20261106), "14h05", ISO weeks, and non-English month names.
 
+## Considering
+
+**A release branch for Store PRs.** Everything since the Store release is too much for one PR. The scheme:
+
+- **`main`** is the testing ground and for personal use. Work lands there first, as now.
+- **A release branch** is dedicated to tailoring changes for an optimal review:
+  1. Diff `main` against what's currently released in the Store.
+  2. Separate the diff into chunks.
+  3. Put only the first chunk to release on the release branch.
+  4. Open the PR that updates the Store page from the release branch.
+- Repeat for the next chunk once the previous one is merged.
+
+Screenshots wait until then.
+
 ---
 
 ## Open questions
