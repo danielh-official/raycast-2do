@@ -1,7 +1,18 @@
-import { Action, ActionPanel, Form, getPreferenceValues, showToast, Toast, useNavigation } from "@raycast/api";
-import { showFailureToast, useForm } from "@raycast/utils";
+import {
+  Action,
+  ActionPanel,
+  Detail,
+  Form,
+  getPreferenceValues,
+  Icon,
+  showToast,
+  Toast,
+  useNavigation,
+} from "@raycast/api";
+import { showFailureToast, useCachedPromise, useForm } from "@raycast/utils";
 import { GoalPrefs, Task, twoDo, ymd } from "./2do";
-import { goalProgress, logProgress, parseGoal } from "./goal";
+import { DisplayFormat, formatDisplay } from "./dates";
+import { checkGoal, goalProgress, logProgress, parseGoal, progressHistory } from "./goal";
 import { dayFirst } from "./preferences";
 import { remediate } from "./remediate";
 
@@ -65,5 +76,71 @@ export function LogProgressForm({ task, onLogged }: { task: Task; onLogged: () =
       <Form.TextField title={unit ? `Amount (${unit})` : "Amount"} placeholder="1" {...itemProps.amount} />
       <Form.DatePicker title="Date" type={Form.DatePicker.Type.Date} {...itemProps.date} />
     </Form>
+  );
+}
+
+const signed = (n: number) => `${n > 0 ? "+" : ""}${n}`;
+
+// A goal's progress entries, newest first, with a running total, and dates shown per the Entry
+// Display Date preferences. Reloads the task so progress logged from here shows up.
+export function GoalProgressView({ task: initial, onChange }: { task: Task; onChange: () => void }) {
+  const { data: task = initial, revalidate } = useCachedPromise(
+    (id: string) => twoDo<{ task: Task }>("get_task", { task_id: id }).then((r) => r.task),
+    [initial.task_id],
+    { initialData: initial },
+  );
+  const { journalDisplayFormat, journalRelativeTime } = getPreferenceValues<{
+    journalDisplayFormat: DisplayFormat;
+    journalRelativeTime: boolean;
+  }>();
+  const goal = parseGoal(task.notes, dayFirst());
+  const markdown = [`# ${task.title}`];
+  if (!goal) markdown.push("This task no longer has a goal.");
+  else {
+    const { done, today } = goalProgress(goal, ymd(new Date()));
+    const unit = goal.unit ? ` ${goal.unit}` : "";
+    markdown.push(
+      `**${done} of ${goal.total}${unit}** · ${Math.round((done / goal.total) * 100)}%${today ? ` · ${signed(today)} today` : ""}`,
+      ...checkGoal(task.notes, dayFirst()).map((i) => `> ⚠️ ${i.message}`),
+    );
+    const rows = progressHistory(goal);
+    markdown.push(
+      rows.length
+        ? [
+            "| When | Amount | Total |",
+            "| --- | ---: | ---: |",
+            ...rows.map(
+              (e) =>
+                `| ${formatDisplay(e, journalDisplayFormat, journalRelativeTime)} | ${signed(e.amount)} | ${e.total} |`,
+            ),
+          ].join("\n")
+        : "No progress logged yet.",
+    );
+  }
+
+  return (
+    <Detail
+      navigationTitle="Progress"
+      markdown={markdown.join("\n\n")}
+      actions={
+        goal && (
+          <ActionPanel>
+            <Action.Push
+              title="Log Progress"
+              icon={Icon.PlusCircle}
+              target={
+                <LogProgressForm
+                  task={task}
+                  onLogged={() => {
+                    revalidate();
+                    onChange();
+                  }}
+                />
+              }
+            />
+          </ActionPanel>
+        )
+      }
+    />
   );
 }

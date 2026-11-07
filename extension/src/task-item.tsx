@@ -17,7 +17,7 @@ import { actionURL, CancelPrefs, cancelTask, isCancelled, isRepeating, Task, tas
 import { goalProgress, parseGoal } from "./goal";
 import { parseJournal } from "./journal";
 import { AddJournalEntryForm, JournalView } from "./journal-view";
-import { LogProgressForm } from "./log-progress";
+import { GoalProgressView, LogProgressForm } from "./log-progress";
 import { TaskForm } from "./task-form";
 import { checkNotes, fixNotes } from "./notes";
 import { dayFirst } from "./preferences";
@@ -187,6 +187,14 @@ export function TaskItem({ task: t, onChange }: { task: Task; onChange: () => vo
               icon={Icon.PlusCircle}
               shortcut={{ modifiers: ["cmd"], key: "g" }}
               target={<LogProgressForm task={t} onLogged={onChange} />}
+            />
+          )}
+          {goal && (
+            <Action.Push
+              title="Show Progress"
+              icon={Icon.LineChart}
+              shortcut={{ modifiers: ["cmd", "shift"], key: "g" }}
+              target={<GoalProgressView task={t} onChange={onChange} />}
             />
           )}
           <Action.Push

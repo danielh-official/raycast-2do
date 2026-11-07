@@ -283,6 +283,11 @@ The data, checked on Nov 6 (54 open tasks):
   - Creating uses `parent_task_id` *instead of* `list_id`, since 2Do takes exactly one destination. Editing uses `move_task` with `parent_task_id`, which gives the task a new ID.
   - The field resets when the list changes.
   - Not offered to projects or checklists themselves: on a scratch task, 2Do turned a checklist moved into a project into a normal task.
+- [x] **Show Progress (⇧⌘G)** on goal tasks, like Show Journal:
+  - a summary line, ⚠️ warnings, and a table of entries, newest first, with running totals (`progressHistory`)
+  - Log Progress from inside it
+  - Goal entries now carry `stamp` (as written) and `at` (for ordering), like journal entries.
+  - The display preferences were renamed **Entry Display Date**, since they now apply to both views.
 
 ### Later questions
 
