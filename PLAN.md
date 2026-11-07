@@ -308,7 +308,7 @@ The data, checked on Nov 6 (54 open tasks):
 
 In this order, one commit each.
 
-- [ ] **New Tags field** in Add Task and Edit Task, under Tags: comma-separated names for tags not yet in 2Do. Saving sends them as `tag_update: { operation: "set", tag_ids, tag_names }`, which creates the missing ones. Names matching an existing tag reuse it.
+- [x] **New Tags field** in Add Task and Edit Task, under Tags: comma-separated names for tags not yet in 2Do. Saving sends them as `tag_update: { operation: "set", tag_ids, tag_names }`, which creates the missing ones. Names matching an existing tag reuse it.
 - [ ] **Paused tag and list together** in View Tasks: Paused. Raycast allows one search-bar dropdown, so the dropdown keeps the lists and smart lists, and a **Filter by Paused Tag** action (⌘T) sets the tag. The navigation title shows the tag, and the dropdown offers only lists with tasks under it.
 - [ ] **Repeat settings** in Add Task and Edit Task. Checked on a scratch task:
   - `frequency`: `daily`, `weekdays`, `weekly` (optional `weekdays`), `monthly` (optional `weekday` with an integer `ordinal`, `-1` for last), `yearly`, or `custom` with `interval` and `unit` (`day`, `week`, `month`, `year`). `custom` takes no `weekdays`, and every 1 year comes back as `yearly`.

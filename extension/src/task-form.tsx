@@ -68,7 +68,7 @@ export function TaskForm({
 
   const { handleSubmit, itemProps, values, setValue } = useForm<TaskValues>({
     initialValues: task
-      ? { ...taskToValues(task), parent_id: parentId ?? "" }
+      ? { ...taskToValues(task), parent_id: parentId ?? "", new_tags: "" }
       : {
           new_tags: "",
           action_type: link ? "url" : "none",
@@ -225,6 +225,12 @@ export function TaskForm({
           <Form.TagPicker.Item key={t.tag_id} value={t.tag_id} title={t.title} />
         ))}
       </Form.TagPicker>
+      <Form.TextField
+        title="New Tags"
+        placeholder="Errands, Home"
+        info="Comma-separated. Tags not in 2Do yet are created when you save."
+        {...itemProps.new_tags}
+      />
       <Form.Separator />
       <Form.Checkbox title="Goal" label="Add a goal" {...itemProps.is_goal} />
       {values.is_goal && (
