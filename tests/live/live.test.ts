@@ -22,6 +22,7 @@ import {
   isRepeating,
   listParents,
   recurrenceOf,
+  reopenTask,
   repeatRule,
   repeatValues,
   saveTask,
@@ -373,6 +374,10 @@ describe("writing to the live-test tasks", () => {
     await cancelTask(normal, prefs);
     const n = await fresh(normal.task_id);
     expect([n.completed, n.tags.map((x) => x.title)]).toEqual([true, ["Cancelled"]]);
+    await reopenTask(n, prefs);
+    const reopened = await fresh(normal.task_id);
+    expect([reopened.completed, reopened.tags]).toEqual([false, []]);
+    await cancelTask(reopened, prefs);
 
     const repeating = await find("Cancel me (repeats daily)");
     await cancelTask(repeating, prefs);

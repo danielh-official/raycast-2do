@@ -60,6 +60,7 @@ The happy path uses the **Demo** list, and the unhappy path uses **Live Testing*
 - [ ] View Tasks: Goals shows the three Demo goals.
 - [ ] View Tasks: Paused shows "Learn the cello". Filter by Paused Tag (⌘T) offers Someday; picking it puts "(Someday)" in the title, and the dropdown then offers only lists with Someday tasks. "All Paused Tags" clears it.
 - [ ] View Tasks: Done shows "Try a new note-taking app" with a gray ✕, and "Renew the car registration" with a green check.
+- [ ] In View Tasks: Done, Mark as Not Done (⌘D) on "Try a new note-taking app" brings it back without the Cancelled tag. With Cancel Task set to Move to List and Complete, a completed task in the Cancel List opens a form asking for the list to move it to.
 - [ ] Reopen a scoped command within 10 minutes: no long loading bar (cached smart lists).
 
 ## Add Link

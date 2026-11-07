@@ -318,9 +318,9 @@ In this order, one commit each.
   - A repeat needs a start or due date, and clearing both dates silently drops it. `frequency: "none"` clears it; `recurrence: null` is rejected.
   - 2Do reports the monthly weekday as `wkdy` and the end date as `ldt `, so reading handles both names.
   - Items in a checklist have no dates, so they can't repeat.
-- [ ] **Reopening a cancelled task:** Mark as Not Done on a cancelled task also undoes the cancel, per the Cancel Task preference:
-  - **Complete and Tag:** removes the cancel tag.
-  - **Move to List and Complete:** asks which list to move it back to, since the original isn't recorded.
+- [x] **Reopening a cancelled task:** Mark as Not Done on a cancelled task also undoes the cancel (`reopenTask`):
+  - **Complete and Tag:** removes the cancel tag. Any completed task with the cancel tag loses it when reopened.
+  - **Move to List and Complete:** a completed task in the Cancel List counts as cancelled (`inCancelList`, also giving it the ✕), and asks which list to move it back to, since the original isn't recorded.
   - **Tag Only** leaves tasks open, and **Delete** leaves nothing to reopen.
 
 ## Parked
