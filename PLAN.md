@@ -332,7 +332,23 @@ In this order, one commit each.
 
 ## Releases
 
-Adopted: `main` holds the Store version plus the release in progress, and `experimental` holds the rest of the work, rebased onto `main`, released to the Store in small chunks. The process is in [AGENTS.md](AGENTS.md#releases). Screenshots wait until a release needs them.
+`main` holds the Store version plus the release in progress, and `experimental` holds the rest of the work, rebased onto `main`, released to the Store in small chunks. The process is in [AGENTS.md](AGENTS.md#releases). Screenshots wait until a release needs them.
+
+### Released
+
+- **Initial Version** (2026-11-01, [raycast/extensions#32601](https://github.com/raycast/extensions/pull/32601)): Add Task and View Tasks.
+- **Links and Actions** ([raycast/extensions#33282](https://github.com/raycast/extensions/pull/33282), approved): Add Link, the Action field in Add Task and Edit Task, and running a task's action (⌘L) or choosing a link (⇧⌘L) in View Tasks.
+
+### Order
+
+Features native to 2Do go first, then wishlist items. The scoped commands wait, since adding many commands risks rejection.
+
+1. **Task form additions:** New Tags, Repeat settings, and the repeat icon, which goes in View Tasks' row (no `TaskItem` yet). The "2Do is too old or not installed" message rides along.
+2. **Projects and checklists:** `TaskItem` comes in here, since Show Items lists items with it. Completing a parent with open items only offers completing them; cancelling them waits for Cancel Task.
+3. **Scoped View Tasks and Deadlines:** Today, Now, Later Today, Starred, Scheduled, Paused (with Filter by Paused Tag), Done, and Deadlines, with the smart-list cache.
+4. **Cancel Task:** the action and its preferences, cancelling only this occurrence of a repeating task, and Mark as Not Done undoing a cancel. Projects gain "Complete Task and Cancel Remaining Items".
+5. **Journal:** carries the plumbing Goals shares: chrono-node date parsing and the Ambiguous Dates preference, hiding the block from Edit Task, and syntax warnings with the fix action. First, move Add Journal Entry (⌘J) off the second action, where Raycast doesn't show its shortcut.
+6. **Goals:** adds its half of the plumbing, View Tasks: Goals (on the scoped list from release 3), and the rule that a project's or checklist's item ring wins over a goal ring.
 
 ---
 
