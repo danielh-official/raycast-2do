@@ -5,6 +5,7 @@ import {
   confirmAlert,
   Form,
   getPreferenceValues,
+  Icon,
   showHUD,
   showToast,
   Toast,
@@ -19,8 +20,6 @@ import {
   goalValueError,
   List,
   listParents,
-  repeatValueError,
-  repeatValues,
   saveTask,
   Tag,
   tagOptions,
@@ -74,6 +73,7 @@ export function TaskForm({
           new_tags: "",
           action_type: link ? "url" : "none",
           action_value: link?.url ?? "",
+          parent_id: "",
           is_goal: false,
           goal_last: new Date(),
           ...(link && { title: link.title, notes: link.description }),
@@ -117,7 +117,7 @@ export function TaskForm({
   // A project or checklist put in another becomes a normal task in 2Do, so they aren't offered one.
   const canNest = !task || task.task_type === "normal";
   const parents = useCachedPromise(listParents, [values.list_id ?? ""], {
-    execute: canNest && !addTo && !!values.list_id,
+    execute: canNest && !!values.list_id,
   });
 
   // The project or checklist the task is going into, if any. Checklist items have no dates, so they
@@ -175,23 +175,20 @@ export function TaskForm({
           {...itemProps.action_value}
         />
       )}
-      <Form.Separator />
-      {!addTo && (
-        <Form.Dropdown
-          title="List"
-          storeValue={!task}
-          {...itemProps.list_id}
-          onChange={(listId) => {
-            itemProps.list_id.onChange?.(listId);
-            if (listId !== values.list_id) setValue("parent_id", "");
-          }}
-        >
-          {lists.data?.map((l) => (
-            <Form.Dropdown.Item key={l.list_id} value={l.list_id} title={l.title} />
-          ))}
-        </Form.Dropdown>
-      )}
-      {(parents.data?.length ?? 0) > 0 && (values.task_type ?? "normal") === "normal" && (
+      <Form.Dropdown
+        title="List"
+        storeValue={!task}
+        {...itemProps.list_id}
+        onChange={(listId) => {
+          itemProps.list_id.onChange?.(listId);
+          if (listId !== values.list_id) setValue("parent_id", "");
+        }}
+      >
+        {lists.data?.map((l) => (
+          <Form.Dropdown.Item key={l.list_id} value={l.list_id} title={l.title} />
+        ))}
+      </Form.Dropdown>
+      {(parents.data?.length ?? 0) > 0 && (
         <Form.Dropdown title="Project or Checklist" {...itemProps.parent_id}>
           <Form.Dropdown.Item value="" title="None" icon={Icon.Minus} />
           {parents.data?.map((p) => (
@@ -204,14 +201,9 @@ export function TaskForm({
           ))}
         </Form.Dropdown>
       )}
-      {dated && (
-        <>
-          <Form.Separator />
-          <Form.DatePicker title="Start" {...itemProps.start} />
-          <Form.DatePicker title="Due" {...itemProps.due} />
-        </>
-      )}
-      {dated && values.repeat !== undefined && (
+      <Form.DatePicker title="Start" {...itemProps.start} />
+      <Form.DatePicker title="Due" {...itemProps.due} />
+      {values.repeat !== undefined && (
         <Form.Checkbox
           label="Repeat"
           info="Without a start or due date, the task starts today."

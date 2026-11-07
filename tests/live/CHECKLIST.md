@@ -27,6 +27,13 @@ The happy path uses the **Demo** list, and the unhappy path uses **Live Testing*
 - [ ] Uncheck "Add a goal" and save: it asks "Remove the goal?". Cancel leaves it unchanged.
 - [ ] Add Task with "Add a goal" checked, Current 3: Last Completed appears, set to today. Saving writes a block with a line like "November 6, 2026: 3".
 
+## Projects and checklists
+
+- [ ] Add Task with the List set to Demo: a "Project or Checklist" field offers "Plan the team offsite" and "Pack for the trip". Picking one adds the task inside it (check in 2Do).
+- [ ] Switching the List to one without projects or checklists hides the field.
+- [ ] Edit Task on a normal Demo task: picking a project moves the task into it. It then leaves the Demo task list, since items don't show there yet.
+- [ ] Edit Task on "Plan the team offsite" doesn't show the field.
+
 ## Journal
 
 - [ ] Show Journal (⇧⌘J) on "Insurance claim follow-up": entries newest first, dated like "Friday, November 6 11 am (… hours ago)". The multi-line entry keeps its line breaks.

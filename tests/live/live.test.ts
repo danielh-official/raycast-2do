@@ -18,6 +18,7 @@ import {
   cancelTask,
   hasStarted,
   isRepeating,
+  listParents,
   saveTask,
   Task,
   taskLinks,
@@ -193,6 +194,28 @@ describe("writing to the live-test tasks", () => {
         { goalTag: "NoSuchLiveTestTag", goalDateFormat: "MMMM d, yyyy" },
       ),
     ).rejects.toThrow('No 2Do tag named "NoSuchLiveTestTag"');
+  });
+
+  it("lists a list's projects and checklists, and puts tasks into them on create and edit", async () => {
+    const parents = await listParents(listId);
+    expect(parents.map((p) => p.title).sort()).toEqual([
+      "Pack for the trip (checklist)",
+      "Plan the team offsite (project)",
+    ]);
+    const project = parents.find((p) => p.task_type === "project")!;
+    const checklist = parents.find((p) => p.task_type === "checklist")!;
+    const items = async (id: string) =>
+      (await twoDo<{ tasks: Task[] }>("list_subtasks", { task_id: id })).tasks.map((t) => t.title);
+
+    const reply = await find("Reply to Sam");
+    await saveTask({ ...taskToValues(reply), title: "Order the catering", notes: "", parent_id: project.task_id });
+    expect(await items(project.task_id)).toContain("Order the catering");
+
+    // Moving gives the task a new ID, so this checks the checklist's items rather than re-reading it.
+    const desks = await find("Compare standing desks");
+    await saveTask({ ...taskToValues(desks), parent_id: checklist.task_id }, desks);
+    expect(await items(checklist.task_id)).toContain(desks.title);
+    expect((await all()).some((t) => t.title === desks.title)).toBe(false);
   });
 
   it("logs progress into the day's date-only line, leaving timed lines alone", async () => {

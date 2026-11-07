@@ -62,6 +62,8 @@ export type TaskValues = {
   // Undefined when the form leaves the task's action alone (a type missing from ACTIONS).
   action_type?: string;
   action_value?: string;
+  // A project or checklist in the list to put the task in, or "" for the list itself.
+  parent_id?: string;
   // Undefined when the form leaves the goal alone. Current and Last Completed only apply when a
   // task first becomes a goal; after that, progress is logged.
   is_goal?: boolean;
@@ -184,6 +186,7 @@ export function taskToValues(task: Task): TaskValues {
     tag_ids: task.tags.map((t) => t.tag_id),
     action_type: task.action.type === "none" || task.action.type in ACTIONS ? task.action.type : undefined,
     action_value: task.action.value ?? "",
+    parent_id: "",
     ...goalValues(task),
   };
 }
@@ -241,7 +244,8 @@ export async function applyGoal(v: TaskValues, p: GoalPrefs): Promise<TaskValues
   return { ...v, notes, tag_ids: [...new Set([...v.tag_ids, tag.tag_id])] };
 }
 
-// Creates a task, or updates `task` (moving it if the list changed).
+// Creates a task, or updates `task` (moving it if the list changed). With `parent_id`, the task goes
+// into that project or checklist instead: 2Do takes exactly one destination, list or parent.
 export async function saveTask(v: TaskValues, task?: Task) {
   // 2Do can't repeat a task without dates, so a repeating task with neither date starts today.
   const repeats = !!v.is_repeating && !!v.repeat;
@@ -263,8 +267,7 @@ export async function saveTask(v: TaskValues, task?: Task) {
     const nests = v.parent_id && (!v.task_type || v.task_type === "normal");
     await twoDo("create_task", {
       ...fields,
-      ...(nests ? { parent_task_id: v.parent_id } : { list_id: v.list_id }),
-      ...(v.task_type && v.task_type !== "normal" && { task_type: v.task_type }),
+      ...(v.parent_id ? { parent_task_id: v.parent_id } : { list_id: v.list_id }),
       notes: v.notes || undefined,
       ...((tagUpdate.tag_ids.length > 0 || tagUpdate.tag_names) && { tag_update: tagUpdate }),
       ...(action.type !== "none" && { action }),
@@ -285,10 +288,8 @@ export async function saveTask(v: TaskValues, task?: Task) {
       (action.type !== task.action.type || action.value !== task.action.value) && { action }),
     ...(repeatChanged && { recurrence }),
   });
-  if (v.parent_id) {
-    if (v.parent_id !== parentId) await twoDo("move_task", { task_id: task.task_id, parent_task_id: v.parent_id });
-  } else if (parentId || v.list_id !== task.list_id)
-    await twoDo("move_task", { task_id: task.task_id, list_id: v.list_id });
+  if (v.parent_id) await twoDo("move_task", { task_id: task.task_id, parent_task_id: v.parent_id });
+  else if (v.list_id !== task.list_id) await twoDo("move_task", { task_id: task.task_id, list_id: v.list_id });
 }
 
 // Projects and checklists in a list, which a task can be put in. 2Do turns a project or checklist
