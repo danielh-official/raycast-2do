@@ -406,6 +406,16 @@ export async function cancelTask(task: Task, p: CancelPrefs) {
   if (p.cancelBehavior === "delete") await twoDo("delete_task", { task_id: taskId });
 }
 
+// Completes a project or checklist. 2Do completes its open items along with it; with `cancelItems`,
+// they're cancelled first, each per the Cancel Task preferences.
+export async function completeParent(parent: Task, cancelItems: boolean, p: CancelPrefs) {
+  if (cancelItems) {
+    const { tasks } = await twoDo<{ tasks: Task[] }>("list_subtasks", { task_id: parent.task_id });
+    for (const item of tasks.filter((t) => !t.completed)) await cancelTask(item, p);
+  }
+  await twoDo("complete_task", { task_id: parent.task_id });
+}
+
 export function isCancelled(task: Task, p: CancelPrefs) {
   return task.completed && task.tags.some((t) => sameTitle(t.title, p.cancelTag));
 }
