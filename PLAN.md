@@ -3,7 +3,7 @@
 Five features for the 2Do Raycast extension:
 
 1. [x] Add a link
-2. [ ] Bulk add links (tabled for now)
+2. [ ] Bulk add links (frozen for now)
 3. [x] Cancel a task**,** with a preference for what cancelling does
 4. [x] Track goal progress on a task, driven by syntax in the notes, with a history of each bit of progress
 5. [x] Add dated notes to a task, driven by syntax in the notes (the journal)
@@ -20,8 +20,9 @@ The Automation Suite was checked against 2Do 2026.4.3 with read-only calls and c
   - `none` must have no `value`; `{ type: "none" }` clears the action.
 - **There's no batch create.** Bulk adding means one `create_task` call per link.
 - **Cancelled tasks are completed tasks with a "Cancelled" tag.** That's 2Do's convention, and 18 tasks in the current database follow it. `complete_task` on a project or checklist also completes its subtasks (`recursive` defaults to true).
-- **The automation can't create tags, but 2Do's URL scheme can.**
-  - The suite has `list_tags` but no `create_tag`, and `tag_update` takes only tag IDs. Its operations are `set`, `append` and `remove`.
+- **The automation creates tags only through `tag_update`'s `tag_names`.**
+  - The suite has `list_tags` but no `create_tag`. `tag_update`'s operations are `set`, `append` and `remove`, and `tag_ids` is always required.
+  - With `set`, `tag_names` (checked Nov 6) adds tags by name: an existing tag is matched case-insensitively, and a missing one is created. `append` and `remove` reject `tag_names`. The automation has no way to delete a tag.
   - Writing a tag name into the notes doesn't create the tag. 2Do's "detect details" only runs as you type in Quick Entry or the task editor.
   - `twodo://x-callback-url/add?task=…&tags=Name&ignoredefaults=1`, opened with `open -g`, does create a missing tag. This was confirmed by creating the Goal tag, with 2Do staying in the background.
   - `ensureTag` used this, adding a placeholder task with the tag and then deleting it. It was **removed** so that Store review isn't worried by shell calls and placeholder tasks. Missing tags are now errors (`requireTag`).
@@ -133,7 +134,7 @@ Details:
 - [x] On a scratch task, `move_task` returned `{ task: { task_id } }` with a **new** ID, which `cancelTask` uses to complete the task.
 - [x] The open-subtask check uses `list_subtasks`, which returns `{ tasks: [{ completed, … }] }`. It applies to the two behaviors that complete the task.
 - [x] The Done view gives completed tasks carrying the cancel tag a gray ✕.
-- [ ] Not built: an "Uncancel" action. It would need `tag_update` with `remove`, which is still unverified.
+- [x] No "Uncancel" action. Instead, **Mark as Not Done** on a cancelled task reverses the cancel (see "Next").
 
 ## Extra: a View Tasks command per scope (added mid-plan)
 
@@ -146,9 +147,7 @@ Details:
   - Smart lists use one extra `query_tasks` per smart list, matching task IDs. That's about 0.3 s for 10 smart lists.
   - If the chosen filter no longer has tasks in the scope, it falls back to All Lists.
 - [x] The task row and its actions moved to `task-item.tsx`, shared by View Tasks and the scoped commands. The shared scoped view is `scoped-tasks.tsx`.
-- [ ] **Tabled:** in Paused, filter by a paused tag *and* a list or smart list at the same time.
-  - Raycast allows one search-bar dropdown, so the tag would need another control.
-  - The likely approach: a "Filter by Paused Tag" action (⌘T) sets the tag, the navigation title shows it, and the dropdown offers only lists with tasks under that tag.
+- [ ] In Paused, filter by a paused tag *and* a list or smart list at the same time. Planned (see "Next").
 
 ## Notes convention (set by goals, the template for dated notes)
 
@@ -273,10 +272,10 @@ The data, checked on Nov 6 (54 open tasks):
   - If the goal isn't reached, ask whether to log the remaining progress first.
   - For a repeating goal task, also ask whether the next occurrence starts fresh (its goal reset to 0, with the history kept on the completed copy) or keeps the running total, as now. Both are valid uses: each occurrence with its own goal, or one running goal across occurrences.
 - [x] **Repeat indicator:** a repeat icon on repeating tasks, with the rule ("Daily", "Every 2 weeks") as its tooltip. No editing of repetition in the forms for now.
-- [ ] **Projects and checklists:**
+- [x] **Projects and checklists:**
   - [x] A **Show Items** action (⌘I) lists a parent's items, with the usual task actions. Editing an item there keeps it in its parent unless the Project or Checklist field changes (`saveTask`'s `parentId`).
   - [x] The parent shows its items' progress, like "3/6", as a ring accessory (one `list_subtasks` call per open parent, cached).
-  - If the parent is also a goal, the goal still displays and Log Progress still works, but **the ring shows item progress, not goal progress.**
+  - If the parent is also a goal, the goal's count still displays and Log Progress still works, but **the ring shows item progress, not goal progress**, and no goal ring shows.
 - [x] **Completing a parent with open items:** ask whether to **complete** or **cancel** the remaining items (cancelling uses the Cancel Task preferences), with a way to back out without deciding. It always asks when there are open items.
 - [x] **Add Item** (⌘N) on projects and checklists, and inside Show Items: the task form preset to the parent, without List or Project or Checklist fields, and without Start and Due for checklist items.
 - [x] **Type** field (Task, Project or Checklist) in Add Task (`create_task`'s `task_type`). A project or checklist always goes in the list, so the Project or Checklist field hides for them.
@@ -300,10 +299,33 @@ The data, checked on Nov 6 (54 open tasks):
   - Every edit or delete re-reads the task, and stops if the entry changed since the list loaded (`rewriteNotes`).
 - [x] An editable table isn't possible: Raycast's tables are display-only Markdown.
 
-### Later questions
+### Answered questions
 
-- If a project or checklist is a goal, does the goal ever override item progress for the ring?
-- If an item is itself a goal, does it count as one item toward its parent, or by its goal's progress?
+- A project or checklist that's a goal: its item count drives the ring. The goal can still be set and logged, but its ring doesn't show.
+- An item that's a goal counts as one item toward its parent, done or not, whatever its goal's progress.
+
+## Next
+
+In this order, one commit each.
+
+- [ ] **New Tags field** in Add Task and Edit Task, under Tags: comma-separated names for tags not yet in 2Do. Saving sends them as `tag_update: { operation: "set", tag_ids, tag_names }`, which creates the missing ones. Names matching an existing tag reuse it.
+- [ ] **Paused tag and list together** in View Tasks: Paused. Raycast allows one search-bar dropdown, so the dropdown keeps the lists and smart lists, and a **Filter by Paused Tag** action (⌘T) sets the tag. The navigation title shows the tag, and the dropdown offers only lists with tasks under it.
+- [ ] **Repeat settings** in Add Task and Edit Task. Checked on a scratch task:
+  - `frequency`: `daily`, `weekdays`, `weekly` (optional `weekdays`), `monthly` (optional `weekday` with an integer `ordinal`, `-1` for last), `yearly`, or `custom` with `interval` and `unit` (`day`, `week`, `month`, `year`). `custom` takes no `weekdays`, and every 1 year comes back as `yearly`.
+  - `based_on` is required: `due_date` or `completion`.
+  - `end_rule`: `never`, `after_count` with `occurrence_count`, or `on_date` with `date`.
+  - A repeat needs a start or due date. `frequency: "none"` clears it; `recurrence: null` is rejected.
+  - 2Do reports the monthly weekday as `wkdy` and the end date as `ldt `, so reading handles both names.
+  - Items in a checklist have no dates, so they can't repeat.
+- [ ] **Reopening a cancelled task:** Mark as Not Done on a cancelled task also undoes the cancel, per the Cancel Task preference:
+  - **Complete and Tag:** removes the cancel tag.
+  - **Move to List and Complete:** asks which list to move it back to, since the original isn't recorded.
+  - **Tag Only** leaves tasks open, and **Delete** leaves nothing to reopen.
+
+## Parked
+
+- Whether `create_task` with a `url` action accepts custom schemes (`readdle-spark://`, `x-apple-health://`). The form accepts them; creating one hasn't been tested.
+- Dates chrono-node doesn't read: compact dates (20261106), "14h05", ISO weeks, and non-English month names.
 
 ---
 
@@ -312,15 +334,15 @@ The data, checked on Nov 6 (54 open tasks):
 The plan assumes the answer in bold for each question. Change these before starting if the defaults are wrong.
 
 1. ~~**"Add a link"**: a link on any task, or a "save this URL as a task" command?~~ Answered: both. The Add Link command is built, and the link on any task is the rest of section 1.
-2. **Bulk titles:** **an optional checkbox, the same as Add Link** (reading pages, or using the URL as the title)?
-3. **Cancel default:** **Complete and tag "Cancelled"**, which matches the existing `cancel-2do-task` skill and the 18 existing cancelled tasks?
+2. **Bulk titles:** **an optional checkbox, the same as Add Link** (reading pages, or using the URL as the title)? Open until Bulk Add Links is unfrozen.
+3. ~~**Cancel default:**~~ Answered: Complete and Tag with "Cancelled".
 4. ~~**Goal reached:**~~ Answered: a toast offers to complete the task.
-5. ~~**Syntax keywords:**~~ Answered for goals: `@goal:` … `@endgoal`. Dated notes still need a name.
+5. ~~**Syntax keywords:**~~ Answered: `@goal:` … `@endgoal` and `@journal` … `@endjournal`.
 6. ~~**Entry order:**~~ Answered: newest first, one line per date.
-7. **Recurring tasks:** when a repeating task completes, 2Do creates the next instance. Should its notes, and with them the goal history, carry over? This is still unchecked.
+7. ~~**Recurring tasks:**~~ Answered: 2Do carries the notes to the next occurrence, and Complete Task on a repeating goal asks whether it starts fresh.
 
 ## Verify before building
 
-- ~~Which operations `tag_update` accepts besides `set` and `append`.~~ The 2Do binary lists `set`, `append` and `remove`, so an "Uncancel" action is possible.
-- That `create_task` with `action.type: "url"` accepts custom schemes (`readdle-spark://`, `x-apple-health://`), since existing tasks use them.
+- ~~Which operations `tag_update` accepts besides `set` and `append`.~~ The 2Do binary lists `set`, `append` and `remove`.
+- Custom schemes in a `url` action: parked (see "Parked").
 - ~~That `move_task` returns the new `task_id` in the shape documented in the sdef.~~ Confirmed: it returns `{ task: { task_id } }`, and the ID changes.
