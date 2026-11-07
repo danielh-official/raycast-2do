@@ -42,8 +42,8 @@ The happy path uses the **Demo** list, and the unhappy path uses **Live Testing*
 
 ## Journal
 
-- [ ] Show Journal (⇧⌘J) on "Insurance claim follow-up": entries newest first, dated like "Friday, November 6 11 am (… hours ago)". The multi-line entry keeps its line breaks.
-- [ ] Add Journal Entry (⌘J) from Show Journal: the new entry appears there after saving.
+- [ ] Show Journal (⇧⌘J) on "Insurance claim follow-up": a list, newest first, dated like "Friday, November 6 11 am (… hours ago)". The side panel shows the text, line breaks included.
+- [ ] In Show Journal: Add Journal Entry (⌘N) adds a row; Edit Entry (⌘E) with only new text keeps the timestamp, and with a new time moves the entry into order; Delete Entry (⌃X) asks, then removes it.
 - [ ] Add a two-line entry: in 2Do, it's the timestamp on its own line, then a blank line, then the text.
 
 ## Scoped commands
@@ -68,7 +68,7 @@ The happy path uses the **Demo** list, and the unhappy path uses **Live Testing*
 - [ ] Add Journal Entry (⌘J) on "Broken: journal without @endjournal": it asks "Fix the notes' syntax first?". Cancel writes nothing; Fix and Continue adds `@endjournal` after "Booked the venue", then the entry.
 - [ ] "Broken: @goal without a total", "Broken: unreadable goal line" and "Broken: text before the first journal entry" show ⚠️ with no Fix action.
 - [ ] Edit Task on a broken task shows the ⚠️ Notes Syntax description at the top.
-- [ ] Show Journal on "Broken: text before the first journal entry" shows the warning above the entries.
+- [ ] Show Journal on "Broken: text before the first journal entry" shows the warning as the first row.
 - [ ] Cancel Task on "Cancel me (repeats daily)": in 2Do, the completed copy is tagged Cancelled, and the next occurrence isn't.
 - [ ] With Cancel Task set to Delete, cancelling "Water the plants (repeats weekly)" asks "Delete this occurrence…?".
 - [ ] Set Cancel Tag to a tag that doesn't exist, then cancel: the toast explains, and nothing changes.

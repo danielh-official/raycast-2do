@@ -110,9 +110,59 @@ export function closeJournal(notes: string, dayFirst?: boolean) {
 // The entry's lines: one line, or the timestamp, a blank line, and the text when it has several lines.
 export function formatEntry(when: Date, hasTime: boolean, text: string, format: DayFormat) {
   const day = formatDay(ymd(when), format);
-  const timestamp = hasTime ? `${day} ${formatTime(when)}` : day;
+  return entryLines(hasTime ? `${day} ${formatTime(when)}` : day, text);
+}
+
+function entryLines(stamp: string, text: string) {
   const body = text.trim();
-  return body.includes("\n") ? [timestamp, "", ...body.split("\n")] : [`${timestamp} - ${body}`];
+  return body.includes("\n") ? [stamp, "", ...body.split("\n")] : [`${stamp} - ${body}`];
+}
+
+// The entry as it is in `notes` now, if it still starts on the same line with the same timestamp;
+// undefined if the notes changed since it was read.
+function stillThere(notes: string, entry: JournalEntry, dayFirst?: boolean) {
+  return parseJournal(notes, dayFirst)?.find((e) => e.start === entry.start && e.stamp === entry.stamp);
+}
+
+// Removes the entry's lines, and a blank line left doubled where it was.
+function removeEntry(lines: string[], entry: JournalEntry) {
+  lines.splice(entry.start, entry.end - entry.start + 1);
+  if (!lines[entry.start]?.trim() && !lines[entry.start - 1]?.trim()) lines.splice(entry.start, 1);
+}
+
+// Removes one entry. Undefined if the entry changed since it was read.
+export function deleteJournalEntry(notes: string, entry: JournalEntry, dayFirst?: boolean) {
+  const current = stillThere(notes, entry, dayFirst);
+  if (!current) return;
+  const lines = notes.split("\n");
+  removeEntry(lines, current);
+  return lines.join("\n");
+}
+
+// Changes one entry. With the same moment, the text is replaced in place under the timestamp as
+// written; a new moment moves the entry into time order, written in `format`. Undefined if the entry
+// changed since it was read.
+export function editJournalEntry(
+  notes: string,
+  entry: JournalEntry,
+  change: { text: string; when: Date; hasTime: boolean },
+  format: DayFormat,
+  dayFirst?: boolean,
+) {
+  const current = stillThere(notes, entry, dayFirst);
+  if (!current) return;
+  const at = change.hasTime
+    ? change.when.getTime()
+    : new Date(change.when.getFullYear(), change.when.getMonth(), change.when.getDate()).getTime();
+  const lines = notes.split("\n");
+  if (at === current.at && change.hasTime === current.hasTime) {
+    const replacement = entryLines(current.stamp, change.text);
+    const spaced = replacement.length > 1 && lines[current.end + 1]?.trim() ? [...replacement, ""] : replacement;
+    lines.splice(current.start, current.end - current.start + 1, ...spaced);
+    return lines.join("\n");
+  }
+  removeEntry(lines, current);
+  return addJournalEntry(lines.join("\n"), change.when, change.hasTime, change.text, format, dayFirst);
 }
 
 // Adds an entry before the first entry that isn't newer, keeping newest first. Multi-line entries
