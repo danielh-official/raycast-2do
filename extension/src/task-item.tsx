@@ -5,12 +5,14 @@ import {
   Color,
   confirmAlert,
   environment,
+  Form,
   getPreferenceValues,
   Icon,
   Keyboard,
   List,
   showToast,
   Toast,
+  useNavigation,
 } from "@raycast/api";
 import { showFailureToast, useCachedPromise } from "@raycast/utils";
 import {
@@ -18,8 +20,11 @@ import {
   CancelPrefs,
   cancelTask,
   completeParent,
+  inCancelList,
   isCancelled,
   isRepeating,
+  List as TwoDoList,
+  reopenTask,
   repeatRule,
   Task,
   taskLinks,
@@ -134,6 +139,16 @@ export function TaskItem({
       onChange();
     } catch (error) {
       await showFailureToast(error, { title: "2Do command failed" });
+    }
+  }
+
+  async function reopen() {
+    try {
+      await reopenTask(t, prefs);
+      await showToast({ style: Toast.Style.Success, title: "Marked not done" });
+      onChange();
+    } catch (error) {
+      await showFailureToast(error, { title: "Could not mark as not done" });
     }
   }
 
@@ -342,16 +357,26 @@ export function TaskItem({
               shortcut={{ modifiers: ["cmd"], key: "d" }}
               target={<CompleteGoalForm task={t} onCompleted={onChange} />}
             />
+          ) : inCancelList(t, prefs) ? (
+            <Action.Push
+              title="Mark as Not Done"
+              icon={Icon.Circle}
+              shortcut={{ modifiers: ["cmd"], key: "d" }}
+              target={<ReopenForm task={t} onReopened={onChange} />}
+            />
+          ) : t.completed ? (
+            <Action
+              title="Mark as Not Done"
+              icon={Icon.Circle}
+              shortcut={{ modifiers: ["cmd"], key: "d" }}
+              onAction={reopen}
+            />
           ) : (
             <Action
-              title={t.completed ? "Mark as Not Done" : "Complete Task"}
-              icon={t.completed ? Icon.Circle : Icon.CheckCircle}
+              title="Complete Task"
+              icon={Icon.CheckCircle}
               shortcut={{ modifiers: ["cmd"], key: "d" }}
-              onAction={() =>
-                run(t.completed ? "Marked not done" : "Completed", t.completed ? "uncomplete_task" : "complete_task", {
-                  task_id: t.task_id,
-                })
-              }
+              onAction={() => run("Completed", "complete_task", { task_id: t.task_id })}
             />
           )}
           {!t.completed && (
@@ -380,5 +405,47 @@ export function TaskItem({
         </ActionPanel>
       }
     />
+  );
+}
+
+// Mark as Not Done for a task cancelled into the Cancel List: 2Do doesn't record where it came from,
+// so this asks which list it goes back to.
+function ReopenForm({ task, onReopened }: { task: Task; onReopened: () => void }) {
+  const { pop } = useNavigation();
+  const prefs = getPreferenceValues<CancelPrefs>();
+  const lists = useCachedPromise(() => twoDo<{ list: TwoDoList[] }>("list_lists").then((r) => r.list));
+
+  async function submit({ list_id }: { list_id: string }) {
+    try {
+      await reopenTask(task, prefs, list_id);
+      await showToast({ style: Toast.Style.Success, title: "Marked not done" });
+      onReopened();
+      pop();
+    } catch (error) {
+      await showFailureToast(error, { title: "Could not mark as not done" });
+    }
+  }
+
+  return (
+    <Form
+      navigationTitle="Mark as Not Done"
+      isLoading={lists.isLoading}
+      actions={
+        <ActionPanel>
+          <Action.SubmitForm title="Mark as Not Done" icon={Icon.Circle} onSubmit={submit} />
+        </ActionPanel>
+      }
+    >
+      <Form.Description
+        text={`"${task.title}" was cancelled into ${task.list_title}. Choose the list it goes back to.`}
+      />
+      <Form.Dropdown id="list_id" title="List">
+        {lists.data
+          ?.filter((l) => l.list_id !== task.list_id)
+          .map((l) => (
+            <Form.Dropdown.Item key={l.list_id} value={l.list_id} title={l.title} />
+          ))}
+      </Form.Dropdown>
+    </Form>
   );
 }
