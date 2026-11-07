@@ -21,6 +21,9 @@ import {
   hasStarted,
   isRepeating,
   listParents,
+  recurrenceOf,
+  repeatRule,
+  repeatValues,
   saveTask,
   Task,
   taskLinks,
@@ -166,6 +169,49 @@ describe("writing to the live-test tasks", () => {
       type: "call",
       value: "+1 555 0100",
     });
+  });
+
+  it("sets a repeat, reads it back as the form shows it, changes it, and clears it", async () => {
+    const fullDay = (y: number, m: number, d: number) => new Date(y, m, d, 0, 0, 0, 1);
+    await saveTask({
+      ...taskToValues(await find("Call the dentist")),
+      title: "Repeat round trip",
+      notes: "",
+      action_type: "none",
+      due: fullDay(2026, 11, 1),
+      repeat: "monthly",
+      repeat_ordinal: "2",
+      repeat_weekday: "tuesday",
+      repeat_from: "completion",
+      repeat_end: "on_date",
+      repeat_until: fullDay(2027, 5, 30),
+    });
+    const t = await find("Repeat round trip");
+    expect(repeatValues(t)).toMatchObject({
+      repeat: "monthly",
+      repeat_ordinal: "2",
+      repeat_weekday: "tuesday",
+      repeat_from: "completion",
+      repeat_end: "on_date",
+    });
+    expect(ymd(repeatValues(t).repeat_until!)).toBe("2027-06-30");
+    expect(repeatRule(t)).toBe("Monthly on the 2nd Tue, after completion, until 2027-06-30");
+
+    const custom = await editSave(t, (v) => ({
+      ...v,
+      repeat: "custom",
+      repeat_interval: "3",
+      repeat_unit: "week",
+      repeat_end: "after_count",
+      repeat_count: "4",
+    }));
+    expect(recurrenceOf(custom)).toMatchObject({
+      frequency: "custom",
+      interval: 3,
+      unit: "week",
+      end_rule: { type: "after_count", occurrence_count: 4 },
+    });
+    expect(isRepeating(await editSave(custom, (v) => ({ ...v, repeat: "none" })))).toBe(false);
   });
 
   it("makes a goal with Current on Last Completed, edits it, and removes it", async () => {
