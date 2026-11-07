@@ -5,6 +5,7 @@ import {
   goalProgress,
   logProgress,
   parseGoal,
+  progressHistory,
   removeGoal,
   setGoalHeader,
 } from "../extension/src/goal";
@@ -15,15 +16,21 @@ const log = (notes: string, day: string, amount: number) => logProgress(notes, d
 
 describe("parseGoal", () => {
   it("reads the total, unit, and entries in mixed date formats", () => {
-    expect(parse(block)).toEqual({
+    expect(parse(block)).toMatchObject({
       total: 32,
       unit: "pages",
       entries: [
-        { day: "2026-11-06", amount: 10, hasTime: false, line: 2 },
-        { day: "2026-11-05", amount: -1, hasTime: false, line: 3 },
-        { day: "2026-11-04", amount: 4, hasTime: false, line: 4 },
+        { day: "2026-11-06", amount: 10, hasTime: false, stamp: "Nov 6, 2026", line: 2 },
+        { day: "2026-11-05", amount: -1, hasTime: false, stamp: "2026-11-05", line: 3 },
+        { day: "2026-11-04", amount: 4, hasTime: false, stamp: "2026-11-04", line: 4 },
       ],
     });
+  });
+
+  it("orders entries by their moment, timed ones within their day", () => {
+    const [timed, dateOnly] = parse("@goal: 5\nNov 6, 2026 2 pm: 1\nNov 6, 2026: 2\n@endgoal")!.entries;
+    expect(timed.at).toBe(new Date(2026, 10, 6, 14).getTime());
+    expect(dateOnly.at).toBe(new Date(2026, 10, 6).getTime());
   });
 
   it("reads timestamps with times, separated by a colon or a dash", () => {
@@ -56,6 +63,18 @@ describe("parseGoal", () => {
 
   it("is undefined without a @goal line", () => {
     expect(parse("Just notes\n2026-11-06: 1")).toBeUndefined();
+  });
+});
+
+describe("progressHistory", () => {
+  it("lists entries newest first with a running total, whatever order the notes use", () => {
+    const notes = "@goal: 10\n2026-11-04: 4\nNov 6, 2026: 2\nNov 6, 2026 8 am: 1\n2026-11-05: -1\n@endgoal";
+    expect(progressHistory(parse(notes)!).map((e) => [e.stamp, e.amount, e.total])).toEqual([
+      ["Nov 6, 2026 8 am", 1, 6],
+      ["Nov 6, 2026", 2, 5],
+      ["2026-11-05", -1, 3],
+      ["2026-11-04", 4, 4],
+    ]);
   });
 });
 
