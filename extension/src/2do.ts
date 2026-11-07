@@ -1,7 +1,16 @@
 import { Form } from "@raycast/api";
 import { runAppleScript } from "@raycast/utils";
 import { DayFormat, ymd } from "./dates";
-import { appendGoal, formatGoal, parseGoal, removeGoal, setGoalHeader } from "./goal";
+import {
+  appendGoal,
+  formatGoal,
+  goalProgress,
+  logProgress,
+  parseGoal,
+  removeGoal,
+  resetGoal,
+  setGoalHeader,
+} from "./goal";
 import { splitNotes } from "./notes";
 
 export type List = { list_id: string; collection_id: string; title: string };
@@ -409,6 +418,29 @@ export async function cancelTask(task: Task, p: CancelPrefs) {
   if (tag) await twoDo("update_task", { task_id: taskId, tag_update: { operation: "append", tag_ids: [tag.tag_id] } });
   if (target) await twoDo("move_task", { task_id: taskId, list_id: target.list_id });
   if (p.cancelBehavior === "delete") await twoDo("delete_task", { task_id: taskId });
+}
+
+// Completes a goal task. With `logRemaining`, today's line first gets what's left to reach the total,
+// so the completed task shows the goal met. For a repeating task, 2Do keeps the open task (next date)
+// with the same notes; with `fresh`, its goal starts over at 0 while the completed copy keeps the
+// history.
+export async function completeGoalTask(
+  task: Task,
+  opts: { logRemaining: boolean; fresh: boolean },
+  p: { goalDateFormat: DayFormat; dayFirst: boolean },
+) {
+  const { task: current } = await twoDo<{ task: Task }>("get_task", { task_id: task.task_id });
+  const goal = parseGoal(current.notes, p.dayFirst);
+  if (goal && opts.logRemaining) {
+    const remaining = goal.total - goalProgress(goal, ymd(new Date())).done;
+    if (remaining > 0) {
+      const notes = logProgress(current.notes, ymd(new Date()), remaining, p.goalDateFormat, p.dayFirst);
+      await twoDo("update_task", { task_id: task.task_id, notes });
+    }
+  }
+  const { task: after } = await twoDo<{ task: Task }>("complete_task", { task_id: task.task_id });
+  if (!after.completed && opts.fresh)
+    await twoDo("update_task", { task_id: after.task_id, notes: resetGoal(after.notes, p.dayFirst) });
 }
 
 // Completes a project or checklist. 2Do completes its open items along with it; with `cancelItems`,

@@ -28,6 +28,7 @@ The happy path uses the **Demo** list, and the unhappy path uses **Live Testing*
 - [ ] Add Task with "Add a goal" checked, Current 3: Last Completed appears, set to today. Saving writes a block with a line like "November 6, 2026: 3".
 - [ ] Show Progress (⇧⌘G) on "Read Designing Data-Intensive Applications": "24 of 40 pages · 60% · +6 today", then a table of three entries, newest first, with totals 24, 18, 8.
 - [ ] Log Progress from inside Show Progress: the table updates after saving.
+- [ ] ⌘D on "Run 20 km this week" (not reached) opens Complete Goal Task with "Log the remaining … km for today". ⌘D on "Drink 8 glasses of water" (repeating) also offers "Next Occurrence". Esc changes nothing.
 
 ## Projects and checklists
 

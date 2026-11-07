@@ -8,6 +8,7 @@
 - Cancel Task action (⇧⌘D), with preferences for what cancelling does
 - View Tasks: Today, Now, Later Today, Starred, Scheduled, Paused, Goals, and Done commands, each narrowed by the lists and smart lists that have tasks in that scope
 - Goals: track progress toward a number in a task's notes, log progress (⌘G), see a progress ring and each entry (⇧⌘G), optionally tagged in 2Do
+- Completing a goal task can log what's left, and a repeating goal can start fresh
 - Put a task inside a project or checklist from Add Task or Edit Task
 - Show Items lists a project's or checklist's items, and the parent shows their progress as a ring
 - Add Item adds an item to a project or checklist, and Add Task can create projects and checklists
