@@ -17,6 +17,7 @@ import {
   actionURL,
   CancelPrefs,
   cancelTask,
+  completeParent,
   isCancelled,
   isRepeating,
   repeatRule,
@@ -131,6 +132,26 @@ export function TaskItem({
       onChange();
     } catch (error) {
       await showFailureToast(error, { title: "2Do command failed" });
+    }
+  }
+
+  async function completeWithItems(cancelItems: boolean) {
+    try {
+      const { tasks } = await twoDo<{ tasks: Task[] }>("list_subtasks", { task_id: t.task_id });
+      const open = tasks.filter((i) => !i.completed).length;
+      const what = open === 1 ? "its open item" : `its ${open} open items`;
+      const ok = await confirmAlert({
+        title: cancelItems ? `Complete "${t.title}" and cancel ${what}?` : `Complete "${t.title}" and ${what}?`,
+        message: cancelItems ? "Each item is cancelled the way Cancel Task is set up." : undefined,
+        primaryAction: { title: cancelItems ? "Cancel Items and Complete" : "Complete All" },
+        dismissAction: { title: "Not Now" },
+      });
+      if (!ok) return;
+      await completeParent(t, cancelItems, prefs);
+      await showToast({ style: Toast.Style.Success, title: "Completed" });
+      onChange();
+    } catch (error) {
+      await showFailureToast(error, { title: "Could not complete task" });
     }
   }
 
@@ -295,16 +316,27 @@ export function TaskItem({
               ))}
             </ActionPanel.Submenu>
           )}
-          <Action
-            title={t.completed ? "Mark as Not Done" : "Complete Task"}
-            icon={t.completed ? Icon.Circle : Icon.CheckCircle}
-            shortcut={{ modifiers: ["cmd"], key: "d" }}
-            onAction={() =>
-              run(t.completed ? "Marked not done" : "Completed", t.completed ? "uncomplete_task" : "complete_task", {
-                task_id: t.task_id,
-              })
-            }
-          />
+          {isParent && !t.completed && itemsDone < (items.data?.length ?? 0) ? (
+            <ActionPanel.Submenu
+              title="Complete Task"
+              icon={Icon.CheckCircle}
+              shortcut={{ modifiers: ["cmd"], key: "d" }}
+            >
+              <Action title="Complete Task and Its Items" onAction={() => completeWithItems(false)} />
+              <Action title="Complete Task and Cancel Remaining Items" onAction={() => completeWithItems(true)} />
+            </ActionPanel.Submenu>
+          ) : (
+            <Action
+              title={t.completed ? "Mark as Not Done" : "Complete Task"}
+              icon={t.completed ? Icon.Circle : Icon.CheckCircle}
+              shortcut={{ modifiers: ["cmd"], key: "d" }}
+              onAction={() =>
+                run(t.completed ? "Marked not done" : "Completed", t.completed ? "uncomplete_task" : "complete_task", {
+                  task_id: t.task_id,
+                })
+              }
+            />
+          )}
           {!t.completed && (
             <Action
               title="Cancel Task"

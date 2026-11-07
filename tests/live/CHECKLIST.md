@@ -35,6 +35,7 @@ The happy path uses the **Demo** list, and the unhappy path uses **Live Testing*
 - [ ] Switching the List to one without projects or checklists hides the field.
 - [ ] Edit Task on a normal Demo task: picking a project moves the task into it. It then leaves the Demo task list, since items don't show there yet.
 - [ ] Edit Task on "Plan the team offsite" doesn't show the field.
+- [ ] ⌘D on "Pack for the trip" (3 open items) opens a submenu. Each choice asks to confirm, and Not Now changes nothing.
 
 ## Journal
 

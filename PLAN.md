@@ -277,7 +277,7 @@ The data, checked on Nov 6 (54 open tasks):
   - [x] A **Show Items** action (⌘I) lists a parent's items, with the usual task actions. Editing an item there keeps it in its parent unless the Project or Checklist field changes (`saveTask`'s `parentId`).
   - [x] The parent shows its items' progress, like "3/6", as a ring accessory (one `list_subtasks` call per open parent, cached).
   - If the parent is also a goal, the goal still displays and Log Progress still works, but **the ring shows item progress, not goal progress.**
-- [ ] **Completing a parent with open items:** ask whether to **complete** or **cancel** the remaining items (cancelling uses the Cancel Task preferences), with a way to back out without deciding. It always asks when there are open items.
+- [x] **Completing a parent with open items:** ask whether to **complete** or **cancel** the remaining items (cancelling uses the Cancel Task preferences), with a way to back out without deciding. It always asks when there are open items.
 - [ ] **Creating:** an **Add Item** action on projects and checklists (`create_task` under the parent), and a **Type** field (Task, Project or Checklist) in Add Task.
 - [x] **Project or Checklist field** in Add Task and Edit Task. It shows when the chosen list has any, and lists them (`listParents`).
   - Creating uses `parent_task_id` *instead of* `list_id`, since 2Do takes exactly one destination. Editing uses `move_task` with `parent_task_id`, which gives the task a new ID.
