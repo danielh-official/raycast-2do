@@ -444,7 +444,8 @@ describe("cancelTask", () => {
   const prefs: CancelPrefs = { cancelBehavior: "complete-and-tag", cancelTag: "Cancelled", cancelList: "" };
   const repeating = { ...task, recurrence: { frequency: "daily" } };
   // A fake 2Do: completing a repeating task leaves it open and adds a completed copy, as 2Do does,
-  // and search finds that copy (plus an older one from a previous day).
+  // and a search within the task's list finds that copy (plus an older one from a previous day). Like
+  // 2Do, a search with no list finds nothing.
   beforeEach(() => {
     runAppleScript.mockImplementation(async (_script: string, [command, json]: string[]) => {
       const args = JSON.parse(json);
@@ -454,11 +455,14 @@ describe("cancelTask", () => {
         return JSON.stringify({ task: { ...task, task_id: args.task_id, completed: !isRepeatingRun } });
       if (command === "query_tasks")
         return JSON.stringify({
-          tasks: [
-            { ...task, completed: false },
-            { ...task, task_id: "old", completed: true, completion_date: "2026-11-05T10:00:00Z" },
-            { ...task, task_id: "copy", completed: true, completion_date: "2026-11-06T10:00:00Z" },
-          ],
+          tasks:
+            args.list_id !== task.list_id
+              ? []
+              : [
+                  { ...task, completed: false },
+                  { ...task, task_id: "old", completed: true, completion_date: "2026-11-05T10:00:00Z" },
+                  { ...task, task_id: "copy", completed: true, completion_date: "2026-11-06T10:00:00Z" },
+                ],
         });
       return "{}";
     });
