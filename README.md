@@ -41,4 +41,6 @@ npm run test:live
 
 It empties the Live Testing list, seeds it with one task per feature, covering both happy and unhappy paths (`live/seed.js`), then runs `live/live.test.ts`, which changes those tasks. If there's no Live Testing list, it stops before changing anything.
 
+The **Demo** list is separate, and holds happy-path tasks for Store screenshots. See [SCREENSHOTS.md](SCREENSHOTS.md).
+
 For what only Raycast's interface shows, like rings, warnings, dropdowns and forms, go through [tests/live/CHECKLIST.md](tests/live/CHECKLIST.md) by hand.
