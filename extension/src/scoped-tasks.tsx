@@ -4,7 +4,7 @@ import { useMemo, useState } from "react";
 import { List as TwoDoList, SmartList, Tag, Task, twoDo } from "./2do";
 import { TaskItem } from "./task-item";
 
-export type Scope = { focus: string; include_completed: boolean; paused_filter?: "only" };
+export type Scope = { focus: string; include_completed: boolean; paused_filter?: "only"; due_on_or_before?: string };
 
 type Filter = { value: string; title: string; match: (t: Task) => boolean };
 type SmartListTasks = SmartList & { task_ids: string[] };
@@ -31,14 +31,17 @@ async function smartListTaskIds(smartListId: string, scope: Scope) {
 // picked in the dropdown is always queried fresh, so its filtering is never stale.
 // With `byPausedTag`, a Filter by Paused Tag action narrows to one paused tag first, since Raycast
 // allows only one dropdown; the dropdown then offers the lists with tasks under that tag.
+// `sections` orders the shown tasks into titled sections; by default they show in 2Do's order.
 export function ScopedTasks({
   scope,
   where = () => true,
   byPausedTag = false,
+  sections: toSections = (tasks) => [["", tasks]],
 }: {
   scope: Scope;
   where?: (t: Task) => boolean;
   byPausedTag?: boolean;
+  sections?: (tasks: Task[]) => [string, Task[]][];
 }) {
   const [filter, setFilter] = useState("all");
   const [pausedTagId, setPausedTagId] = useState<string>();
@@ -154,9 +157,16 @@ export function ScopedTasks({
       }
     >
       {!tasks.isLoading && <List.EmptyView icon={Icon.CheckCircle} title="No Tasks" />}
-      {shown.map((t) => (
-        <TaskItem key={t.task_id} task={t} onChange={reload} extraActions={tagFilter || undefined} />
-      ))}
+      {toSections(shown).map(
+        ([title, tasks]) =>
+          tasks.length > 0 && (
+            <List.Section key={title} title={title || undefined}>
+              {tasks.map((t) => (
+                <TaskItem key={t.task_id} task={t} onChange={reload} extraActions={tagFilter || undefined} />
+              ))}
+            </List.Section>
+          ),
+      )}
     </List>
   );
 }

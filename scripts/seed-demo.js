@@ -76,6 +76,7 @@ function run() {
     action: { type: "mail", value: "landlord@example.com" },
   });
   add({ title: "Review the quarterly budget", priority: "high", starred: true, due_date: iso(day(1)) });
+  add({ title: "Return the library books", due_date: iso(day(-2)), ...tagged("Outside") });
   add({
     title: "Read the Raycast extension guidelines",
     action: { type: "url", value: "https://developers.raycast.com/basics/prepare-an-extension-for-store" },

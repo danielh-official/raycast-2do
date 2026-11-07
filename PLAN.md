@@ -323,6 +323,8 @@ In this order, one commit each.
   - **Move to List and Complete:** a completed task in the Cancel List counts as cancelled (`inCancelList`, also giving it the ✕), and asks which list to move it back to, since the original isn't recorded.
   - **Tag Only** leaves tasks open, and **Delete** leaves nothing to reopen.
 
+- [x] **View Tasks: Deadlines** (added after the four above): open tasks with a due date, Overdue first, then Upcoming, each by due date (`deadlineSections`). 2Do has no "has a due date" filter, but `query_tasks` takes `due_on_or_before`, and a far-future date (`9999-12-31`) matches every due date. Its results aren't sorted, so the extension sorts them; "overdue" is 2Do's own `presentation.is_overdue`.
+
 ## Parked
 
 - Whether `create_task` with a `url` action accepts custom schemes (`readdle-spark://`, `x-apple-health://`). The form accepts them; creating one hasn't been tested.
