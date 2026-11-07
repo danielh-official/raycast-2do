@@ -274,7 +274,7 @@ The data, checked on Nov 6 (54 open tasks):
   - For a repeating goal task, also ask whether the next occurrence starts fresh (its goal reset to 0, with the history kept on the completed copy) or keeps the running total, as now. Both are valid uses: each occurrence with its own goal, or one running goal across occurrences.
 - [x] **Repeat indicator:** a repeat icon on repeating tasks, with the rule ("Daily", "Every 2 weeks") as its tooltip. No editing of repetition in the forms for now.
 - [ ] **Projects and checklists:**
-  - A **Show Items** action lists a parent's items, with the usual task actions.
+  - [x] A **Show Items** action (⌘I) lists a parent's items, with the usual task actions. Editing an item there keeps it in its parent unless the Project or Checklist field changes (`saveTask`'s `parentId`).
   - The parent shows its items' progress, like "3/6", as a ring.
   - If the parent is also a goal, the goal still displays and Log Progress still works, but **the ring shows item progress, not goal progress.**
 - [ ] **Completing a parent with open items:** ask whether to **complete** or **cancel** the remaining items (cancelling uses the Cancel Task preferences), with a way to back out without deciding. It always asks when there are open items.
