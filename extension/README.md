@@ -48,6 +48,7 @@ Browse tasks by scope: All, Today, Starred, Scheduled, Done, any list, or any sm
 | Complete / Mark as Not Done         | ⌘D       |
 | Cancel Task                         | ⇧⌘D      |
 | Log Progress (goals)                | ⌘G       |
+| Show Progress (goals)               | ⇧⌘G      |
 | Add Journal Entry                   | ⌘J       |
 | Show Journal                        | ⇧⌘J      |
 | Star / Unstar                       | ⌘.       |
@@ -74,6 +75,7 @@ The extension writes one date-only line per day, newest first, in the **Goal Dat
 - **Make a goal:** check **Add a goal** in Add Task or Edit Task, and fill in **Total**, **Units** and, optionally, **Current**. When Current is above 0, **Last Completed** sets its date (today by default). To also tag goals in 2Do, set **Goal Tag** in the extension's preferences to a tag that already exists in 2Do. It's empty by default, so goals aren't tagged.
 - **Change a goal:** Edit Task changes Total and Units, keeping its history. Unchecking **Add a goal** removes the goal and its history, after asking.
 - **Log Progress (⌘G):** add an amount for a day (today by default). Logging twice on one day adds to that day's date-only line. When the total is reached, a toast offers to complete the task.
+- **Show Progress (⇧⌘G):** the goal's summary ("24 of 40 pages · 60% · +6 today"), then each entry, newest first, with its amount and the running total. Dates follow the same display preferences as Show Journal.
 - **In task lists:** a goal task shows a progress ring, with today's share in a second color, and "13/32 pages".
 
 ### Journal
@@ -95,7 +97,7 @@ They'll send the paperwork.
 An entry starts with a date and optional time in any common format. Short entries put the text after `-` on the same line. Longer ones put the timestamp on its own line, with the text below. No tag is involved.
 
 - **Add Journal Entry (⌘J):** on any task. Write the entry and pick when it happened (now by default). Leave the time out for a date-only entry. The entry is written in the **Journal Date Format** preference ("November 6, 2026 2:05 pm" by default) and slotted in by time. Lines you typed are never rewritten.
-- **Show Journal (⇧⌘J):** reads a task's entries, newest first, with dates like "Friday, November 6 3 pm (2 hours ago)". The year shows only for other years. The **Journal Display Date** preference picks the date style, including how it's written in the notes, and **Show relative time** turns the part in parentheses on or off. Tasks with a journal show a book icon.
+- **Show Journal (⇧⌘J):** reads a task's entries, newest first, with dates like "Friday, November 6 3 pm (2 hours ago)". The year shows only for other years. The **Entry Display Date** preference picks the date style, including how it's written in the notes, and **Show relative time** turns the part in parentheses on or off. Both also apply to Show Progress. Tasks with a journal show a book icon.
 
 Edit Task's Notes field leaves out the goal and journal blocks and saves them as they are, after the rest of the notes. Use Log Progress and Add Journal Entry to change them.
 

@@ -14,7 +14,8 @@ import { DayFormat, formatDay, parseTimestamp } from "./dates";
 // times count toward their day. Other lines in the block are ignored, and the extension never
 // rewrites lines it didn't write: logging updates or adds a date-only line, and editing the goal
 // only changes the header. Text outside the block is left alone.
-export type GoalEntry = { day: string; amount: number; hasTime: boolean; line: number };
+// `stamp` is the timestamp as written; `at` orders entries (see Timestamp).
+export type GoalEntry = { day: string; amount: number; hasTime: boolean; at: number; stamp: string; line: number };
 export type Goal = { total: number; unit: string; entries: GoalEntry[] };
 
 export const HEADER = /^@goal:\s*(\d+(?:\.\d+)?)\s*(.*)$/i;
@@ -34,8 +35,9 @@ function readEntry(text: string, dayFirst?: boolean) {
   for (const sep of text.matchAll(/:\s*|\s[-–—]\s+/g)) {
     const amount = text.slice(sep.index + sep[0].length);
     if (!AMOUNT.test(amount)) continue;
-    const timestamp = parseTimestamp(text.slice(0, sep.index), dayFirst);
-    if (timestamp) return { day: timestamp.day, hasTime: timestamp.hasTime, amount: Number(amount) };
+    const stamp = text.slice(0, sep.index).trim();
+    const timestamp = parseTimestamp(stamp, dayFirst);
+    if (timestamp) return { ...timestamp, stamp, amount: Number(amount) };
   }
 }
 
@@ -154,6 +156,16 @@ export function closeGoal(notes: string, dayFirst?: boolean) {
   const after = parseGoal(notes, dayFirst)!.entries.at(-1)?.line ?? block.start;
   lines.splice(after + 1, 0, "", "@endgoal", ...(lines[after + 1]?.trim() ? [""] : []));
   return lines.join("\n");
+}
+
+// Entries newest first, each with the running total up to and including it. Entries at the same
+// moment keep the notes' order, which lists newer first.
+export function progressHistory(goal: Goal) {
+  let total = 0;
+  return [...goal.entries]
+    .sort((a, b) => a.at - b.at || b.line - a.line)
+    .map((e) => ({ ...e, total: (total = round(total + e.amount)) }))
+    .reverse();
 }
 
 export function goalProgress(goal: Goal, today: string) {

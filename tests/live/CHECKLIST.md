@@ -26,6 +26,8 @@ The happy path uses the **Demo** list, and the unhappy path uses **Live Testing*
 - [ ] Change Total to 50, save, and in 2Do only the `@goal:` line changed.
 - [ ] Uncheck "Add a goal" and save: it asks "Remove the goal?". Cancel leaves it unchanged.
 - [ ] Add Task with "Add a goal" checked, Current 3: Last Completed appears, set to today. Saving writes a block with a line like "November 6, 2026: 3".
+- [ ] Show Progress (⇧⌘G) on "Read Designing Data-Intensive Applications": "24 of 40 pages · 60% · +6 today", then a table of three entries, newest first, with totals 24, 18, 8.
+- [ ] Log Progress from inside Show Progress: the table updates after saving.
 
 ## Projects and checklists
 
