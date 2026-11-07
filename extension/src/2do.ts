@@ -51,6 +51,9 @@ export type TaskValues = {
   action_value?: string;
   // A project or checklist in the list to put the task in, or "" for the list itself.
   parent_id?: string;
+  // New tasks only: "normal", "project", or "checklist". A project or checklist goes in the list,
+  // never in another one.
+  task_type?: string;
   // Undefined when the form leaves the goal alone. Current and Last Completed only apply when a
   // task first becomes a goal; after that, progress is logged.
   is_goal?: boolean;
@@ -248,9 +251,11 @@ export async function saveTask(v: TaskValues, task?: Task, parentId?: string) {
       ? { type: "none" }
       : { type: v.action_type, value: v.action_value?.trim() };
   if (!task) {
+    const nests = v.parent_id && (!v.task_type || v.task_type === "normal");
     await twoDo("create_task", {
       ...fields,
-      ...(v.parent_id ? { parent_task_id: v.parent_id } : { list_id: v.list_id }),
+      ...(nests ? { parent_task_id: v.parent_id } : { list_id: v.list_id }),
+      ...(v.task_type && v.task_type !== "normal" && { task_type: v.task_type }),
       notes: v.notes || undefined,
       ...(v.tag_ids.length > 0 && { tag_update: { operation: "set", tag_ids: v.tag_ids } }),
       ...(action.type !== "none" && { action }),

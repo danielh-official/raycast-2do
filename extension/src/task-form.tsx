@@ -62,6 +62,7 @@ export function TaskForm({
           action_type: link ? "url" : "none",
           action_value: link?.url ?? "",
           parent_id: addTo?.task_id ?? "",
+          task_type: "normal",
           ...(addTo && { list_id: addTo.list_id }),
           is_goal: false,
           goal_last: new Date(),
@@ -133,6 +134,13 @@ export function TaskForm({
         />
       )}
       <Form.TextField title="Title" placeholder="Task" {...itemProps.title} />
+      {!task && !addTo && (
+        <Form.Dropdown title="Type" {...itemProps.task_type}>
+          <Form.Dropdown.Item value="normal" title="Task" icon={Icon.Circle} />
+          <Form.Dropdown.Item value="project" title="Project" icon={Icon.Folder} />
+          <Form.Dropdown.Item value="checklist" title="Checklist" icon={Icon.CheckList} />
+        </Form.Dropdown>
+      )}
       <Form.TextArea
         title="Notes"
         placeholder="Notes"
@@ -173,7 +181,7 @@ export function TaskForm({
           ))}
         </Form.Dropdown>
       )}
-      {(parents.data?.length ?? 0) > 0 && (
+      {(parents.data?.length ?? 0) > 0 && (values.task_type ?? "normal") === "normal" && (
         <Form.Dropdown title="Project or Checklist" {...itemProps.parent_id}>
           <Form.Dropdown.Item value="" title="None" icon={Icon.Minus} />
           {parents.data?.map((p) => (

@@ -203,6 +203,15 @@ describe("saveTask", () => {
     expect(sent()[0][1]).not.toHaveProperty("list_id");
   });
 
+  it("creates a project or checklist in the list, never inside another", async () => {
+    await saveTask({ ...values, task_type: "checklist", parent_id: "p1" });
+    expect(sent()[0][1]).toMatchObject({ task_type: "checklist", list_id: "inbox" });
+    expect(sent()[0][1]).not.toHaveProperty("parent_task_id");
+    runAppleScript.mockClear();
+    await saveTask({ ...values, task_type: "normal" });
+    expect(sent()[0][1]).not.toHaveProperty("task_type");
+  });
+
   it("moves an edited task into a project or checklist, rather than to the list", async () => {
     await saveTask({ ...taskToValues(task), list_id: "work", parent_id: "p1" }, task);
     expect(sent().map(([command, args]) => [command, args.parent_task_id ?? args.list_id])).toEqual([
