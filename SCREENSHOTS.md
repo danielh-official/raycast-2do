@@ -4,6 +4,14 @@ Raycast Store screenshots live in `extension/metadata/` as 2000 × 1250 PNGs, nu
 
 The Store shows at most **six** screenshots, so the needed ones below are in priority order. A suggested final set is at the end.
 
+**Demo tasks:** a list named **Demo** in 2Do holds realistic, happy-path tasks for screenshots: actions, goals with progress, a journal, a project, a checklist, and repeating, paused and cancelled tasks. Keep the list for screenshots only. To reset it to fresh tasks with dates relative to today, run from the repo root:
+
+```bash
+osascript -l JavaScript scripts/clear-demo.js && osascript -l JavaScript scripts/seed-demo.js
+```
+
+The edge cases are in a separate **Live Testing** list, for `npm run test:live`.
+
 **Capturing:**
 
 - Use Raycast's **Capture Window** command with **Save to Metadata**, running the extension in `npm run dev` (Capture Window hides development-only elements).
