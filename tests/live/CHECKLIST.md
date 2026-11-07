@@ -55,7 +55,7 @@ The happy path uses the **Demo** list, and the unhappy path uses **Live Testing*
 - [ ] View Tasks: Today's dropdown only offers lists and smart lists with tasks today. Picking Demo narrows the list.
 - [ ] View Tasks: Later Today shows "Evening walk" (before 7:30 pm); View Tasks: Now doesn't.
 - [ ] View Tasks: Goals shows the three Demo goals.
-- [ ] View Tasks: Paused shows "Learn the cello", and the dropdown has a Paused Tags section with Someday.
+- [ ] View Tasks: Paused shows "Learn the cello". Filter by Paused Tag (⌘T) offers Someday; picking it puts "(Someday)" in the title, and the dropdown then offers only lists with Someday tasks. "All Paused Tags" clears it.
 - [ ] View Tasks: Done shows "Try a new note-taking app" with a gray ✕, and "Renew the car registration" with a green check.
 - [ ] Reopen a scoped command within 10 minutes: no long loading bar (cached smart lists).
 

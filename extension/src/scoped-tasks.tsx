@@ -1,4 +1,4 @@
-import { Cache, Icon, List } from "@raycast/api";
+import { Action, ActionPanel, Cache, Icon, List } from "@raycast/api";
 import { useCachedPromise, usePromise } from "@raycast/utils";
 import { useMemo, useState } from "react";
 import { List as TwoDoList, SmartList, Tag, Task, twoDo } from "./2do";
@@ -29,6 +29,8 @@ async function smartListTaskIds(smartListId: string, scope: Scope) {
 // Querying every smart list is slow with many of them, so their task IDs are cached per scope and
 // refreshed when a command opens at most every 10 minutes, or after a task action. A smart list
 // picked in the dropdown is always queried fresh, so its filtering is never stale.
+// With `byPausedTag`, a Filter by Paused Tag action narrows to one paused tag first, since Raycast
+// allows only one dropdown; the dropdown then offers the lists with tasks under that tag.
 export function ScopedTasks({
   scope,
   where = () => true,
@@ -39,6 +41,7 @@ export function ScopedTasks({
   byPausedTag?: boolean;
 }) {
   const [filter, setFilter] = useState("all");
+  const [pausedTagId, setPausedTagId] = useState<string>();
   const tasks = useCachedPromise(
     // ponytail: capped at 200, as in View Tasks
     (scope: Scope) => twoDo<{ tasks: Task[] }>("query_tasks", { ...scope, limit: 200 }).then((r) => r.tasks),
@@ -72,16 +75,13 @@ export function ScopedTasks({
   const picked = filter.startsWith("smart-list:") ? smartListData.find((l) => l.collection_id === filter) : undefined;
   const pickedTasks = usePromise(smartListTaskIds, [picked?.smart_list_id ?? "", scope], { execute: !!picked });
 
-  const inScope = (tasks.data ?? []).filter((t) => where(t));
+  const scoped = (tasks.data ?? []).filter((t) => where(t));
+  const hasTag = (tagId: string) => (t: Task) => t.tags.some((x) => x.tag_id === tagId);
+  // A paused tag whose last task left the scope falls back to all paused tags.
+  const tagsInScope = (pausedTags.data ?? []).filter((tag) => scoped.some(hasTag(tag.tag_id)));
+  const pausedTag = tagsInScope.find((tag) => tag.tag_id === pausedTagId);
+  const inScope = pausedTag ? scoped.filter(hasTag(pausedTag.tag_id)) : scoped;
   const sections: [string, Filter[]][] = [
-    [
-      "Paused Tags",
-      (byPausedTag ? (pausedTags.data ?? []) : []).map((tag) => ({
-        value: `tag:${tag.tag_id}`,
-        title: tag.title,
-        match: (t) => t.tags.some((x) => x.tag_id === tag.tag_id),
-      })),
-    ],
     [
       "Lists",
       (lists.data ?? []).map((l) => ({
@@ -112,15 +112,34 @@ export function ScopedTasks({
     if (picked) pickedTasks.revalidate();
   }
 
+  const tagFilter = tagsInScope.length > 0 && (
+    <ActionPanel.Submenu title="Filter by Paused Tag" icon={Icon.Tag} shortcut={{ modifiers: ["cmd"], key: "t" }}>
+      <Action
+        title="All Paused Tags"
+        icon={pausedTag ? Icon.Tag : Icon.Checkmark}
+        onAction={() => setPausedTagId(undefined)}
+      />
+      {tagsInScope.map((tag) => (
+        <Action
+          key={tag.tag_id}
+          title={tag.title}
+          icon={tag === pausedTag ? Icon.Checkmark : Icon.Tag}
+          onAction={() => setPausedTagId(tag.tag_id)}
+        />
+      ))}
+    </ActionPanel.Submenu>
+  );
+
   return (
     <List
+      navigationTitle={pausedTag ? `View Tasks: Paused (${pausedTag.title})` : undefined}
       isLoading={
         tasks.isLoading || lists.isLoading || smartLists.isLoading || pickedTasks.isLoading || pausedTags.isLoading
       }
       searchBarPlaceholder="Filter tasks"
       searchBarAccessory={
         <List.Dropdown tooltip="Filter" value={active?.value ?? "all"} onChange={setFilter}>
-          <List.Dropdown.Item value="all" title={byPausedTag ? "All Paused" : "All Lists"} icon={Icon.Tray} />
+          <List.Dropdown.Item value="all" title="All Lists" icon={Icon.Tray} />
           {offered.map(
             ([title, filters]) =>
               filters.length > 0 && (
@@ -136,7 +155,7 @@ export function ScopedTasks({
     >
       {!tasks.isLoading && <List.EmptyView icon={Icon.CheckCircle} title="No Tasks" />}
       {shown.map((t) => (
-        <TaskItem key={t.task_id} task={t} onChange={reload} />
+        <TaskItem key={t.task_id} task={t} onChange={reload} extraActions={tagFilter || undefined} />
       ))}
     </List>
   );

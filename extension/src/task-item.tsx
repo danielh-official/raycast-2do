@@ -72,15 +72,17 @@ const RUN_ACTION: Record<string, { title: string; icon: Icon }> = {
 };
 
 // A task row with its actions. `onChange` reloads the list after an action changes the task.
-// `parentId` is set for a project's or checklist's items.
+// `parentId` is set for a project's or checklist's items. `extraActions` are the list's own.
 export function TaskItem({
   task: t,
   parentId,
   onChange: reloadList,
+  extraActions,
 }: {
   task: Task;
   parentId?: string;
   onChange: () => void;
+  extraActions?: ActionPanel.Section.Children;
 }) {
   // A project's or checklist's ring counts its items, even when it's also a goal.
   const isParent = t.task_type !== "normal";
@@ -374,6 +376,7 @@ export function TaskItem({
             shortcut={Keyboard.Shortcut.Common.Open}
             onAction={() => twoDo("open_task", { task_id: t.task_id }).catch((e) => showFailureToast(e))}
           />
+          {extraActions && <ActionPanel.Section>{extraActions}</ActionPanel.Section>}
         </ActionPanel>
       }
     />
