@@ -22,7 +22,16 @@ export type Task = {
   due_time?: string;
   tags: Tag[];
   task_type: "normal" | "project" | "checklist";
-  recurrence?: { frequency?: string } | null;
+  recurrence?: {
+    frequency?: string;
+    interval?: number;
+    unit?: string;
+    weekdays?: string[];
+    weekday?: string;
+    ordinal?: number | string;
+    based_on?: string;
+    end_rule?: { type?: string; occurrence_count?: number; date?: string };
+  } | null;
   completion_date?: string;
   action: { type: string; value?: string };
   presentation: { due_date_formatted?: string; is_overdue: boolean };
@@ -320,6 +329,35 @@ export async function requireTag(title: string, fix: string): Promise<Tag> {
 }
 
 export const isRepeating = (task: Task) => !!task.recurrence?.frequency && task.recurrence.frequency !== "none";
+
+const day3 = (d: string) => d.slice(0, 1).toUpperCase() + d.slice(1, 3);
+const ordinal = (n: number | string) => {
+  const v = Number(n);
+  if (!Number.isInteger(v)) return String(n);
+  if (v === -1) return "last";
+  const teen = v % 100 >= 11 && v % 100 <= 13;
+  return `${v}${teen ? "th" : (({ 1: "st", 2: "nd", 3: "rd" } as Record<number, string>)[v % 10] ?? "th")}`;
+};
+
+// A repeating task's rule in words, like "Every 3 days" or "Weekly on Mon, Tue, after completion".
+export function repeatRule(task: Task) {
+  const r = task.recurrence;
+  if (!r || !isRepeating(task)) return;
+  const base: Record<string, string> = { daily: "Daily", weekly: "Weekly", monthly: "Monthly", yearly: "Yearly" };
+  let rule =
+    r.frequency === "custom" && r.interval
+      ? `Every ${r.interval === 1 ? "" : `${r.interval} `}${r.unit ?? "day"}${r.interval === 1 ? "" : "s"}`
+      : r.frequency === "weekdays"
+        ? "On weekdays"
+        : (base[r.frequency!] ?? r.frequency!.slice(0, 1).toUpperCase() + r.frequency!.slice(1));
+  if (r.weekdays?.length) rule += ` on ${r.weekdays.map(day3).join(", ")}`;
+  else if (r.weekday && r.ordinal !== undefined) rule += ` on the ${ordinal(r.ordinal)} ${day3(r.weekday)}`;
+  if (r.based_on === "completion") rule += ", after completion";
+  if (r.end_rule?.type === "after_count" && r.end_rule.occurrence_count)
+    rule += `, ${r.end_rule.occurrence_count} times`;
+  if (r.end_rule?.type === "on_date" && r.end_rule.date) rule += `, until ${r.end_rule.date}`;
+  return rule;
+}
 
 // Completes `task` and returns the ID of the completed occurrence. For a repeating task, 2Do keeps the
 // open task (moved to its next date) and adds a completed copy, which only a search by title finds.
