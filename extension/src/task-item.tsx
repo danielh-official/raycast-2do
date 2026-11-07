@@ -256,6 +256,14 @@ export function TaskItem({
             icon={Icon.Pencil}
             target={<TaskForm task={t} parentId={parentId} onSaved={onChange} />}
           />
+          {isParent && !t.completed && (
+            <Action.Push
+              title="Add Item"
+              icon={Icon.Plus}
+              shortcut={Keyboard.Shortcut.Common.New}
+              target={<TaskForm addTo={t} onSaved={onChange} />}
+            />
+          )}
           {t.task_type !== "normal" && (
             <Action.Push
               title="Show Items"

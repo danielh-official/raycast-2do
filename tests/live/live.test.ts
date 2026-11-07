@@ -219,6 +219,24 @@ describe("writing to the live-test tasks", () => {
     expect((await all()).some((t) => t.title === desks.title)).toBe(false);
   });
 
+  it("adds an item to a checklist the way Add Item submits it (no list or dates)", async () => {
+    const checklist = (await listParents(listId)).find((p) => p.task_type === "checklist")!;
+    await saveTask({
+      title: "Sunglasses",
+      notes: "",
+      list_id: "",
+      start: null,
+      due: null,
+      priority: "none",
+      starred: false,
+      tag_ids: [],
+      action_type: "none",
+      parent_id: checklist.task_id,
+    });
+    const items = (await twoDo<{ tasks: Task[] }>("list_subtasks", { task_id: checklist.task_id })).tasks;
+    expect(items.map((t) => t.title)).toContain("Sunglasses");
+  });
+
   it("completes a project and cancels only its open items", async () => {
     const project = await find("Plan the team offsite");
     const before = (await twoDo<{ tasks: Task[] }>("list_subtasks", { task_id: project.task_id })).tasks;

@@ -10,6 +10,7 @@
 - Goals: track progress toward a number in a task's notes, log progress (⌘G), see a progress ring and each entry (⇧⌘G), optionally tagged in 2Do
 - Put a task inside a project or checklist from Add Task or Edit Task
 - Show Items lists a project's or checklist's items, and the parent shows their progress as a ring
+- Add Item adds an item to a project or checklist
 - Completing a project or checklist with open items asks whether to complete or cancel them
 - Journal: timestamped entries in a task's notes, added with ⌘J and read with ⇧⌘J
 - Warnings, and a fix action, when a goal's or journal's syntax is off
