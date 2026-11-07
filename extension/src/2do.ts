@@ -560,6 +560,17 @@ export async function reopenTask(task: Task, p: CancelPrefs, listId?: string) {
   if (listId && listId !== task.list_id) await twoDo("move_task", { task_id: task.task_id, list_id: listId });
 }
 
+// Deadlines' sections: overdue tasks (as 2Do judges them), then the rest, each by due date, with timed
+// tasks before full-day ones on the same day.
+export function deadlineSections(tasks: Task[]): [string, Task[]][] {
+  const key = (t: Task) => `${t.due_date} ${t.due_time ?? "~"}`;
+  const sorted = [...tasks].sort((a, b) => (key(a) < key(b) ? -1 : key(a) > key(b) ? 1 : 0));
+  return [
+    ["Overdue", sorted.filter((t) => t.presentation.is_overdue)],
+    ["Upcoming", sorted.filter((t) => !t.presentation.is_overdue)],
+  ];
+}
+
 // Scope values are 2Do collection ids ("list:<id>", "smart-list:<id>") or "focus:<name>".
 export function scopeArgs(scope: string) {
   const [kind, id] = scope.split(":");

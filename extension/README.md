@@ -116,13 +116,14 @@ If a goal or journal's syntax is off, the task shows a ⚠️ explaining what's 
 
 Repeating tasks keep their notes when 2Do creates the next occurrence, so a repeating goal carries its progress forward, unless you choose to start fresh when completing it.
 
-### View Tasks: Today, Now, Later Today, Starred, Scheduled, Paused, Goals, Done
+### View Tasks: Today, Now, Later Today, Starred, Scheduled, Paused, Goals, Deadlines, Done
 
 One command per scope, so you can open it straight from Raycast's root search or give it a hotkey. Each has the same task actions as View Tasks. Its dropdown narrows the scope to one list or smart list, and only offers those that contain at least one of the scope's tasks. Which smart lists hold which tasks is cached and refreshed at most every 10 minutes, or after a task action. A smart list you pick is always checked fresh.
 
 - **Now** is today's tasks that have started: no start time, or a start time that has passed. **Later Today** is the rest of today's tasks.
 - **Paused** is the tasks hidden by paused tags. **Filter by Paused Tag** (⌘T) narrows it to one paused tag, shown in the title, and the dropdown then narrows that tag's tasks by list or smart list.
 - **Goals** is the open tasks with a goal in their notes.
+- **Deadlines** is the open tasks with a due date: an **Overdue** section first, then **Upcoming**, each in due-date order, with timed tasks before full-day ones on the same day.
 
 ### Cancel Task
 
