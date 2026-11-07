@@ -1,10 +1,7 @@
 # 2Do Changelog
 
-## [Links, Actions, Goals, Journal, and Scoped Views] - {PR_MERGE_DATE}
+## [Goals, Journal, and Scoped Views] - {PR_MERGE_DATE}
 
-- Add Link command that creates a task from a web address, optionally reading the page's title and description
-- Set a task's 2Do action (link, call, message, email, visit, or Google search) when adding or editing it
-- Run a task's action (⌘L), or choose from all of its links (⇧⌘L)
 - Cancel Task action (⇧⌘D), with preferences for what cancelling does
 - Mark as Not Done on a cancelled task removes the cancel tag, or moves it out of the Cancel List
 - View Tasks: Today, Now, Later Today, Starred, Scheduled, Paused, Goals, Deadlines, and Done commands, each narrowed by the lists and smart lists that have tasks in that scope
@@ -22,6 +19,12 @@
 - Journal: timestamped entries in a task's notes, added with ⌘J and listed with ⇧⌘J
 - Warnings, and a fix action, when a goal's or journal's syntax is off
 - A clear message when 2Do is too old for this extension, or not installed
+
+## [Links and Actions] - {PR_MERGE_DATE}
+
+- Add Link command that creates a task from a web address, optionally reading the page's title and description
+- Set a task's 2Do action (link, call, message, email, visit, or Google search) when adding or editing it
+- Run a task's action (⌘L), or choose from all of its links (⇧⌘L)
 
 ## [Initial Version] - 2026-11-01
 
