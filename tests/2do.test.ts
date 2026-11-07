@@ -10,8 +10,10 @@ import {
   dateFields,
   GoalPrefs,
   hasStarted,
+  inCancelList,
   isCancelled,
   recurrenceArgs,
+  reopenTask,
   repeatRule,
   repeatValueError,
   repeatValues,
@@ -685,6 +687,38 @@ describe("isCancelled", () => {
     expect(isCancelled({ ...tagged, completed: true }, prefs)).toBe(true);
     expect(isCancelled(tagged, prefs)).toBe(false);
     expect(isCancelled({ ...task, completed: true }, prefs)).toBe(false);
+  });
+
+  it("is a completed task in the Cancel List, when cancelling moves tasks there", () => {
+    const prefs: CancelPrefs = { cancelBehavior: "move", cancelTag: "Cancelled", cancelList: "graveyard" };
+    const moved = { ...task, list_title: "Graveyard", completed: true };
+    expect(isCancelled(moved, prefs)).toBe(true);
+    expect(inCancelList(moved, prefs)).toBe(true);
+    expect(isCancelled({ ...moved, completed: false }, prefs)).toBe(false);
+    expect(inCancelList(moved, { ...prefs, cancelBehavior: "complete-and-tag" })).toBe(false);
+  });
+});
+
+describe("reopenTask", () => {
+  const prefs: CancelPrefs = { cancelBehavior: "complete-and-tag", cancelTag: "cancelled", cancelList: "" };
+
+  it("marks the task not done and removes the cancel tag", async () => {
+    const cancelled = { ...task, completed: true, tags: [...task.tags, { tag_id: "c1", title: "Cancelled" }] };
+    await reopenTask(cancelled, prefs);
+    expect(sent()).toEqual([
+      ["uncomplete_task", { task_id: "t1" }],
+      ["update_task", { task_id: "t1", tag_update: { operation: "remove", tag_ids: ["c1"] } }],
+    ]);
+  });
+
+  it("only marks a task without the cancel tag not done", async () => {
+    await reopenTask({ ...task, completed: true }, prefs);
+    expect(sent()).toEqual([["uncomplete_task", { task_id: "t1" }]]);
+  });
+
+  it("moves it to the chosen list", async () => {
+    await reopenTask({ ...task, completed: true }, prefs, "home");
+    expect(sent()[1]).toEqual(["move_task", { task_id: "t1", list_id: "home" }]);
   });
 });
 

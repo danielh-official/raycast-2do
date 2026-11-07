@@ -540,7 +540,24 @@ export async function completeParent(parent: Task, cancelItems: boolean, p: Canc
 }
 
 export function isCancelled(task: Task, p: CancelPrefs) {
-  return task.completed && task.tags.some((t) => sameTitle(t.title, p.cancelTag));
+  return task.completed && (task.tags.some((t) => sameTitle(t.title, p.cancelTag)) || inCancelList(task, p));
+}
+
+// A completed task in the Cancel List was cancelled by moving it there.
+export function inCancelList(task: Task, p: CancelPrefs) {
+  return (
+    task.completed && p.cancelBehavior === "move" && !!p.cancelList.trim() && sameTitle(task.list_title, p.cancelList)
+  );
+}
+
+// Marks a completed task not done, undoing a cancel: the cancel tag comes off, and with `listId`, the
+// task moves there (out of the Cancel List, since where it came from isn't recorded).
+export async function reopenTask(task: Task, p: CancelPrefs, listId?: string) {
+  await twoDo("uncomplete_task", { task_id: task.task_id });
+  const tag = task.tags.find((t) => sameTitle(t.title, p.cancelTag));
+  if (tag)
+    await twoDo("update_task", { task_id: task.task_id, tag_update: { operation: "remove", tag_ids: [tag.tag_id] } });
+  if (listId && listId !== task.list_id) await twoDo("move_task", { task_id: task.task_id, list_id: listId });
 }
 
 // Scope values are 2Do collection ids ("list:<id>", "smart-list:<id>") or "focus:<name>".
