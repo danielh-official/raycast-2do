@@ -44,6 +44,9 @@ const PRIORITY_TAGS = {
   low: { value: "Low", color: Color.Blue },
 };
 
+// Projects and checklists keep their type icon even when they're goals.
+const PARENT_ICONS = { project: Icon.Folder, checklist: Icon.CheckList };
+
 // The ⌘L action for each 2Do action type.
 const RUN_ACTION: Record<string, { title: string; icon: Icon }> = {
   url: { title: "Open Link", icon: Icon.Link },
@@ -139,9 +142,11 @@ export function TaskItem({ task: t, onChange }: { task: Task; onChange: () => vo
           ? { source: Icon.XMarkCircle, tintColor: Color.SecondaryText }
           : t.completed
             ? { source: Icon.CheckCircle, tintColor: Color.Green }
-            : goal && progress
-              ? goalIcon(progress.done, progress.today, goal.total)
-              : Icon.Circle
+            : t.task_type !== "normal"
+              ? { source: PARENT_ICONS[t.task_type], tooltip: t.task_type === "project" ? "Project" : "Checklist" }
+              : goal && progress
+                ? goalIcon(progress.done, progress.today, goal.total)
+                : Icon.Circle
       }
       accessories={[
         ...(issues.length

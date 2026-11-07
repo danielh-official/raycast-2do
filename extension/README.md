@@ -38,6 +38,8 @@ Either way, the task form opens with the address as the task's Link action, so 2
 
 Browse tasks by scope: All, Today, Starred, Scheduled, Done, any list, or any smart list. Type to filter by title, notes, tag, or link.
 
+Projects show a folder icon, and checklists a checklist icon.
+
 ⌘L runs the task's 2Do action: it opens the link, calls or messages the number (through FaceTime or Messages), starts an email, opens the place in Maps, or searches Google. A task with no action opens the first link in its notes instead. An icon shows which kind of action a task has. Choose Link lists every link, from the action and the notes.
 
 | Action                              | Shortcut |
