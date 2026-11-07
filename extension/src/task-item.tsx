@@ -12,7 +12,7 @@ import {
   showToast,
   Toast,
 } from "@raycast/api";
-import { showFailureToast } from "@raycast/utils";
+import { showFailureToast, useCachedPromise } from "@raycast/utils";
 import {
   actionURL,
   CancelPrefs,
@@ -34,7 +34,8 @@ import { TaskForm } from "./task-form";
 import { checkNotes, fixNotes } from "./notes";
 import { dayFirst } from "./preferences";
 
-// A progress ring like getProgressIcon's, with today's share of the progress in a second color.
+// A progress ring like getProgressIcon's, with today's share of the progress in a second color. Also used
+// for a project's or checklist's items, with no today share.
 function goalIcon(done: number, today: number, total: number) {
   const share = (n: number) => Math.max(0, Math.min(1, n / total));
   const todayShare = Math.min(share(done), share(today));
@@ -71,7 +72,27 @@ const RUN_ACTION: Record<string, { title: string; icon: Icon }> = {
 
 // A task row with its actions. `onChange` reloads the list after an action changes the task.
 // `parentId` is set for a project's or checklist's items.
-export function TaskItem({ task: t, parentId, onChange }: { task: Task; parentId?: string; onChange: () => void }) {
+export function TaskItem({
+  task: t,
+  parentId,
+  onChange: reloadList,
+}: {
+  task: Task;
+  parentId?: string;
+  onChange: () => void;
+}) {
+  // A project's or checklist's ring counts its items, even when it's also a goal.
+  const isParent = t.task_type !== "normal";
+  const items = useCachedPromise(
+    (id: string) => twoDo<{ tasks: Task[] }>("list_subtasks", { task_id: id }).then((r) => r.tasks),
+    [t.task_id],
+    { execute: isParent && !t.completed },
+  );
+  const itemsDone = items.data?.filter((i) => i.completed).length ?? 0;
+  const onChange = () => {
+    reloadList();
+    if (isParent) items.revalidate();
+  };
   const prefs = getPreferenceValues<CancelPrefs>();
   const links = taskLinks(t);
   const actionTarget = actionURL(t.action);
@@ -168,6 +189,15 @@ export function TaskItem({ task: t, parentId, onChange }: { task: Task; parentId
               {
                 icon: { source: Icon.Warning, tintColor: Color.Orange },
                 tooltip: issues.map((i) => i.message).join("\n"),
+              },
+            ]
+          : []),
+        ...(isParent && !t.completed && items.data?.length
+          ? [
+              {
+                icon: goalIcon(itemsDone, 0, items.data.length),
+                text: `${itemsDone}/${items.data.length}`,
+                tooltip: `${itemsDone} of ${items.data.length} items done`,
               },
             ]
           : []),
