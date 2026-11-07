@@ -5,6 +5,7 @@ import {
   applyGoal,
   CancelPrefs,
   cancelTask,
+  completeParent,
   dateFields,
   GoalPrefs,
   hasStarted,
@@ -464,6 +465,43 @@ describe("applyGoal", () => {
     expect(await applyGoal({ ...base, is_goal: undefined }, prefs)).toEqual({ ...base, is_goal: undefined });
     expect(await applyGoal({ ...base, is_goal: false }, prefs)).toEqual({ ...base, is_goal: false });
     expect(runAppleScript).not.toHaveBeenCalled();
+  });
+});
+
+describe("completeParent", () => {
+  const prefs: CancelPrefs = { cancelBehavior: "complete-and-tag", cancelTag: "Cancelled", cancelList: "" };
+  const project = { ...task, task_id: "p1", task_type: "project" as const };
+  beforeEach(() => {
+    runAppleScript.mockImplementation(async (_script: string, [command, json]: string[]) => {
+      const args = JSON.parse(json);
+      if (command === "list_subtasks")
+        return JSON.stringify({
+          tasks: [
+            { ...task, task_id: "i1", completed: false },
+            { ...task, task_id: "i2", completed: true },
+          ],
+        });
+      if (command === "list_tags") return JSON.stringify({ tags: [{ tag_id: "c1", title: "Cancelled" }] });
+      if (command === "complete_task")
+        return JSON.stringify({ task: { ...task, task_id: args.task_id, completed: true } });
+      return "{}";
+    });
+  });
+
+  it("completes the parent, which completes its items", async () => {
+    await completeParent(project, false, prefs);
+    expect(sent()).toEqual([["complete_task", { task_id: "p1" }]]);
+  });
+
+  it("cancels only the open items first, then completes the parent", async () => {
+    await completeParent(project, true, prefs);
+    expect(sent().map(([command, args]) => `${command}:${args.task_id ?? ""}`)).toEqual([
+      "list_subtasks:p1",
+      "list_tags:",
+      "complete_task:i1",
+      "update_task:i1",
+      "complete_task:p1",
+    ]);
   });
 });
 

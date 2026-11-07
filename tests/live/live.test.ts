@@ -16,6 +16,7 @@ import {
   actionURL,
   applyGoal,
   cancelTask,
+  completeParent,
   hasStarted,
   isRepeating,
   listParents,
@@ -216,6 +217,22 @@ describe("writing to the live-test tasks", () => {
     await saveTask({ ...taskToValues(desks), parent_id: checklist.task_id }, desks);
     expect(await items(checklist.task_id)).toContain(desks.title);
     expect((await all()).some((t) => t.title === desks.title)).toBe(false);
+  });
+
+  it("completes a project and cancels only its open items", async () => {
+    const project = await find("Plan the team offsite");
+    const before = (await twoDo<{ tasks: Task[] }>("list_subtasks", { task_id: project.task_id })).tasks;
+    await completeParent(project, true, { cancelBehavior: "complete-and-tag", cancelTag: "Cancelled", cancelList: "" });
+    expect((await fresh(project.task_id)).completed).toBe(true);
+    const after = (await twoDo<{ tasks: Task[] }>("list_subtasks", { task_id: project.task_id })).tasks;
+    for (const item of after) {
+      const wasOpen = !before.find((b) => b.task_id === item.task_id)?.completed;
+      expect([item.title, item.completed, item.tags.some((x) => x.title === "Cancelled")]).toEqual([
+        item.title,
+        true,
+        wasOpen,
+      ]);
+    }
   });
 
   it("logs progress into the day's date-only line, leaving timed lines alone", async () => {
