@@ -33,6 +33,9 @@ The happy path uses the **Demo** list, and the unhappy path uses **Live Testing*
 ## Add Task
 
 - [ ] New Tags under Tags: "Live Testing, live testing" in Add Task (List: Live Testing) adds one "Live Testing" tag, reusing the existing one. A name not yet in 2Do shows up in 2Do's tags after saving.
+- [ ] Repeat set to Weekly shows "On" with the seven days; Monthly shows "On", and picking "The Second" adds a Weekday field; Custom shows Every and Unit. Ends "On a Date" shows End Date.
+- [ ] Repeat set to Daily with no Start or Due: saving shows "Set a start or due date to repeat" on Repeat.
+- [ ] Edit Task on "Drink 8 glasses of water" shows Repeat: Daily. Changing it to Monthly on the Last Friday saves, and the row's repeat icon tooltip says "Repeats: Monthly on the last Fri".
 
 ## Projects and checklists
 

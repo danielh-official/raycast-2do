@@ -22,6 +22,8 @@ If you clicked **Don't Allow**, turn it back on in **System Settings → Privacy
 
 Create a task with a title, notes, action, list, start and due dates (with optional times), priority, star, and tags. The list you pick is remembered for next time.
 
+**Repeat** makes the task repeat: daily, on weekdays, weekly (optionally on chosen days), monthly (optionally on, say, the second Tuesday), yearly, or every so many days, weeks, months or years. Choose whether it repeats from the due date or from when you complete it, and whether it ends after a number of times or on a date. A repeating task needs a start or due date.
+
 For tags not in 2Do yet, type their names in **New Tags**, separated by commas. Saving creates them in 2Do; a name that matches an existing tag uses that tag.
 
 A **Type** field makes the new task a project or checklist instead. If the list has projects or checklists, a **Project or Checklist** field puts the task inside one of them. In Edit Task, picking one moves the task in. Projects and checklists themselves aren't offered the field, because 2Do turns a project or checklist put inside another into a normal task.

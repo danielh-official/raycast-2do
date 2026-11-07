@@ -12,6 +12,7 @@
 - Edit or delete goal and journal entries from their lists
 - Completing a goal task can log what's left, and a repeating goal can start fresh
 - New Tags field in Add Task and Edit Task, for tags not in 2Do yet
+- Set how a task repeats in Add Task and Edit Task, and see the rule on repeating tasks
 - Put a task inside a project or checklist from Add Task or Edit Task
 - Show Items lists a project's or checklist's items, and the parent shows their progress as a ring
 - Add Item adds an item to a project or checklist, and Add Task can create projects and checklists

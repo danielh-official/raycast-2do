@@ -31,16 +31,7 @@ export type Task = {
   due_time?: string;
   tags: Tag[];
   task_type: "normal" | "project" | "checklist";
-  recurrence?: {
-    frequency?: string;
-    interval?: number;
-    unit?: string;
-    weekdays?: string[];
-    weekday?: string;
-    ordinal?: number | string;
-    based_on?: string;
-    end_rule?: { type?: string; occurrence_count?: number; date?: string };
-  } | null;
+  recurrence?: Recurrence | null;
   completion_date?: string;
   action: { type: string; value?: string };
   presentation: { due_date_formatted?: string; is_overdue: boolean };
@@ -50,20 +41,11 @@ export type Recurrence = {
   frequency?: string;
   interval?: number;
   unit?: string;
-  weekdays?: Weekday[];
-  weekday?: Weekday;
+  weekdays?: string[];
+  weekday?: string;
   ordinal?: number | string;
   based_on?: string;
   end_rule?: { type?: string; occurrence_count?: number; date?: string };
-};
-
-// A recurrence as 2Do reports it: unchecked weekday names, and its misnamed keys ("wkdy" for the
-// monthly weekday, "ldt " for the end date). recurrenceOf turns it into a Recurrence.
-export type RawRecurrence = Omit<Recurrence, "weekdays" | "weekday" | "end_rule"> & {
-  weekdays?: string[];
-  weekday?: string;
-  wkdy?: string;
-  end_rule?: Recurrence["end_rule"] & { "ldt "?: string };
 };
 
 export type TaskValues = {
@@ -92,7 +74,87 @@ export type TaskValues = {
   goal_unit?: string;
   goal_current?: string;
   goal_last?: Date | null;
+  // A REPEATS frequency or "none". Undefined when the form leaves the repeat alone (one it can't show).
+  repeat?: string;
+  repeat_interval?: string;
+  repeat_unit?: string;
+  repeat_days?: string[];
+  // Monthly: "" for the same day of the month, or "1"–"5" or "-1" (last) with repeat_weekday.
+  repeat_ordinal?: string;
+  repeat_weekday?: string;
+  repeat_from?: string;
+  repeat_end?: string;
+  repeat_count?: string;
+  repeat_until?: Date | null;
 };
+
+export const REPEATS = ["daily", "weekdays", "weekly", "monthly", "yearly", "custom"];
+export const WEEKDAYS = ["monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday"];
+const UNITS = ["day", "week", "month", "year"];
+
+// 2Do's limits for a repeat's numbers. Undefined when the value is fine or not used.
+export function repeatValueError(field: "interval" | "count", value?: string) {
+  const n = Number(value);
+  const max = field === "interval" ? 999 : 99;
+  if (!(Number.isInteger(n) && n >= 1 && n <= max)) return `Enter a whole number from 1 to ${max}`;
+}
+
+// A task's recurrence with 2Do's misnamed keys read: it reports the monthly weekday as "wkdy" and the
+// end date as "ldt ".
+export function recurrenceOf(task: Task): Recurrence | undefined {
+  const r = task.recurrence as (Recurrence & { wkdy?: string }) | null | undefined;
+  if (!r) return;
+  const end = r.end_rule as (Recurrence["end_rule"] & { "ldt "?: string }) | undefined;
+  return {
+    ...r,
+    weekday: r.weekday ?? r.wkdy,
+    ...(end && { end_rule: { ...end, date: end.date ?? end["ldt "] } }),
+  };
+}
+
+// The recurrence to send for the form's repeat fields, or { frequency: "none" } to clear it.
+export function recurrenceArgs(v: Partial<TaskValues>): Recurrence {
+  if (!v.repeat || v.repeat === "none") return { frequency: "none" };
+  const days = WEEKDAYS.filter((d) => v.repeat_days?.includes(d));
+  return {
+    frequency: v.repeat,
+    based_on: v.repeat_from || "due_date",
+    ...(v.repeat === "custom" && { interval: Number(v.repeat_interval), unit: v.repeat_unit || "day" }),
+    ...(v.repeat === "weekly" && days.length > 0 && { weekdays: days }),
+    ...(v.repeat === "monthly" &&
+      v.repeat_ordinal && { weekday: v.repeat_weekday || "monday", ordinal: Number(v.repeat_ordinal) }),
+    end_rule:
+      v.repeat_end === "after_count"
+        ? { type: "after_count", occurrence_count: Number(v.repeat_count) }
+        : v.repeat_end === "on_date" && v.repeat_until
+          ? { type: "on_date", date: ymd(v.repeat_until) }
+          : { type: "never" },
+  };
+}
+
+// The form's repeat fields for a task, with defaults for the fields its repeat doesn't use. A repeat
+// the form can't show leaves `repeat` undefined, so saving leaves it alone.
+export function repeatValues(task?: Task) {
+  const r = task && recurrenceOf(task);
+  const known =
+    !r?.frequency ||
+    r.frequency === "none" ||
+    (REPEATS.includes(r.frequency) &&
+      (!r.unit || UNITS.includes(r.unit)) &&
+      ["never", "after_count", "on_date"].includes(r.end_rule?.type ?? "never"));
+  return {
+    repeat: known ? (r?.frequency ?? "none") : undefined,
+    repeat_interval: String(r?.interval ?? 2),
+    repeat_unit: r?.unit ?? "day",
+    repeat_days: r?.weekdays ?? [],
+    repeat_ordinal: r?.ordinal !== undefined && r.weekday ? String(r.ordinal) : "",
+    repeat_weekday: r?.weekday ?? "monday",
+    repeat_from: r?.based_on ?? "due_date",
+    repeat_end: r?.end_rule?.type ?? "never",
+    repeat_count: String(r?.end_rule?.occurrence_count ?? ""),
+    repeat_until: r?.end_rule?.date ? toDate(r.end_rule.date) : null,
+  };
+}
 
 export function goalValueError(field: "total" | "current", value?: string) {
   const n = Number(value);
@@ -219,6 +281,7 @@ export function taskToValues(task: Task): TaskValues {
     action_value: task.action.value ?? "",
     parent_id: "",
     ...goalValues(task),
+    ...repeatValues(task),
   };
 }
 
@@ -303,7 +366,7 @@ export async function saveTask(v: TaskValues, task?: Task, parentId?: string) {
       notes: v.notes || undefined,
       ...((v.tag_ids.length > 0 || names.length > 0) && { tag_update: tagUpdate }),
       ...(action.type !== "none" && { action }),
-      ...(repeats && { recurrence: recurrenceArgs(v) }),
+      ...(v.repeat && v.repeat !== "none" && { recurrence: recurrenceArgs(v) }),
     });
     return;
   }
@@ -376,7 +439,7 @@ const ordinal = (n: number | string) => {
 
 // A repeating task's rule in words, like "Every 3 days" or "Weekly on Mon, Tue, after completion".
 export function repeatRule(task: Task) {
-  const r = task.recurrence;
+  const r = recurrenceOf(task);
   if (!r || !isRepeating(task)) return;
   const base: Record<string, string> = { daily: "Daily", weekly: "Weekly", monthly: "Monthly", yearly: "Yearly" };
   let rule =
