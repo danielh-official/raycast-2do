@@ -80,7 +80,7 @@ The extension writes one date-only line per day, newest first, in the **Goal Dat
 - **Change a goal:** Edit Task changes Total and Units, keeping its history. Unchecking **Add a goal** removes the goal and its history, after asking.
 - **Log Progress (⌘G):** add an amount for a day (today by default). Logging twice on one day adds to that day's date-only line. When the total is reached, a toast offers to complete the task.
 - **Completing a goal (⌘D):** if the goal isn't reached, or the task repeats, a short form asks whether to log what's left for today first, and for a repeating task whether the next occurrence keeps the running total or starts fresh from 0. The completed occurrence keeps its history either way.
-- **Show Progress (⇧⌘G):** the goal's summary ("24 of 40 pages · 60% · +6 today"), then each entry, newest first, with its amount and the running total. Dates follow the same display preferences as Show Journal.
+- **Show Progress (⇧⌘G):** the goal's summary ("24 of 40 pages · 60% · +6 today"), then a list of entries, newest first, each with its amount and the running total. **Edit Entry** (⌘E) changes an entry's date or amount, and **Delete Entry** (⌃X) removes it. Keeping the date keeps the entry's timestamp as written. Dates follow the same display preferences as Show Journal.
 - **In task lists:** a goal task shows a progress ring, with today's share in a second color, and "13/32 pages".
 
 ### Journal

@@ -158,6 +158,16 @@ export function toDate(date?: string, time?: string) {
   return new Date(`${date}T00:00:00.001`);
 }
 
+// Re-reads a task, applies `change` to its notes, and writes them back, for edits to one goal or
+// journal entry. `change` returns undefined when the entry changed in 2Do since it was read, which
+// stops the write.
+export async function rewriteNotes(taskId: string, change: (notes: string) => string | undefined) {
+  const { task } = await twoDo<{ task: Task }>("get_task", { task_id: taskId });
+  const notes = change(task.notes);
+  if (notes === undefined) throw new Error("The entry changed in 2Do since this opened. Reopen and try again.");
+  await twoDo("update_task", { task_id: taskId, notes });
+}
+
 // Splits Today into Now and Later Today: a task has started unless it has a start time still ahead.
 export function hasStarted(task: Task, now = new Date()) {
   if (!task.start_time) return true;

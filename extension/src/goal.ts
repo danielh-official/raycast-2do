@@ -78,6 +78,40 @@ export function setGoalHeader(notes: string, total: number, unit: string) {
   return lines.join("\n");
 }
 
+// The entry as it is in `notes` now, if it's still on the same line with the same timestamp and
+// amount; undefined if the notes changed since it was read.
+function stillThere(notes: string, entry: GoalEntry, dayFirst?: boolean) {
+  return parseGoal(notes, dayFirst)?.entries.find(
+    (e) => e.line === entry.line && e.stamp === entry.stamp && e.amount === entry.amount,
+  );
+}
+
+// Changes one entry in place. The timestamp stays as written while the day is the same; a new day is
+// written date-only in `format`. Undefined if the entry changed since it was read.
+export function editGoalEntry(
+  notes: string,
+  entry: GoalEntry,
+  change: { day: string; amount: number },
+  format: DayFormat,
+  dayFirst?: boolean,
+) {
+  if (!stillThere(notes, entry, dayFirst)) return;
+  const lines = notes.split("\n");
+  lines[entry.line] =
+    change.day === entry.day
+      ? lines[entry.line].replace(/[+-]?\d+(?:\.\d+)?\s*$/, String(round(change.amount)))
+      : `${formatDay(change.day, format)}: ${round(change.amount)}`;
+  return lines.join("\n");
+}
+
+// Removes one entry. Undefined if the entry changed since it was read.
+export function deleteGoalEntry(notes: string, entry: GoalEntry, dayFirst?: boolean) {
+  if (!stillThere(notes, entry, dayFirst)) return;
+  const lines = notes.split("\n");
+  lines.splice(entry.line, 1);
+  return lines.join("\n");
+}
+
 // Empties the goal's entries in place, keeping its total and unit: a fresh start.
 export function resetGoal(notes: string, dayFirst?: boolean) {
   const lines = notes.split("\n");
