@@ -30,6 +30,10 @@ The happy path uses the **Demo** list, and the unhappy path uses **Live Testing*
 - [ ] In Show Progress: Log Progress (⌘G) adds a row; Edit Entry (⌘E) on today's entry changes its amount and keeps its date text; Delete Entry (⌃X) asks, then removes it.
 - [ ] ⌘D on "Run 20 km this week" (not reached) opens Complete Goal Task with "Log the remaining … km for today". ⌘D on "Drink 8 glasses of water" (repeating) also offers "Next Occurrence". Esc changes nothing.
 
+## Add Task
+
+- [ ] New Tags under Tags: "Live Testing, live testing" in Add Task (List: Live Testing) adds one "Live Testing" tag, reusing the existing one. A name not yet in 2Do shows up in 2Do's tags after saving.
+
 ## Projects and checklists
 
 - [ ] Add Task with the List set to Demo: a "Project or Checklist" field offers "Plan the team offsite" and "Pack for the trip". Picking one adds the task inside it (check in 2Do).

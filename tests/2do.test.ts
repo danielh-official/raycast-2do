@@ -143,23 +143,13 @@ describe("saveTask", () => {
     expect(sent()[0][1].tag_update).toEqual({ operation: "set", tag_ids: ["tag1"] });
   });
 
-  it("creates only new tag names, trimmed and without blanks or repeats", async () => {
+  it("sends new tag names with set, trimmed and without blanks or repeats", async () => {
     await saveTask({ ...values, new_tags: " Errands, ,home, Home ,Errands" });
-    expect(sent()[0]).toEqual(["list_tags", {}]);
-    expect(sent()[1][1].tag_update).toEqual({ operation: "set", tag_ids: [], tag_names: ["Errands", "home"] });
+    expect(sent()[0][1].tag_update).toEqual({ operation: "set", tag_ids: [], tag_names: ["Errands", "home"] });
+    await saveTask({ ...taskToValues(task), new_tags: "Calls" }, task);
+    expect(sent()[1][1].tag_update).toEqual({ operation: "set", tag_ids: ["tag1"], tag_names: ["Calls"] });
     await saveTask({ ...values, new_tags: " , " });
     expect(sent()[2][1]).not.toHaveProperty("tag_update");
-  });
-
-  it("uses an existing tag for a New Tags name instead of creating it", async () => {
-    runAppleScript.mockImplementation(async (_script: string, [command]: string[]) =>
-      command === "list_tags" ? '{"tags":[{"tag_id":"tag2","title":"Errands"}]}' : "{}",
-    );
-    await saveTask({ ...values, tag_ids: ["tag2"], new_tags: "errands , Calls" });
-    expect(sent()[1][1].tag_update).toEqual({ operation: "set", tag_ids: ["tag2"], tag_names: ["Calls"] });
-    // The task's own tag counts as existing even when list_tags leaves it out.
-    await saveTask({ ...taskToValues(task), tag_ids: [], new_tags: "FAMILY, Errands" }, task);
-    expect(sent()[3][1].tag_update).toEqual({ operation: "set", tag_ids: ["tag1", "tag2"] });
   });
 
   it("sets the action when creating, trimming its value", async () => {

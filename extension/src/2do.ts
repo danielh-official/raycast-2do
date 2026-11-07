@@ -75,7 +75,7 @@ export type TaskValues = {
   priority: string;
   starred: boolean;
   tag_ids: string[];
-  // Comma-separated tag names, for tags not in 2Do yet. Names matching an existing tag use that tag.
+  // Comma-separated tag names, for tags not in 2Do yet. 2Do creates missing ones and reuses existing ones.
   new_tags?: string;
   // Undefined when the form leaves the task's action alone (a type missing from ACTIONS).
   action_type?: string;
@@ -286,7 +286,9 @@ export async function saveTask(v: TaskValues, task?: Task, parentId?: string) {
     ...dateFields("start", start, !!task),
     ...dateFields("due", v.due, !!task),
   };
-  const tagUpdate = await tagUpdateFor(v, task);
+  // tag_names only works with "set", and tag_ids is required even when empty.
+  const names = tagNames(v.new_tags);
+  const tagUpdate = { operation: "set", tag_ids: v.tag_ids, ...(names.length > 0 && { tag_names: names }) };
   // 2Do rejects a value on "none" and requires one on every other type.
   const action =
     !v.action_type || v.action_type === "none"
@@ -299,7 +301,7 @@ export async function saveTask(v: TaskValues, task?: Task, parentId?: string) {
       ...(nests ? { parent_task_id: v.parent_id } : { list_id: v.list_id }),
       ...(v.task_type && v.task_type !== "normal" && { task_type: v.task_type }),
       notes: v.notes || undefined,
-      ...((tagUpdate.tag_ids.length > 0 || tagUpdate.tag_names) && { tag_update: tagUpdate }),
+      ...((v.tag_ids.length > 0 || names.length > 0) && { tag_update: tagUpdate }),
       ...(action.type !== "none" && { action }),
       ...(repeats && { recurrence: recurrenceArgs(v) }),
     });
@@ -345,7 +347,16 @@ export async function findTag(title: string) {
   return tags.find((t) => sameTitle(t.title, title));
 }
 
-// 2Do automation can't create tags, so a missing tag is an error saying how to fix it.
+// The New Tags field's names, trimmed, without blanks or repeats.
+export function tagNames(text = "") {
+  const names = text
+    .split(",")
+    .map((n) => n.trim())
+    .filter(Boolean);
+  return names.filter((n, i) => names.findIndex((m) => sameTitle(m, n)) === i);
+}
+
+// Tags named in preferences are never created, so a missing one is an error saying how to fix it.
 export async function requireTag(title: string, fix: string): Promise<Tag> {
   const tag = await findTag(title);
   if (!tag) throw new Error(`No 2Do tag named "${title.trim()}". ${fix}`);
@@ -403,8 +414,8 @@ async function completeOccurrence(task: Task) {
 
 // 2Do's own convention is a completed task carrying a "Cancelled" tag. The task is completed first,
 // then only the completed occurrence is tagged, moved, or deleted, so a repeating task's next
-// occurrence stays untouched. 2Do automation can't create tags or lists, so a missing one is an
-// error naming the preference, raised before anything changes.
+// occurrence stays untouched. The tag or list isn't created, so a missing one is an error naming
+// the preference, raised before anything changes.
 export async function cancelTask(task: Task, p: CancelPrefs) {
   const needsTag = p.cancelBehavior === "complete-and-tag" || p.cancelBehavior === "tag";
   const tag = needsTag
