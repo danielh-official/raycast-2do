@@ -290,6 +290,16 @@ The data, checked on Nov 6 (54 open tasks):
   - Goal entries now carry `stamp` (as written) and `at` (for ordering), like journal entries.
   - The display preferences were renamed **Entry Display Date**, since they now apply to both views.
 
+### Entry lists
+
+- [x] **Show Progress** and **Show Journal** are lists of entries, newest first. Each entry has **Edit Entry** (⌘E) and **Delete Entry** (⌃X).
+- [x] Edits change one entry where it sits (`editGoalEntry`, `editJournalEntry`):
+  - The timestamp stays as written unless the date (or, for the journal, the moment) changes.
+  - A new date is written in the configured format, and a journal entry moves into time order.
+  - Deletes remove one entry (`deleteGoalEntry`, `deleteJournalEntry`).
+  - Every edit or delete re-reads the task, and stops if the entry changed since the list loaded (`rewriteNotes`).
+- [x] An editable table isn't possible: Raycast's tables are display-only Markdown.
+
 ### Later questions
 
 - If a project or checklist is a goal, does the goal ever override item progress for the ring?
