@@ -143,6 +143,15 @@ describe("saveTask", () => {
     expect(sent()[0][1].tag_update).toEqual({ operation: "set", tag_ids: ["tag1"] });
   });
 
+  it("sends new tag names with set, trimmed and without blanks or repeats", async () => {
+    await saveTask({ ...values, new_tags: " Errands, ,home, Home ,Errands" });
+    expect(sent()[0][1].tag_update).toEqual({ operation: "set", tag_ids: [], tag_names: ["Errands", "home"] });
+    await saveTask({ ...taskToValues(task), new_tags: "Calls" }, task);
+    expect(sent()[1][1].tag_update).toEqual({ operation: "set", tag_ids: ["tag1"], tag_names: ["Calls"] });
+    await saveTask({ ...values, new_tags: " , " });
+    expect(sent()[2][1]).not.toHaveProperty("tag_update");
+  });
+
   it("sets the action when creating, trimming its value", async () => {
     await saveTask({ ...values, action_type: "mail", action_value: " a@example.com " });
     expect(sent()[0][1].action).toEqual({ type: "mail", value: "a@example.com" });
