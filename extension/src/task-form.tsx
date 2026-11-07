@@ -45,19 +45,16 @@ const ORDINALS = [
 ];
 
 // Creates a task, or edits `task` when given. `link` prefills a new task from a web page, with
-// the page as the task's link. `parent` is the project or checklist an edited item is in.
-// `addTo` adds a new item to that project or checklist; checklist items have no dates.
+// the page as the task's link. `parentId` is the project or checklist an edited item is in.
 export function TaskForm({
   task,
   link,
-  parent,
-  addTo,
+  parentId,
   onSaved,
 }: {
   task?: Task;
   link?: PageInfo & { url: string };
-  parent?: Task;
-  addTo?: Task;
+  parentId?: string;
   onSaved?: () => void;
 }) {
   const { pop } = useNavigation();
@@ -68,7 +65,7 @@ export function TaskForm({
 
   const { handleSubmit, itemProps, values, setValue } = useForm<TaskValues>({
     initialValues: task
-      ? { ...taskToValues(task), parent_id: parent?.task_id ?? "", new_tags: "" }
+      ? { ...taskToValues(task), parent_id: parentId ?? "" }
       : {
           new_tags: "",
           action_type: link ? "url" : "none",
@@ -100,7 +97,7 @@ export function TaskForm({
           });
           if (!ok) return;
         }
-        await saveTask(await applyGoal(full, getPreferenceValues<GoalPrefs>()), current);
+        await saveTask(await applyGoal(full, getPreferenceValues<GoalPrefs>()), current, parentId);
         if (task) {
           await showToast({ style: Toast.Style.Success, title: "Task updated" });
           onSaved?.();

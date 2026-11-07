@@ -28,6 +28,7 @@ import {
 import { goalProgress, parseGoal } from "./goal";
 import { parseJournal } from "./journal";
 import { AddJournalEntryForm, JournalView } from "./journal-view";
+import { ItemsView } from "./items-view";
 import { GoalProgressView, LogProgressForm } from "./log-progress";
 import { TaskForm } from "./task-form";
 import { checkNotes, fixNotes } from "./notes";
@@ -69,7 +70,8 @@ const RUN_ACTION: Record<string, { title: string; icon: Icon }> = {
 };
 
 // A task row with its actions. `onChange` reloads the list after an action changes the task.
-export function TaskItem({ task: t, onChange }: { task: Task; onChange: () => void }) {
+// `parentId` is set for a project's or checklist's items.
+export function TaskItem({ task: t, parentId, onChange }: { task: Task; parentId?: string; onChange: () => void }) {
   const prefs = getPreferenceValues<CancelPrefs>();
   const links = taskLinks(t);
   const actionTarget = actionURL(t.action);
@@ -198,7 +200,19 @@ export function TaskItem({ task: t, onChange }: { task: Task; onChange: () => vo
       ]}
       actions={
         <ActionPanel>
-          <Action.Push title="Edit Task" icon={Icon.Pencil} target={<TaskForm task={t} onSaved={onChange} />} />
+          <Action.Push
+            title="Edit Task"
+            icon={Icon.Pencil}
+            target={<TaskForm task={t} parentId={parentId} onSaved={onChange} />}
+          />
+          {t.task_type !== "normal" && (
+            <Action.Push
+              title="Show Items"
+              icon={Icon.List}
+              shortcut={{ modifiers: ["cmd"], key: "i" }}
+              target={<ItemsView parent={t} onChange={onChange} />}
+            />
+          )}
           {goal && (
             <Action.Push
               title="Log Progress"

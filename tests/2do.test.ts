@@ -229,6 +229,17 @@ describe("saveTask", () => {
     ]);
   });
 
+  it("leaves an item in its project when the parent is unchanged, and moves it out or to another", async () => {
+    await saveTask({ ...taskToValues(task), parent_id: "p1" }, task, "p1");
+    expect(sent().map(([command]) => command)).toEqual(["update_task"]);
+    runAppleScript.mockClear();
+    await saveTask({ ...taskToValues(task), parent_id: "" }, task, "p1");
+    expect(sent()[1]).toEqual(["move_task", { task_id: "t1", list_id: "inbox" }]);
+    runAppleScript.mockClear();
+    await saveTask({ ...taskToValues(task), parent_id: "p2" }, task, "p1");
+    expect(sent()[1]).toEqual(["move_task", { task_id: "t1", parent_task_id: "p2" }]);
+  });
+
   it("moves the task when its list changed", async () => {
     await saveTask({ ...values, list_id: "work" }, task);
     expect(sent().map(([command]) => command)).toEqual(["update_task", "move_task"]);
