@@ -459,10 +459,12 @@ export function repeatRule(task: Task) {
 
 // Completes `task` and returns the ID of the completed occurrence. For a repeating task, 2Do keeps the
 // open task (moved to its next date) and adds a completed copy, which only a search by title finds.
+// 2Do's search finds nothing without a list to search in, so it searches the task's list.
 async function completeOccurrence(task: Task) {
   const { task: after } = await twoDo<{ task: Task }>("complete_task", { task_id: task.task_id });
   if (after.completed) return after.task_id;
   const { tasks } = await twoDo<{ tasks: Task[] }>("query_tasks", {
+    list_id: task.list_id,
     search: task.title,
     include_completed: true,
     paused_filter: "include",
