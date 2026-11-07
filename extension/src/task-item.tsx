@@ -13,7 +13,18 @@ import {
   Toast,
 } from "@raycast/api";
 import { showFailureToast } from "@raycast/utils";
-import { actionURL, CancelPrefs, cancelTask, isCancelled, isRepeating, Task, taskLinks, twoDo, ymd } from "./2do";
+import {
+  actionURL,
+  CancelPrefs,
+  cancelTask,
+  isCancelled,
+  isRepeating,
+  repeatRule,
+  Task,
+  taskLinks,
+  twoDo,
+  ymd,
+} from "./2do";
 import { goalProgress, parseGoal } from "./goal";
 import { parseJournal } from "./journal";
 import { AddJournalEntryForm, JournalView } from "./journal-view";
@@ -69,6 +80,7 @@ export function TaskItem({ task: t, onChange }: { task: Task; onChange: () => vo
   const progress = goal && goalProgress(goal, ymd(new Date()));
   const journal = parseJournal(t.notes, dayFirst());
   const issues = checkNotes(t.notes, dayFirst());
+  const repeat = repeatRule(t);
 
   async function fixSyntax() {
     try {
@@ -181,6 +193,7 @@ export function TaskItem({ task: t, onChange }: { task: Task; onChange: () => vo
         ...(journal?.length
           ? [{ icon: Icon.Book, tooltip: `${journal.length} journal ${journal.length === 1 ? "entry" : "entries"}` }]
           : []),
+        ...(repeat ? [{ icon: Icon.Repeat, tooltip: `Repeats: ${repeat}` }] : []),
         ...(t.starred ? [{ icon: { source: Icon.Star, tintColor: Color.Yellow } }] : []),
       ]}
       actions={

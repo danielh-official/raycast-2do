@@ -272,7 +272,7 @@ The data, checked on Nov 6 (54 open tasks):
 - [ ] **Completing a goal task** (Complete Task on a task with a goal):
   - If the goal isn't reached, ask whether to log the remaining progress first.
   - For a repeating goal task, also ask whether the next occurrence starts fresh (its goal reset to 0, with the history kept on the completed copy) or keeps the running total, as now. Both are valid uses: each occurrence with its own goal, or one running goal across occurrences.
-- [ ] **Repeat indicator:** a repeat icon on repeating tasks, with the rule ("Daily", "Every 2 weeks") as its tooltip. No editing of repetition in the forms for now.
+- [x] **Repeat indicator:** a repeat icon on repeating tasks, with the rule ("Daily", "Every 2 weeks") as its tooltip. No editing of repetition in the forms for now.
 - [ ] **Projects and checklists:**
   - A **Show Items** action lists a parent's items, with the usual task actions.
   - The parent shows its items' progress, like "3/6", as a ring.

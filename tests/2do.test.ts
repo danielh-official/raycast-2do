@@ -9,6 +9,7 @@ import {
   GoalPrefs,
   hasStarted,
   isCancelled,
+  repeatRule,
   saveTask,
   scopeArgs,
   tagOptions,
@@ -272,6 +273,29 @@ describe("hasStarted", () => {
 
   it("leaves tasks starting later for Later Today", () => {
     expect(hasStarted({ ...task, start_date: "2026-11-06", start_time: "17:00" }, at)).toBe(false);
+  });
+});
+
+describe("repeatRule", () => {
+  const rule = (recurrence: Task["recurrence"]) => repeatRule({ ...task, recurrence });
+  it("describes 2Do's repeat shapes in words", () => {
+    expect(rule(null)).toBeUndefined();
+    expect(rule({ frequency: "none" })).toBeUndefined();
+    expect(rule({ frequency: "daily", based_on: "due_date", end_rule: { type: "never" } })).toBe("Daily");
+    expect(rule({ frequency: "custom", interval: 3, unit: "day" })).toBe("Every 3 days");
+    expect(rule({ frequency: "custom", interval: 1, unit: "week" })).toBe("Every week");
+    expect(rule({ frequency: "weekly", weekdays: ["monday", "friday"] })).toBe("Weekly on Mon, Fri");
+    expect(rule({ frequency: "monthly", weekday: "tuesday", ordinal: 2 })).toBe("Monthly on the 2nd Tue");
+    expect(rule({ frequency: "monthly", weekday: "friday", ordinal: -1 })).toBe("Monthly on the last Fri");
+    expect(rule({ frequency: "weekdays" })).toBe("On weekdays");
+  });
+
+  it("adds completion-based repeats and end rules", () => {
+    expect(rule({ frequency: "weekly", based_on: "completion" })).toBe("Weekly, after completion");
+    expect(rule({ frequency: "daily", end_rule: { type: "after_count", occurrence_count: 5 } })).toBe("Daily, 5 times");
+    expect(rule({ frequency: "yearly", end_rule: { type: "on_date", date: "2027-01-01" } })).toBe(
+      "Yearly, until 2027-01-01",
+    );
   });
 });
 
