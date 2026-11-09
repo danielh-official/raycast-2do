@@ -31,7 +31,7 @@ export type Task = {
   due_time?: string;
   tags: Tag[];
   task_type: "normal" | "project" | "checklist";
-  recurrence?: Recurrence | null;
+  recurrence?: RawRecurrence | null;
   completion_date?: string;
   action: { type: string; value?: string };
   presentation: { due_date_formatted?: string; is_overdue: boolean };
@@ -41,11 +41,20 @@ export type Recurrence = {
   frequency?: string;
   interval?: number;
   unit?: string;
-  weekdays?: string[];
-  weekday?: string;
+  weekdays?: Weekday[];
+  weekday?: Weekday;
   ordinal?: number | string;
   based_on?: string;
   end_rule?: { type?: string; occurrence_count?: number; date?: string };
+};
+
+// A recurrence as 2Do reports it: unchecked weekday names, and its misnamed keys ("wkdy" for the
+// monthly weekday, "ldt " for the end date). recurrenceOf turns it into a Recurrence.
+export type RawRecurrence = Omit<Recurrence, "weekdays" | "weekday" | "end_rule"> & {
+  weekdays?: string[];
+  weekday?: string;
+  wkdy?: string;
+  end_rule?: Recurrence["end_rule"] & { "ldt "?: string };
 };
 
 export type TaskValues = {
@@ -89,7 +98,9 @@ export type TaskValues = {
 };
 
 export const REPEATS = ["daily", "weekdays", "weekly", "monthly", "yearly", "custom"];
-export const WEEKDAYS = ["monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday"];
+export const WEEKDAYS = ["monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday"] as const;
+export type Weekday = (typeof WEEKDAYS)[number];
+const isWeekday = (d?: string): d is Weekday => WEEKDAYS.includes(d as Weekday);
 const UNITS = ["day", "week", "month", "year"];
 
 // 2Do's limits for a repeat's numbers. Undefined when the value is fine or not used.
@@ -99,15 +110,17 @@ export function repeatValueError(field: "interval" | "count", value?: string) {
   if (!(Number.isInteger(n) && n >= 1 && n <= max)) return `Enter a whole number from 1 to ${max}`;
 }
 
-// A task's recurrence with 2Do's misnamed keys read: it reports the monthly weekday as "wkdy" and the
-// end date as "ldt ".
+// A task's recurrence with 2Do's misnamed keys read and its weekdays narrowed to WEEKDAYS. A weekday
+// name 2Do reports that isn't in WEEKDAYS is dropped.
 export function recurrenceOf(task: Task): Recurrence | undefined {
-  const r = task.recurrence as (Recurrence & { wkdy?: string }) | null | undefined;
+  const r = task.recurrence;
   if (!r) return;
-  const end = r.end_rule as (Recurrence["end_rule"] & { "ldt "?: string }) | undefined;
+  const { weekdays, weekday, wkdy, end_rule: end, ...rest } = r;
+  const day = weekday ?? wkdy;
   return {
-    ...r,
-    weekday: r.weekday ?? r.wkdy,
+    ...rest,
+    ...(weekdays && { weekdays: weekdays.filter(isWeekday) }),
+    ...(isWeekday(day) && { weekday: day }),
     ...(end && { end_rule: { ...end, date: end.date ?? end["ldt "] } }),
   };
 }
@@ -122,7 +135,10 @@ export function recurrenceArgs(v: Partial<TaskValues>): Recurrence {
     ...(v.repeat === "custom" && { interval: Number(v.repeat_interval), unit: v.repeat_unit || "day" }),
     ...(v.repeat === "weekly" && days.length > 0 && { weekdays: days }),
     ...(v.repeat === "monthly" &&
-      v.repeat_ordinal && { weekday: v.repeat_weekday || "monday", ordinal: Number(v.repeat_ordinal) }),
+      v.repeat_ordinal && {
+        weekday: isWeekday(v.repeat_weekday) ? v.repeat_weekday : "monday",
+        ordinal: Number(v.repeat_ordinal),
+      }),
     end_rule:
       v.repeat_end === "after_count"
         ? { type: "after_count", occurrence_count: Number(v.repeat_count) }
