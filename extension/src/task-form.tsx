@@ -110,11 +110,13 @@ export function TaskForm({
           {...itemProps.action_value}
         />
       )}
+      <Form.Separator />
       <Form.Dropdown title="List" storeValue={!task} {...itemProps.list_id}>
         {lists.data?.map((l) => (
           <Form.Dropdown.Item key={l.list_id} value={l.list_id} title={l.title} />
         ))}
       </Form.Dropdown>
+      <Form.Separator />
       <Form.DatePicker title="Start" {...itemProps.start} />
       <Form.DatePicker title="Due" {...itemProps.due} />
       {values.repeat !== undefined && (
@@ -186,6 +188,7 @@ export function TaskForm({
           )}
         </>
       )}
+      <Form.Separator />
       <Form.Dropdown title="Priority" {...itemProps.priority}>
         <Form.Dropdown.Item value="none" title="None" />
         <Form.Dropdown.Item value="low" title="Low" />
@@ -193,6 +196,7 @@ export function TaskForm({
         <Form.Dropdown.Item value="high" title="High" />
       </Form.Dropdown>
       <Form.Checkbox label="Starred" {...itemProps.starred} />
+      <Form.Separator />
       <Form.TagPicker title="Tags" {...itemProps.tag_ids}>
         {tagOptions(tags.data, task).map((t) => (
           <Form.TagPicker.Item key={t.tag_id} value={t.tag_id} title={t.title} />
