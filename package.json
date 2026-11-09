@@ -1,0 +1,10 @@
+{
+  "scripts": {
+    "build": "cd extension && npm install && npm run build",
+    "dev": "cd extension && npm install && npm run dev",
+    "lint": "cd extension && npm install && npm run lint",
+    "fix-lint": "cd extension && npm install && npm run fix-lint",
+    "publish": "cd extension && npm install && npm run publish",
+    "test": "cd tests && npm install && npm run test"
+  }
+}
