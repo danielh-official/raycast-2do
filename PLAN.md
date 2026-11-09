@@ -324,6 +324,7 @@ In this order, one commit each.
   - **Tag Only** leaves tasks open, and **Delete** leaves nothing to reopen.
 
 - [x] **View Tasks: Deadlines** (added after the four above): open tasks with a due date, Overdue first, then Upcoming, each by due date (`deadlineSections`). 2Do has no "has a due date" filter, but `query_tasks` takes `due_on_or_before`, and a far-future date (`9999-12-31`) matches every due date. Its results aren't sorted, so the extension sorts them; "overdue" is 2Do's own `presentation.is_overdue`.
+- [ ] **Add Task stays open after adding:** saving a new task clears the form for the next one, instead of closing Raycast (`showHUD` closes it today). A success toast replaces the HUD, and `useForm`'s `reset` clears the fields. The List keeps its choice, as it does now (`storeValue`). Edit Task still closes after saving. Open: whether Add Link's form does the same, or goes back to the address step.
 
 ## Parked
 
