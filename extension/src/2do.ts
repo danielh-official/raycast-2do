@@ -66,7 +66,7 @@ export type TaskValues = {
   priority: string;
   starred: boolean;
   tag_ids: string[];
-  // Comma-separated tag names, for tags not in 2Do yet. 2Do creates missing ones and reuses existing ones.
+  // Comma-separated tag names, for tags not in 2Do yet. Names matching an existing tag use that tag.
   new_tags?: string;
   // Undefined when the form leaves the task's action alone (a type missing from ACTIONS).
   action_type?: string;
@@ -83,7 +83,9 @@ export type TaskValues = {
   goal_unit?: string;
   goal_current?: string;
   goal_last?: Date | null;
-  // A REPEATS frequency or "none". Undefined when the form leaves the repeat alone (one it can't show).
+  // The Repeat checkbox. When it's off, saving clears the repeat.
+  is_repeating?: boolean;
+  // A REPEATS frequency. Undefined when the form leaves the repeat alone (one it can't show).
   repeat?: string;
   repeat_interval?: string;
   repeat_unit?: string;
@@ -127,7 +129,7 @@ export function recurrenceOf(task: Task): Recurrence | undefined {
 
 // The recurrence to send for the form's repeat fields, or { frequency: "none" } to clear it.
 export function recurrenceArgs(v: Partial<TaskValues>): Recurrence {
-  if (!v.repeat || v.repeat === "none") return { frequency: "none" };
+  if (!v.is_repeating || !v.repeat || v.repeat === "none") return { frequency: "none" };
   const days = WEEKDAYS.filter((d) => v.repeat_days?.includes(d));
   return {
     frequency: v.repeat,
@@ -158,8 +160,10 @@ export function repeatValues(task?: Task) {
     (REPEATS.includes(r.frequency) &&
       (!r.unit || UNITS.includes(r.unit)) &&
       ["never", "after_count", "on_date"].includes(r.end_rule?.type ?? "never"));
+  const on = !!r?.frequency && r.frequency !== "none";
   return {
-    repeat: known ? (r?.frequency ?? "none") : undefined,
+    is_repeating: on,
+    repeat: known ? (on ? r.frequency : "daily") : undefined,
     repeat_interval: String(r?.interval ?? 2),
     repeat_unit: r?.unit ?? "day",
     repeat_days: r?.weekdays ?? [],
@@ -358,6 +362,9 @@ export async function applyGoal(v: TaskValues, p: GoalPrefs): Promise<TaskValues
 // into that project or checklist instead: 2Do takes exactly one destination, list or parent.
 // `parentId` is the project or checklist an edited task is already in, if any.
 export async function saveTask(v: TaskValues, task?: Task, parentId?: string) {
+  // 2Do can't repeat a task without dates, so a repeating task with neither date starts today.
+  const repeats = !!v.is_repeating && !!v.repeat;
+  const start = repeats && !v.start && !v.due ? toDate(ymd(new Date())) : v.start;
   const fields = {
     title: v.title,
     priority: v.priority,
@@ -365,9 +372,7 @@ export async function saveTask(v: TaskValues, task?: Task, parentId?: string) {
     ...dateFields("start", start, !!task),
     ...dateFields("due", v.due, !!task),
   };
-  // tag_names only works with "set", and tag_ids is required even when empty.
-  const names = tagNames(v.new_tags);
-  const tagUpdate = { operation: "set", tag_ids: v.tag_ids, ...(names.length > 0 && { tag_names: names }) };
+  const tagUpdate = await tagUpdateFor(v, task);
   // 2Do rejects a value on "none" and requires one on every other type.
   const action =
     !v.action_type || v.action_type === "none"
@@ -380,9 +385,9 @@ export async function saveTask(v: TaskValues, task?: Task, parentId?: string) {
       ...(nests ? { parent_task_id: v.parent_id } : { list_id: v.list_id }),
       ...(v.task_type && v.task_type !== "normal" && { task_type: v.task_type }),
       notes: v.notes || undefined,
-      ...((v.tag_ids.length > 0 || names.length > 0) && { tag_update: tagUpdate }),
+      ...((tagUpdate.tag_ids.length > 0 || tagUpdate.tag_names) && { tag_update: tagUpdate }),
       ...(action.type !== "none" && { action }),
-      ...(v.repeat && v.repeat !== "none" && { recurrence: recurrenceArgs(v) }),
+      ...(repeats && { recurrence: recurrenceArgs(v) }),
     });
     return;
   }
@@ -433,6 +438,27 @@ export function tagNames(text = "") {
     .map((n) => n.trim())
     .filter(Boolean);
   return names.filter((n, i) => names.findIndex((m) => sameTitle(m, n)) === i);
+}
+
+// The tag_update for the picked tags plus the New Tags names. A name matching an existing tag
+// (case-insensitively) adds that tag's ID, so only names with no tag yet go to 2Do to be created.
+// tag_names only works with "set", and tag_ids is required even when empty.
+async function tagUpdateFor(
+  v: TaskValues,
+  task?: Task,
+): Promise<{ operation: "set"; tag_ids: string[]; tag_names?: string[] }> {
+  const names = tagNames(v.new_tags);
+  if (names.length === 0) return { operation: "set", tag_ids: v.tag_ids };
+  const { tags } = await twoDo<{ tags: Tag[] }>("list_tags");
+  const known = tagOptions(tags, task);
+  const ids = new Set(v.tag_ids);
+  const missing: string[] = [];
+  for (const name of names) {
+    const tag = known.find((t) => sameTitle(t.title, name));
+    if (tag) ids.add(tag.tag_id);
+    else missing.push(name);
+  }
+  return { operation: "set", tag_ids: [...ids], ...(missing.length > 0 && { tag_names: missing }) };
 }
 
 // Tags named in preferences are never created, so a missing one is an error saying how to fix it.

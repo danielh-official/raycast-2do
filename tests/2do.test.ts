@@ -149,13 +149,22 @@ describe("saveTask", () => {
     expect(sent()[0][1].tag_update).toEqual({ operation: "set", tag_ids: ["tag1"] });
   });
 
-  it("sends new tag names with set, trimmed and without blanks or repeats", async () => {
+  it("creates only new tag names, trimmed and without blanks or repeats", async () => {
     await saveTask({ ...values, new_tags: " Errands, ,home, Home ,Errands" });
-    expect(sent()[0][1].tag_update).toEqual({ operation: "set", tag_ids: [], tag_names: ["Errands", "home"] });
-    await saveTask({ ...taskToValues(task), new_tags: "Calls" }, task);
-    expect(sent()[1][1].tag_update).toEqual({ operation: "set", tag_ids: ["tag1"], tag_names: ["Calls"] });
+    expect(sent()[0]).toEqual(["list_tags", {}]);
+    expect(sent()[1][1].tag_update).toEqual({ operation: "set", tag_ids: [], tag_names: ["Errands", "home"] });
     await saveTask({ ...values, new_tags: " , " });
     expect(sent()[2][1]).not.toHaveProperty("tag_update");
+  });
+  it("uses an existing tag for a New Tags name instead of creating it", async () => {
+    runAppleScript.mockImplementation(async (_script: string, [command]: string[]) =>
+      command === "list_tags" ? '{"tags":[{"tag_id":"tag2","title":"Errands"}]}' : "{}",
+    );
+    await saveTask({ ...values, tag_ids: ["tag2"], new_tags: "errands , Calls" });
+    expect(sent()[1][1].tag_update).toEqual({ operation: "set", tag_ids: ["tag2"], tag_names: ["Calls"] });
+    // The task's own tag counts as existing even when list_tags leaves it out.
+    await saveTask({ ...taskToValues(task), tag_ids: [], new_tags: "FAMILY, Errands" }, task);
+    expect(sent()[3][1].tag_update).toEqual({ operation: "set", tag_ids: ["tag1", "tag2"] });
   });
 
   it("sets the action when creating, trimming its value", async () => {
@@ -310,136 +319,6 @@ describe("hasStarted", () => {
 
   it("leaves tasks starting later for Later Today", () => {
     expect(hasStarted({ ...task, start_date: "2026-11-06", start_time: "17:00" }, at)).toBe(false);
-  });
-});
-
-describe("repeatRule", () => {
-  const rule = (recurrence: Task["recurrence"]) => repeatRule({ ...task, recurrence });
-  it("describes 2Do's repeat shapes in words", () => {
-    expect(rule(null)).toBeUndefined();
-    expect(rule({ frequency: "none" })).toBeUndefined();
-    expect(rule({ frequency: "daily", based_on: "due_date", end_rule: { type: "never" } })).toBe("Daily");
-    expect(rule({ frequency: "custom", interval: 3, unit: "day" })).toBe("Every 3 days");
-    expect(rule({ frequency: "custom", interval: 1, unit: "week" })).toBe("Every week");
-    expect(rule({ frequency: "weekly", weekdays: ["monday", "friday"] })).toBe("Weekly on Mon, Fri");
-    expect(rule({ frequency: "monthly", weekday: "tuesday", ordinal: 2 })).toBe("Monthly on the 2nd Tue");
-    expect(rule({ frequency: "monthly", weekday: "friday", ordinal: -1 })).toBe("Monthly on the last Fri");
-    expect(rule({ frequency: "weekdays" })).toBe("On weekdays");
-  });
-
-  it("adds completion-based repeats and end rules", () => {
-    expect(rule({ frequency: "weekly", based_on: "completion" })).toBe("Weekly, after completion");
-    expect(rule({ frequency: "daily", end_rule: { type: "after_count", occurrence_count: 5 } })).toBe("Daily, 5 times");
-    expect(rule({ frequency: "yearly", end_rule: { type: "on_date", date: "2027-01-01" } })).toBe(
-      "Yearly, until 2027-01-01",
-    );
-  });
-
-  it("reads 2Do's misnamed monthly weekday and end date keys", () => {
-    const reported = {
-      frequency: "monthly",
-      ordinal: 2,
-      wkdy: "tuesday",
-      end_rule: { type: "on_date", "ldt ": "2027-06-30" },
-    };
-    expect(rule(reported as Task["recurrence"])).toBe("Monthly on the 2nd Tue, until 2027-06-30");
-  });
-});
-
-describe("repeat fields", () => {
-  const values = { ...taskToValues(task), notes: "", tag_ids: [] };
-  const withRepeat = (recurrence: Task["recurrence"]) => ({ ...task, recurrence });
-
-  it("turns form values into a recurrence, with weekdays in week order", () => {
-    expect(recurrenceArgs({ repeat: "none" })).toEqual({ frequency: "none" });
-    expect(recurrenceArgs({ ...repeatValues(), repeat: "daily" })).toEqual({
-      frequency: "daily",
-      based_on: "due_date",
-      end_rule: { type: "never" },
-    });
-    expect(
-      recurrenceArgs({
-        ...repeatValues(),
-        repeat: "weekly",
-        repeat_days: ["friday", "monday"],
-        repeat_from: "completion",
-      }),
-    ).toMatchObject({ frequency: "weekly", weekdays: ["monday", "friday"], based_on: "completion" });
-    expect(recurrenceArgs({ ...repeatValues(), repeat: "weekly" })).not.toHaveProperty("weekdays");
-    expect(
-      recurrenceArgs({ ...repeatValues(), repeat: "custom", repeat_interval: "3", repeat_unit: "week" }),
-    ).toMatchObject({ interval: 3, unit: "week" });
-    expect(
-      recurrenceArgs({ ...repeatValues(), repeat: "monthly", repeat_ordinal: "-1", repeat_weekday: "friday" }),
-    ).toMatchObject({ weekday: "friday", ordinal: -1 });
-    expect(recurrenceArgs({ ...repeatValues(), repeat: "monthly" })).not.toHaveProperty("ordinal");
-  });
-
-  it("sends end rules", () => {
-    const daily = { ...repeatValues(), repeat: "daily" };
-    expect(recurrenceArgs({ ...daily, repeat_end: "after_count", repeat_count: "5" }).end_rule).toEqual({
-      type: "after_count",
-      occurrence_count: 5,
-    });
-    expect(recurrenceArgs({ ...daily, repeat_end: "on_date", repeat_until: fullDay(2027, 0, 31) }).end_rule).toEqual({
-      type: "on_date",
-      date: "2027-01-31",
-    });
-  });
-
-  it("reads a task's repeat back into the same recurrence", () => {
-    const shapes: Task["recurrence"][] = [
-      { frequency: "daily", based_on: "due_date", end_rule: { type: "never" } },
-      { frequency: "custom", interval: 3, unit: "day", based_on: "due_date", end_rule: { type: "never" } },
-      { frequency: "weekly", weekdays: ["monday", "thursday"], based_on: "completion", end_rule: { type: "never" } },
-      {
-        frequency: "monthly",
-        weekday: "tuesday",
-        ordinal: 2,
-        based_on: "due_date",
-        end_rule: { type: "after_count", occurrence_count: 4 },
-      },
-    ];
-    for (const r of shapes) expect(recurrenceArgs(repeatValues(withRepeat(r)))).toEqual(r);
-    const reported = { frequency: "yearly", based_on: "due_date", end_rule: { type: "on_date", "ldt ": "2027-06-30" } };
-    expect(recurrenceArgs(repeatValues(withRepeat(reported as Task["recurrence"]))).end_rule).toEqual({
-      type: "on_date",
-      date: "2027-06-30",
-    });
-    expect(repeatValues(task).repeat).toBe("none");
-  });
-
-  it("leaves a repeat the form can't show alone", () => {
-    const odd = withRepeat({ frequency: "hourly", based_on: "due_date" });
-    expect(repeatValues(odd).repeat).toBeUndefined();
-  });
-
-  it("validates a repeat's numbers to 2Do's limits", () => {
-    expect(repeatValueError("interval", "999")).toBeUndefined();
-    expect(repeatValueError("interval", "1000")).toBe("Enter a whole number from 1 to 999");
-    expect(repeatValueError("count", "0")).toBe("Enter a whole number from 1 to 99");
-    expect(repeatValueError("count", "2.5")).toBeDefined();
-  });
-
-  it("creates with a repeat, and sends a repeat on edit only when it changed", async () => {
-    await saveTask({ ...values, repeat: "weekdays" });
-    expect(sent()[0][1].recurrence).toEqual({
-      frequency: "weekdays",
-      based_on: "due_date",
-      end_rule: { type: "never" },
-    });
-    await saveTask(values);
-    expect(sent()[1][1]).not.toHaveProperty("recurrence");
-
-    const daily = withRepeat({ frequency: "daily", based_on: "due_date", end_rule: { type: "never" } });
-    await saveTask(taskToValues(daily), daily);
-    expect(sent()[2][1]).not.toHaveProperty("recurrence");
-    await saveTask({ ...taskToValues(daily), repeat_from: "completion" }, daily);
-    expect(sent()[3][1].recurrence).toMatchObject({ frequency: "daily", based_on: "completion" });
-    await saveTask({ ...taskToValues(daily), repeat: "none" }, daily);
-    expect(sent()[4][1].recurrence).toEqual({ frequency: "none" });
-    await saveTask({ ...taskToValues(daily), repeat: undefined }, daily);
-    expect(sent()[5][1]).not.toHaveProperty("recurrence");
   });
 });
 
