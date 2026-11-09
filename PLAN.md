@@ -331,6 +331,14 @@ In this order, one commit each.
 - Whether `create_task` with a `url` action accepts custom schemes (`readdle-spark://`, `x-apple-health://`). The form accepts them; creating one hasn't been tested.
 - Dates chrono-node doesn't read: compact dates (20261106), "14h05", ISO weeks, and non-English month names.
 
+## Housekeeping
+
+Cleanups to existing code, kept out of feature PRs and saved for a release of their own. Feature work applies these ideas only to the code it adds.
+
+- **Action types:** `ACTIONS` (`2do.ts`) and `RUN_ACTION` (`view-tasks.tsx`) are both `Record<string, …>`, so nothing checks that they list the same types, or match `actionURL`. Declare `ACTIONS` with `satisfies`, derive `ActionType` from its keys, and type `RUN_ACTION` as `Record<ActionType, …>`.
+- **`twoDo` commands:** `command` is a plain `string`, and each call site repeats its response type (`twoDo<{ tags: Tag[] }>("list_tags")`). Map each command to its response in one type, so a mistyped command doesn't compile and call sites become `twoDo("list_tags")`.
+- **Priority:** `TaskValues.priority` is `string`, while `Task.priority` is a union. Use the union there, and declare `PRIORITY_TAGS` (`view-tasks.tsx`) with `satisfies Record<Exclude<Task["priority"], "none">, …>`.
+
 ## Releases
 
 `main` holds the Store version plus the release in progress, and `experimental` holds the rest of the work, rebased onto `main`, released to the Store in small chunks. The process is in [AGENTS.md](AGENTS.md#releases). Screenshots wait until a release needs them.
