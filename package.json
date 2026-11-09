@@ -5,6 +5,7 @@
     "lint": "cd extension && npm install && npm run lint",
     "fix-lint": "cd extension && npm install && npm run fix-lint",
     "publish": "cd extension && npm install && npm run publish",
-    "test": "cd tests && npm install && npm run test"
+    "test": "cd tests && npm install && npm run test",
+    "pull-contributions": "cd extension && npm install && npm run pull-contributions"
   }
 }
