@@ -20,7 +20,7 @@
 - Warnings, and a fix action, when a goal's or journal's syntax is off
 - A clear message when 2Do is too old for this extension, or not installed
 
-## [Links and Actions] - {PR_MERGE_DATE}
+## [Links and Actions] - 2026-11-07
 
 - Add Link command that creates a task from a web address, optionally reading the page's title and description
 - Set a task's 2Do action (link, call, message, email, visit, or Google search) when adding or editing it

@@ -324,11 +324,20 @@ In this order, one commit each.
   - **Tag Only** leaves tasks open, and **Delete** leaves nothing to reopen.
 
 - [x] **View Tasks: Deadlines** (added after the four above): open tasks with a due date, Overdue first, then Upcoming, each by due date (`deadlineSections`). 2Do has no "has a due date" filter, but `query_tasks` takes `due_on_or_before`, and a far-future date (`9999-12-31`) matches every due date. Its results aren't sorted, so the extension sorts them; "overdue" is 2Do's own `presentation.is_overdue`.
+- [ ] **Add Task stays open after adding:** saving a new task clears the form for the next one, instead of closing Raycast (`showHUD` closes it today). A success toast replaces the HUD, and `useForm`'s `reset` clears the fields. The List keeps its choice, as it does now (`storeValue`). Edit Task still closes after saving. Open: whether Add Link's form does the same, or goes back to the address step.
 
 ## Parked
 
 - Whether `create_task` with a `url` action accepts custom schemes (`readdle-spark://`, `x-apple-health://`). The form accepts them; creating one hasn't been tested.
 - Dates chrono-node doesn't read: compact dates (20261106), "14h05", ISO weeks, and non-English month names.
+
+## Housekeeping
+
+Cleanups to existing code, kept out of feature PRs and saved for a release of their own. Feature work applies these ideas only to the code it adds.
+
+- **Action types:** `ACTIONS` (`2do.ts`) and `RUN_ACTION` (`view-tasks.tsx`) are both `Record<string, …>`, so nothing checks that they list the same types, or match `actionURL`. Declare `ACTIONS` with `satisfies`, derive `ActionType` from its keys, and type `RUN_ACTION` as `Record<ActionType, …>`.
+- **`twoDo` commands:** `command` is a plain `string`, and each call site repeats its response type (`twoDo<{ tags: Tag[] }>("list_tags")`). Map each command to its response in one type, so a mistyped command doesn't compile and call sites become `twoDo("list_tags")`.
+- **Priority:** `TaskValues.priority` is `string`, while `Task.priority` is a union. Use the union there, and declare `PRIORITY_TAGS` (`view-tasks.tsx`) with `satisfies Record<Exclude<Task["priority"], "none">, …>`.
 
 ## Releases
 
@@ -337,7 +346,7 @@ In this order, one commit each.
 ### Released
 
 - **Initial Version** (2026-11-01, [raycast/extensions#32601](https://github.com/raycast/extensions/pull/32601)): Add Task and View Tasks.
-- **Links and Actions** ([raycast/extensions#33282](https://github.com/raycast/extensions/pull/33282), approved): Add Link, the Action field in Add Task and Edit Task, and running a task's action (⌘L) or choosing a link (⇧⌘L) in View Tasks.
+- **Links and Actions** (2026-11-07, [raycast/extensions#33282](https://github.com/raycast/extensions/pull/33282)): Add Link, the Action field in Add Task and Edit Task, and running a task's action (⌘L) or choosing a link (⇧⌘L) in View Tasks.
 
 ### Order
 
