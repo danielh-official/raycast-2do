@@ -1,5 +1,6 @@
 {
   "scripts": {
+    "install": "cd extension && npm install && cd ../tests && npm install",
     "build": "cd extension && npm install && npm run build",
     "dev": "cd extension && npm install && npm run dev",
     "lint": "cd extension && npm install && npm run lint",
