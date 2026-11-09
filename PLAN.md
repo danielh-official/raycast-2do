@@ -337,7 +337,7 @@ In this order, one commit each.
 ### Released
 
 - **Initial Version** (2026-11-01, [raycast/extensions#32601](https://github.com/raycast/extensions/pull/32601)): Add Task and View Tasks.
-- **Links and Actions** ([raycast/extensions#33282](https://github.com/raycast/extensions/pull/33282), approved): Add Link, the Action field in Add Task and Edit Task, and running a task's action (⌘L) or choosing a link (⇧⌘L) in View Tasks.
+- **Links and Actions** (2026-11-07, [raycast/extensions#33282](https://github.com/raycast/extensions/pull/33282)): Add Link, the Action field in Add Task and Edit Task, and running a task's action (⌘L) or choosing a link (⇧⌘L) in View Tasks.
 
 ### Order
 
