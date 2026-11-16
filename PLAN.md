@@ -277,7 +277,7 @@ The data, checked on Nov 6 (54 open tasks):
   - [x] The parent shows its items' progress, like "3/6", as a ring accessory (one `list_subtasks` call per open parent, cached).
   - If the parent is also a goal, the goal's count still displays and Log Progress still works, but **the ring shows item progress, not goal progress**, and no goal ring shows.
 - [x] **Completing a parent with open items:** ask whether to **complete** or **cancel** the remaining items (cancelling uses the Cancel Task preferences), with a way to back out without deciding. It always asks when there are open items.
-- [x] **Add Item** (⌘N) on projects and checklists, and inside Show Items: the task form preset to the parent, without List or Project or Checklist fields, and without Start and Due for checklist items.
+- [x] **Add Item** (⌘N) on projects and checklists, and inside Show Items: the task form preset to the parent, without List or Project or Checklist fields, and without Start and Due for a checklist's child tasks (the checklist itself keeps them).
 - [x] **Type** field (Task, Project or Checklist) in Add Task (`create_task`'s `task_type`). A project or checklist always goes in the list, so the Project or Checklist field hides for them.
 - [x] **Project or Checklist field** in Add Task and Edit Task. It shows when the chosen list has any, and lists them (`listParents`).
   - Creating uses `parent_task_id` *instead of* `list_id`, since 2Do takes exactly one destination. Editing uses `move_task` with `parent_task_id`, which gives the task a new ID.
@@ -317,7 +317,7 @@ In this order, one commit each.
   - Limits: `interval` 1–999, `ordinal` 1–5 or -1, `occurrence_count` 1–99, and `weekdays` can't be empty.
   - A repeat needs a start or due date, and clearing both dates silently drops it. `frequency: "none"` clears it; `recurrence: null` is rejected.
   - 2Do reports the monthly weekday as `wkdy` and the end date as `ldt `, so reading handles both names.
-  - Items in a checklist have no dates, so they can't repeat.
+  - A checklist's child tasks have no dates, so they can't repeat. The checklist itself, a project, and a project's child tasks can.
 - [x] **Reopening a cancelled task:** Mark as Not Done on a cancelled task also undoes the cancel (`reopenTask`):
   - **Complete and Tag:** removes the cancel tag. Any completed task with the cancel tag loses it when reopened.
   - **Move to List and Complete:** a completed task in the Cancel List counts as cancelled (`inCancelList`, also giving it the ✕), and asks which list to move it back to, since the original isn't recorded.
