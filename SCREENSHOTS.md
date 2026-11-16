@@ -22,21 +22,25 @@ The edge cases are in a separate **Live Testing** list, for `npm run test:live`.
 
 ([Raycast's guidelines](https://developers.raycast.com/basics/prepare-an-extension-for-store#screenshots))
 
-## Current (Links and Actions)
+## Current (Projects and Checklists)
 
 - [x] **View Tasks** (`2do-1.png`): the Demo list with tags, priorities, due dates (an overdue one in red), stars, and action icons.
 - [x] **Edit Task** (`2do-2.png`): "Book a dentist appointment" with the Action set to Call and its Phone Number.
 - [x] **Add Task** (`2do-3.png`): the empty form, with the Action field and the remembered list.
 - [x] **Add Link** (`2do-4.png`): the first step with "Read page title and description" checked, the Raycast Companion tip, and the "Get Raycast Companion" link.
+- [x] **View Tasks** (`2do-5.png`): the Demo list with the "Plan the team offsite" project and "Pack for the trip" checklist, each with its icon and a "1/4" item ring, plus the repeat icon on "Water the plants".
+- [x] **Show Items** (`2do-6.png`): "Pack for the trip", 1 of 4 done, with Add Item at the top.
+
+That's six, the Store's limit, so later releases replace shots instead of adding them.
 
 ## Needed, by release
 
 1. **Task form additions:**
    - [ ] Edit Task with New Tags and Repeat filled in (for example Weekly on Mon and Thu). Could replace `2do-3.png`.
-   - [ ] View Tasks showing the repeat icon on repeating tasks.
+   - [x] View Tasks showing the repeat icon on repeating tasks (`2do-5.png`).
 2. **Projects and checklists:**
-   - [ ] View Tasks with project and checklist icons and their item-progress rings, like "1/3".
-   - [ ] Show Items on "Pack for the trip".
+   - [x] View Tasks with project and checklist icons and their item-progress rings, like "1/3" (`2do-5.png`).
+   - [x] Show Items on "Pack for the trip" (`2do-6.png`).
 3. **Scoped View Tasks and Deadlines:**
    - [ ] View Tasks: Today or Now, with the dropdown open on the lists and smart lists that have tasks in that scope.
    - [ ] View Tasks: Paused, filtered to the Someday tag (⌘T), with "(Someday)" in the title.
