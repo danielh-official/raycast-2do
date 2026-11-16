@@ -100,7 +100,12 @@ export function TaskForm({
 
   // The project or checklist the task is going into, if any. Checklist items have no dates, so they
   // can't repeat either.
-  const target = addTo ?? [parent, ...(parents.data ?? [])].find((p) => p && p.task_id === values.parent_id);
+  // A new project or checklist ignores the parent field, since it always goes in the list.
+  const target =
+    addTo ??
+    ((values.task_type ?? "normal") === "normal"
+      ? [parent, ...(parents.data ?? [])].find((p) => p && p.task_id === values.parent_id)
+      : undefined);
   const dated = target?.task_type !== "checklist";
   const repeats = dated && !!values.is_repeating && values.repeat !== undefined;
 
