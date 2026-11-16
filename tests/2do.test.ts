@@ -42,6 +42,7 @@ const task: Task = {
   start_time: "12:00",
   due_date: "2026-10-25",
   tags: [{ tag_id: "tag1", title: "Family" }],
+  task_type: "normal",
   action: { type: "none" },
   presentation: { is_overdue: false },
 };
@@ -197,6 +198,40 @@ describe("saveTask", () => {
     expect(taskToValues(future).action_type).toBeUndefined();
     await saveTask(taskToValues(future), future);
     expect(sent()[0][1]).not.toHaveProperty("action");
+  });
+
+  it("creates a task inside a project or checklist instead of the list", async () => {
+    await saveTask({ ...values, parent_id: "p1" });
+    expect(sent()[0][1]).toMatchObject({ parent_task_id: "p1" });
+    expect(sent()[0][1]).not.toHaveProperty("list_id");
+  });
+
+  it("creates a project or checklist in the list, never inside another", async () => {
+    await saveTask({ ...values, task_type: "checklist", parent_id: "p1" });
+    expect(sent()[0][1]).toMatchObject({ task_type: "checklist", list_id: "inbox" });
+    expect(sent()[0][1]).not.toHaveProperty("parent_task_id");
+    runAppleScript.mockClear();
+    await saveTask({ ...values, task_type: "normal" });
+    expect(sent()[0][1]).not.toHaveProperty("task_type");
+  });
+
+  it("moves an edited task into a project or checklist, rather than to the list", async () => {
+    await saveTask({ ...taskToValues(task), list_id: "work", parent_id: "p1" }, task);
+    expect(sent().map(([command, args]) => [command, args.parent_task_id ?? args.list_id])).toEqual([
+      ["update_task", undefined],
+      ["move_task", "p1"],
+    ]);
+  });
+
+  it("leaves an item in its project when the parent is unchanged, and moves it out or to another", async () => {
+    await saveTask({ ...taskToValues(task), parent_id: "p1" }, task, "p1");
+    expect(sent().map(([command]) => command)).toEqual(["update_task"]);
+    runAppleScript.mockClear();
+    await saveTask({ ...taskToValues(task), parent_id: "" }, task, "p1");
+    expect(sent()[1]).toEqual(["move_task", { task_id: "t1", list_id: "inbox" }]);
+    runAppleScript.mockClear();
+    await saveTask({ ...taskToValues(task), parent_id: "p2" }, task, "p1");
+    expect(sent()[1]).toEqual(["move_task", { task_id: "t1", parent_task_id: "p2" }]);
   });
 
   it("moves the task when its list changed", async () => {
