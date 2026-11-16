@@ -28,8 +28,6 @@ For tags not in 2Do yet, type their names in **New Tags**, separated by commas. 
 
 A **Type** field makes the new task a project or checklist instead. If the list has projects or checklists, a **Project or Checklist** field puts the task inside one of them. In Edit Task, picking one moves the task in. Projects and checklists themselves aren't offered the field, because 2Do turns a project or checklist put inside another into a normal task.
 
-A **Type** field makes the new task a project or checklist instead. If the list has projects or checklists, a **Project or Checklist** field puts the task inside one of them. In Edit Task, picking one moves the task in. Projects and checklists themselves aren't offered the field, because 2Do turns a project or checklist put inside another into a normal task.
-
 The action is 2Do's one-tap task action: **Link** (a URL), **Call** or **Message** (a phone number), **Email** (an address), **Visit** (a place, opened in Maps), or **Google** (search terms). Edit Task changes or removes it.
 
 ### Add Link
