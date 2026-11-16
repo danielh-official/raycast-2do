@@ -98,15 +98,15 @@ export function TaskForm({
     execute: canNest && !addTo && !!values.list_id,
   });
 
-  // The project or checklist the task is going into, if any. Checklist items have no dates, so they
-  // can't repeat either.
+  // Checklist items have no dates, so they can't repeat either: no date fields for a checklist's item
+  // being edited, or for a task going into a checklist.
   // A new project or checklist ignores the parent field, since it always goes in the list.
   const target =
     addTo ??
     ((values.task_type ?? "normal") === "normal"
       ? [parent, ...(parents.data ?? [])].find((p) => p && p.task_id === values.parent_id)
       : undefined);
-  const dated = target?.task_type !== "checklist";
+  const dated = parent?.task_type !== "checklist" && target?.task_type !== "checklist";
   const repeats = dated && !!values.is_repeating && values.repeat !== undefined;
 
   return (
