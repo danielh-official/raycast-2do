@@ -36,7 +36,7 @@ That's six, the Store's limit, so later releases replace shots instead of adding
 ## Needed, by release
 
 1. **Task form additions:**
-   - [ ] Edit Task with New Tags and Repeat filled in (for example Weekly on Mon and Thu). Could replace `2do-3.png`.
+   - ~~Edit Task with New Tags and Repeat filled in (for example Weekly on Mon and Thu). Could replace `2do-3.png`.~~
    - [x] View Tasks showing the repeat icon on repeating tasks (`2do-5.png`).
 2. **Projects and checklists:**
    - [x] View Tasks with project and checklist icons and their item-progress rings, like "1/3" (`2do-5.png`).
