@@ -144,7 +144,8 @@ export function TaskForm({
           {...itemProps.action_value}
         />
       )}
-      <Form.Separator />
+      {/* Add Item hides List and Project or Checklist, so their divider would double up. */}
+      {!addTo && <Form.Separator />}
       {!addTo && (
         <Form.Dropdown
           title="List"
