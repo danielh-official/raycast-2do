@@ -354,10 +354,11 @@ Cleanups to existing code, kept out of feature PRs and saved for a release of th
 
 Features native to 2Do go first, then wishlist items. The scoped commands wait, since adding many commands risks rejection.
 
-1. **Scoped View Tasks and Deadlines:** Today, Now, Later Today, Starred, Scheduled, Paused (with Filter by Paused Tag), Done, and Deadlines, with the smart-list cache.
-2. **Cancel Task:** the action and its preferences, cancelling only this occurrence of a repeating task, and Mark as Not Done undoing a cancel. Projects gain "Complete Task and Cancel Remaining Items".
-3. **Journal:** carries the plumbing Goals shares: chrono-node date parsing and the Ambiguous Dates preference, hiding the block from Edit Task, and syntax warnings with the fix action. First, move Add Journal Entry (⌘J) off the second action, where Raycast doesn't show its shortcut.
-4. **Goals:** adds its half of the plumbing, View Tasks: Goals (on the scoped list from release 1), and the rule that a project's or checklist's item ring wins over a goal ring.
+1. **Add Task stays open:** saving a new task clears the form for the next one instead of closing Raycast (see "Add Task stays open after adding" under Next).
+2. **Scoped View Tasks and Deadlines:** Today, Now, Later Today, Starred, Scheduled, Paused (with Filter by Paused Tag), Done, and Deadlines, with the smart-list cache.
+3. **Cancel Task:** the action and its preferences, cancelling only this occurrence of a repeating task, and Mark as Not Done undoing a cancel. Projects gain "Complete Task and Cancel Remaining Items".
+4. **Journal:** carries the plumbing Goals shares: chrono-node date parsing and the Ambiguous Dates preference, hiding the block from Edit Task, and syntax warnings with the fix action. First, move Add Journal Entry (⌘J) off the second action, where Raycast doesn't show its shortcut.
+5. **Goals:** adds its half of the plumbing, View Tasks: Goals (on the scoped list from release 2), and the rule that a project's or checklist's item ring wins over a goal ring.
 
 ---
 

@@ -14,7 +14,7 @@ import {
   Toast,
   useNavigation,
 } from "@raycast/api";
-import { showFailureToast, useCachedPromise } from "@raycast/utils";
+import { getProgressIcon, showFailureToast, useCachedPromise } from "@raycast/utils";
 import {
   actionURL,
   CancelPrefs,
@@ -40,8 +40,8 @@ import { TaskForm } from "./task-form";
 import { checkNotes, fixNotes } from "./notes";
 import { dayFirst } from "./preferences";
 
-// A progress ring like getProgressIcon's, with today's share of the progress in a second color. Also used
-// for a project's or checklist's items, with no today share.
+// A progress ring like getProgressIcon's, with today's share of the progress in a second color, which
+// getProgressIcon can't draw.
 function goalIcon(done: number, today: number, total: number) {
   const share = (n: number) => Math.max(0, Math.min(1, n / total));
   const todayShare = Math.min(share(done), share(today));
@@ -77,15 +77,15 @@ const RUN_ACTION: Record<string, { title: string; icon: Icon }> = {
 };
 
 // A task row with its actions. `onChange` reloads the list after an action changes the task.
-// `parentId` is set for a project's or checklist's items. `extraActions` are the list's own.
+// `parent` is set for a project's or checklist's items. `extraActions` are the list's own.
 export function TaskItem({
   task: t,
-  parentId,
+  parent,
   onChange: reloadList,
   extraActions,
 }: {
   task: Task;
-  parentId?: string;
+  parent?: Task;
   onChange: () => void;
   extraActions?: ActionPanel.Section.Children;
 }) {
@@ -157,12 +157,15 @@ export function TaskItem({
       const { tasks } = await twoDo<{ tasks: Task[] }>("list_subtasks", { task_id: t.task_id });
       const open = tasks.filter((i) => !i.completed).length;
       const what = open === 1 ? "its open item" : `its ${open} open items`;
-      const ok = await confirmAlert({
-        title: cancelItems ? `Complete "${t.title}" and cancel ${what}?` : `Complete "${t.title}" and ${what}?`,
-        message: cancelItems ? "Each item is cancelled the way Cancel Task is set up." : undefined,
-        primaryAction: { title: cancelItems ? "Cancel Items and Complete" : "Complete All" },
-        dismissAction: { title: "Not Now" },
-      });
+      // Read fresh from 2Do rather than from the cached ring, so open items are never completed unasked.
+      const ok =
+        open === 0 ||
+        (await confirmAlert({
+          title: cancelItems ? `Complete "${t.title}" and cancel ${what}?` : `Complete "${t.title}" and ${what}?`,
+          message: cancelItems ? "Each item is cancelled the way Cancel Task is set up." : undefined,
+          primaryAction: { title: cancelItems ? "Cancel Items and Complete" : "Complete All" },
+          dismissAction: { title: "Not Now" },
+        }));
       if (!ok) return;
       await completeParent(t, cancelItems, prefs);
       await showToast({ style: Toast.Style.Success, title: "Completed" });
@@ -233,7 +236,7 @@ export function TaskItem({
         ...(isParent && !t.completed && items.data?.length
           ? [
               {
-                icon: goalIcon(itemsDone, 0, items.data.length),
+                icon: getProgressIcon(itemsDone / items.data.length, Color.Green),
                 text: `${itemsDone}/${items.data.length}`,
                 tooltip: `${itemsDone} of ${items.data.length} items done`,
               },
@@ -271,24 +274,8 @@ export function TaskItem({
           <Action.Push
             title="Edit Task"
             icon={Icon.Pencil}
-            target={<TaskForm task={t} parentId={parentId} onSaved={onChange} />}
+            target={<TaskForm task={t} parent={parent} onSaved={onChange} />}
           />
-          {isParent && !t.completed && (
-            <Action.Push
-              title="Add Item"
-              icon={Icon.Plus}
-              shortcut={Keyboard.Shortcut.Common.New}
-              target={<TaskForm addTo={t} onSaved={onChange} />}
-            />
-          )}
-          {t.task_type !== "normal" && (
-            <Action.Push
-              title="Show Items"
-              icon={Icon.List}
-              shortcut={{ modifiers: ["cmd"], key: "i" }}
-              target={<ItemsView parent={t} onChange={onChange} />}
-            />
-          )}
           {goal && (
             <Action.Push
               title="Log Progress"
@@ -341,7 +328,7 @@ export function TaskItem({
               ))}
             </ActionPanel.Submenu>
           )}
-          {isParent && !t.completed && itemsDone < (items.data?.length ?? 0) ? (
+          {isParent && !t.completed ? (
             <ActionPanel.Submenu
               title="Complete Task"
               icon={Icon.CheckCircle}
@@ -396,7 +383,7 @@ export function TaskItem({
               target={<TaskForm addTo={t} onSaved={onChange} />}
             />
           )}
-          {isParent && (
+          {t.task_type !== "normal" && (
             <Action.Push
               title="Show Items"
               icon={Icon.List}

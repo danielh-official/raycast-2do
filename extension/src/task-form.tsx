@@ -47,18 +47,18 @@ const ORDINALS = [
 ];
 
 // Creates a task, or edits `task` when given. `link` prefills a new task from a web page, with
-// the page as the task's link. `parentId` is the project or checklist an edited item is in.
+// the page as the task's link. `parent` is the project or checklist an edited item is in.
 // `addTo` adds a new item to that project or checklist; checklist items have no dates.
 export function TaskForm({
   task,
   link,
-  parentId,
+  parent,
   addTo,
   onSaved,
 }: {
   task?: Task;
   link?: PageInfo & { url: string };
-  parentId?: string;
+  parent?: Task;
   addTo?: Task;
   onSaved?: () => void;
 }) {
@@ -70,7 +70,7 @@ export function TaskForm({
 
   const { handleSubmit, itemProps, values, setValue } = useForm<TaskValues>({
     initialValues: task
-      ? { ...taskToValues(task), parent_id: parentId ?? "", new_tags: "" }
+      ? { ...taskToValues(task), parent_id: parent?.task_id ?? "", new_tags: "" }
       : {
           new_tags: "",
           action_type: link ? "url" : "none",
@@ -111,7 +111,13 @@ export function TaskForm({
           });
           if (!ok) return;
         }
-        await saveTask(await applyGoal(full, getPreferenceValues<GoalPrefs>()), current, parentId);
+        // Checklist items have no dates, so a task put in a checklist loses its dates and repeat.
+        const undated = !dated && { start: null, due: null, is_repeating: false };
+        await saveTask(
+          await applyGoal({ ...full, ...undated }, getPreferenceValues<GoalPrefs>()),
+          current,
+          parent?.task_id,
+        );
         if (task || addTo) {
           await showToast({ style: Toast.Style.Success, title: task ? "Task updated" : "Item added" });
           onSaved?.();
@@ -124,8 +130,6 @@ export function TaskForm({
       }
     },
   });
-
-  const repeats = !!values.is_repeating && values.repeat !== undefined;
 
   // A project or checklist put in another becomes a normal task in 2Do, so they aren't offered one.
   const canNest = !task || task.task_type === "normal";
@@ -224,7 +228,7 @@ export function TaskForm({
           ))}
         </Form.Dropdown>
       )}
-      {addTo?.task_type !== "checklist" && (
+      {dated && (
         <>
           <Form.Separator />
           <Form.DatePicker title="Start" {...itemProps.start} />
