@@ -48,7 +48,8 @@ const ORDINALS = [
 
 // Creates a task, or edits `task` when given. `link` prefills a new task from a web page, with
 // the page as the task's link. `parent` is the project or checklist an edited item is in.
-// `addTo` adds a new item to that project or checklist; checklist items have no dates.
+// `addTo` adds a new item to that project or checklist. A checklist's child tasks have no dates; the
+// checklist itself, and a project and its children, do.
 export function TaskForm({
   task,
   link,
@@ -111,7 +112,7 @@ export function TaskForm({
           });
           if (!ok) return;
         }
-        // Checklist items have no dates, so a task put in a checklist loses its dates and repeat.
+        // A checklist's child tasks have no dates, so a task put in a checklist loses its dates and repeat.
         const undated = !dated && { start: null, due: null, is_repeating: false };
         await saveTask(
           await applyGoal({ ...full, ...undated }, getPreferenceValues<GoalPrefs>()),
@@ -137,8 +138,8 @@ export function TaskForm({
     execute: canNest && !addTo && !!values.list_id,
   });
 
-  // Checklist items have no dates, so they can't repeat either: no date fields for a checklist's item
-  // being edited, or for a task going into a checklist.
+  // A checklist's child tasks have no dates, so they can't repeat either: no date fields when editing
+  // one, or for a task going into a checklist. The checklist itself keeps its date fields.
   // A new project or checklist ignores the parent field, since it always goes in the list.
   const target =
     addTo ??
