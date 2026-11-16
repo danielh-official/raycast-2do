@@ -348,16 +348,16 @@ Cleanups to existing code, kept out of feature PRs and saved for a release of th
 - **Initial Version** (2026-11-01, [raycast/extensions#32601](https://github.com/raycast/extensions/pull/32601)): Add Task and View Tasks.
 - **Links and Actions** (2026-11-07, [raycast/extensions#33282](https://github.com/raycast/extensions/pull/33282)): Add Link, the Action field in Add Task and Edit Task, and running a task's action (⌘L) or choosing a link (⇧⌘L) in View Tasks.
 - **Repeats and New Tags** (2026-11-09, [raycast/extensions#33346](https://github.com/raycast/extensions/pull/33346)): Repeat settings in Add Task and Edit Task, the repeat icon in View Tasks, the New Tags field, and the "2Do is too old or not installed" message.
+- **Projects and Checklists** (not merged yet, [raycast/extensions#33613](https://github.com/raycast/extensions/pull/33613)): the Type and Project or Checklist fields, Show Items, Add Item, project and checklist icons with item rings, and asking before completing a parent with open items.
 
 ### Order
 
 Features native to 2Do go first, then wishlist items. The scoped commands wait, since adding many commands risks rejection.
 
-1. **Projects and checklists:** `TaskItem` comes in here, since Show Items lists items with it. Completing a parent with open items only offers completing them; cancelling them waits for Cancel Task.
-2. **Scoped View Tasks and Deadlines:** Today, Now, Later Today, Starred, Scheduled, Paused (with Filter by Paused Tag), Done, and Deadlines, with the smart-list cache.
-3. **Cancel Task:** the action and its preferences, cancelling only this occurrence of a repeating task, and Mark as Not Done undoing a cancel. Projects gain "Complete Task and Cancel Remaining Items".
-4. **Journal:** carries the plumbing Goals shares: chrono-node date parsing and the Ambiguous Dates preference, hiding the block from Edit Task, and syntax warnings with the fix action. First, move Add Journal Entry (⌘J) off the second action, where Raycast doesn't show its shortcut.
-5. **Goals:** adds its half of the plumbing, View Tasks: Goals (on the scoped list from release 2), and the rule that a project's or checklist's item ring wins over a goal ring.
+1. **Scoped View Tasks and Deadlines:** Today, Now, Later Today, Starred, Scheduled, Paused (with Filter by Paused Tag), Done, and Deadlines, with the smart-list cache.
+2. **Cancel Task:** the action and its preferences, cancelling only this occurrence of a repeating task, and Mark as Not Done undoing a cancel. Projects gain "Complete Task and Cancel Remaining Items".
+3. **Journal:** carries the plumbing Goals shares: chrono-node date parsing and the Ambiguous Dates preference, hiding the block from Edit Task, and syntax warnings with the fix action. First, move Add Journal Entry (⌘J) off the second action, where Raycast doesn't show its shortcut.
+4. **Goals:** adds its half of the plumbing, View Tasks: Goals (on the scoped list from release 1), and the rule that a project's or checklist's item ring wins over a goal ring.
 
 ---
 
