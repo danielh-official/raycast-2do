@@ -3,6 +3,7 @@ import {
   actionURL,
   actionValueError,
   dateFields,
+  newTaskValues,
   recurrenceArgs,
   repeatRule,
   repeatValueError,
@@ -238,6 +239,46 @@ describe("saveTask", () => {
     await saveTask({ ...values, list_id: "work" }, task);
     expect(sent().map(([command]) => command)).toEqual(["update_task", "move_task"]);
     expect(sent()[1][1]).toEqual({ task_id: "t1", list_id: "work" });
+  });
+});
+
+describe("newTaskValues", () => {
+  it("omits list_id on initial render so storeValue restores it, and clears all other fields", () => {
+    const empty = newTaskValues();
+    expect(empty).not.toHaveProperty("list_id");
+    expect(empty).toMatchObject({
+      title: "",
+      notes: "",
+      start: null,
+      due: null,
+      priority: "none",
+      starred: false,
+      tag_ids: [],
+      new_tags: "",
+      action_type: "none",
+      action_value: "",
+      parent_id: "",
+      task_type: "normal",
+      is_repeating: false,
+      repeat: "daily",
+      repeat_end: "never",
+      repeat_until: null,
+    });
+  });
+
+  it("keeps the chosen list when resetting after saving", () => {
+    expect(newTaskValues("work")).toMatchObject({
+      list_id: "work",
+      title: "",
+      notes: "",
+      parent_id: "",
+      tag_ids: [],
+      new_tags: "",
+      action_type: "none",
+      action_value: "",
+      task_type: "normal",
+      is_repeating: false,
+    });
   });
 });
 

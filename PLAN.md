@@ -324,7 +324,7 @@ In this order, one commit each.
   - **Tag Only** leaves tasks open, and **Delete** leaves nothing to reopen.
 
 - [x] **View Tasks: Deadlines** (added after the four above): open tasks with a due date, Overdue first, then Upcoming, each by due date (`deadlineSections`). 2Do has no "has a due date" filter, but `query_tasks` takes `due_on_or_before`, and a far-future date (`9999-12-31`) matches every due date. Its results aren't sorted, so the extension sorts them; "overdue" is 2Do's own `presentation.is_overdue`.
-- [ ] **Add Task stays open after adding:** saving a new task clears the form for the next one, instead of closing Raycast (`showHUD` closes it today). A success toast replaces the HUD, and `useForm`'s `reset` clears the fields. The List keeps its choice, as it does now (`storeValue`). Edit Task still closes after saving. Open: whether Add Link's form does the same, or goes back to the address step.
+- [x] **Add Task stays open after adding:** saving a new task clears the form for the next one, instead of closing Raycast (`showHUD` closed it before). A success toast replaces the HUD, `useForm`'s `reset` clears the fields while keeping the chosen List (`storeValue`), and focus returns to Title. New tags and new projects/checklists revalidate their pickers. Edit Task and Add Item still close after saving, and Add Link returns to the cleared Link step for the next URL.
 - [ ] **Tags under List** in the task form: Tags and New Tags move from the bottom of the form to just under the List field, in Add Task, Edit Task and Add Link.
 
 ## Parked
@@ -342,14 +342,14 @@ Cleanups to existing code, kept out of feature PRs and saved for a release of th
 
 ## Releases
 
-`main` holds the Store version plus the release in progress, and `experimental` holds the rest of the work, rebased onto `main`, released to the Store in small chunks. The process is in [AGENTS.md](AGENTS.md#releases). Screenshots wait until a release needs them.
+`main` holds the Store version plus the release in progress, and `experimental` holds earlier unreleased work, released to the Store in small chunks. The process is in [AGENTS.md](AGENTS.md#releases). Screenshots wait until a release needs them.
 
 ### Released
 
 - **Initial Version** (2026-11-01, [raycast/extensions#32601](https://github.com/raycast/extensions/pull/32601)): Add Task and View Tasks.
 - **Links and Actions** (2026-11-07, [raycast/extensions#33282](https://github.com/raycast/extensions/pull/33282)): Add Link, the Action field in Add Task and Edit Task, and running a task's action (⌘L) or choosing a link (⇧⌘L) in View Tasks.
 - **Repeats and New Tags** (2026-11-09, [raycast/extensions#33346](https://github.com/raycast/extensions/pull/33346)): Repeat settings in Add Task and Edit Task, the repeat icon in View Tasks, the New Tags field, and the "2Do is too old or not installed" message.
-- **Projects and Checklists** (not merged yet, [raycast/extensions#33613](https://github.com/raycast/extensions/pull/33613)): the Type and Project or Checklist fields, Show Items, Add Item, project and checklist icons with item rings, and asking before completing a parent with open items.
+- **Projects and Checklists** (2026-11-17, [raycast/extensions#33613](https://github.com/raycast/extensions/pull/33613)): the Type and Project or Checklist fields, Show Items, Add Item, project and checklist icons with item rings, and asking before completing a parent with open items.
 
 ### Order
 
