@@ -171,6 +171,17 @@ export function TaskForm({
           ))}
         </Form.Dropdown>
       )}
+      <Form.TagPicker title="Tags" {...itemProps.tag_ids}>
+        {tagOptions(tags.data, task).map((t) => (
+          <Form.TagPicker.Item key={t.tag_id} value={t.tag_id} title={t.title} />
+        ))}
+      </Form.TagPicker>
+      <Form.TextField
+        title="New Tags"
+        placeholder="Errands, Home"
+        info="Comma-separated. Names matching an existing tag use that tag; the rest are created when you save."
+        {...itemProps.new_tags}
+      />
       {parentOptions.length > 0 && (values.task_type ?? "normal") === "normal" && (
         <Form.Dropdown title="Project or Checklist" {...itemProps.parent_id}>
           <Form.Dropdown.Item value="" title="None" icon={Icon.Minus} />
@@ -268,18 +279,6 @@ export function TaskForm({
         <Form.Dropdown.Item value="high" title="High" />
       </Form.Dropdown>
       <Form.Checkbox label="Starred" {...itemProps.starred} />
-      <Form.Separator />
-      <Form.TagPicker title="Tags" {...itemProps.tag_ids}>
-        {tagOptions(tags.data, task).map((t) => (
-          <Form.TagPicker.Item key={t.tag_id} value={t.tag_id} title={t.title} />
-        ))}
-      </Form.TagPicker>
-      <Form.TextField
-        title="New Tags"
-        placeholder="Errands, Home"
-        info="Comma-separated. Names matching an existing tag use that tag; the rest are created when you save."
-        {...itemProps.new_tags}
-      />
     </Form>
   );
 }

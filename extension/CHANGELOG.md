@@ -1,5 +1,9 @@
 # 2Do Changelog
 
+## [Tags Under List] - {PR_MERGE_DATE}
+
+- Tags and New Tags now appear directly below List in Add Task, Edit Task, and Add Link
+
 ## [Add Task Stays Open] - 2026-11-23
 
 - Add Task now stays open and clears the form after saving a task (keeping the selected list), so you can add multiple tasks in a row
