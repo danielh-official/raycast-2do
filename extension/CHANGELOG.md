@@ -2,7 +2,7 @@
 
 ## [Tags Under List] - {PR_MERGE_DATE}
 
-- Tags and New Tags now appear directly below List in Add Task, Edit Task, and Add Link
+- Tags and New Tags now appear below List and Project or Checklist (when shown) in Add Task, Edit Task, and Add Link
 
 ## [Add Task Stays Open] - 2026-11-23
 
