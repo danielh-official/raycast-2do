@@ -11,12 +11,12 @@
 
 ### Smart-list caching — next implementation task
 
-- [ ] Cache smart-list results/membership in Raycast's `Cache` to avoid repeated queries. This is a performance improvement, independent of adding separate scoped commands or goals/journal.
-  - Use the experimental cache as reference, adapting it to the existing View Tasks command.
-  - Cache per query scope; refresh on opening when older than 10 minutes, and after task actions.
-  - Query a selected smart list fresh so filtering does not rely on stale cached membership.
-  - Test cache reuse, expiry, selected-list freshness, and invalidation after actions.
-  - May join today's Tags Under List PR if the combined change stays small and reviewable; otherwise ship separately.
+- [ ] Cache the smart-list dropdown catalog in Raycast's `Cache` to avoid repeated `list_smart_lists` queries. Prepared on `smart-list-performance`, not yet on main.
+  - Unlike the experimental scoped views, current View Tasks does not query every smart list's membership. Do not add that query fan-out or a membership cache.
+  - Reuse the catalog for ten minutes across command opens; invalidate and refresh after task actions.
+  - Keep task queries for selected scopes unchanged and fresh, including selected smart lists.
+  - Test reuse, expiry, invalidation, corrupt cache recovery, and retry after query failures.
+  - Keep this PR focused on smart-list performance; Tags Under List already has its own PR.
 
 ### New View Tasks Scopes
 
@@ -156,7 +156,7 @@ Keep unrelated cleanup out of feature PRs; apply these patterns to new code wher
 ### In progress and order
 
 1. **Tags Under List:** implemented on main; not yet listed as released.
-2. **Smart-list caching:** next implementation task; may be included in today's PR with Tags Under List if reviewable.
+2. **Smart-list caching:** prepared on `smart-list-performance` as a separate, performance-only PR; catalog caching without caching selected tasks.
 3. **New View Tasks Scopes:** Now, Later Today, Tomorrow, Paused, Deadlines, and dated-scope ordering inside View Tasks.
 4. **Cancel Task:** all cancellation features above, including repeating occurrences, reopening, and cancelling remaining parent items.
 
