@@ -9,15 +9,6 @@
 
 ## Next
 
-### Smart-list caching — next implementation task
-
-- [ ] Cache the smart-list dropdown catalog in Raycast's `Cache` to avoid repeated `list_smart_lists` queries. Prepared on `smart-list-performance`, not yet on main.
-  - Unlike the experimental scoped views, current View Tasks does not query every smart list's membership. Do not add that query fan-out or a membership cache.
-  - Reuse the catalog for ten minutes across command opens; invalidate and refresh after task actions.
-  - Keep task queries for selected scopes unchanged and fresh, including selected smart lists.
-  - Test reuse, expiry, invalidation, corrupt cache recovery, and retry after query failures.
-  - Keep this PR focused on smart-list performance; Tags Under List already has its own PR.
-
 ### New View Tasks Scopes
 
 Add selections **inside the existing View Tasks command**, not new Raycast commands.
@@ -47,7 +38,7 @@ Add selections **inside the existing View Tasks command**, not new Raycast comma
 - [ ] Count open tasks, except **Done**, which counts completed tasks. Use full totals, not the 200-task display limit.
 - [ ] Load counts in the background without delaying View Tasks; refresh after task changes. Avoid unnecessary query fan-out, especially for smart lists.
 - [ ] Test totals, refresh behavior, and loading/error handling; update README and CHANGELOG.
-- [ ] Implement as its own commit, separate from the current smart-list caching PR and the other scope work.
+- [ ] Implement as its own commit, separate from the other scope work.
 
 ### Cancel Task
 
@@ -124,6 +115,13 @@ All cancellation features remain wanted. They exist in `experimental`, **not `ma
   - Edit Task and Add Item close after saving; Add Link returns to its cleared Link step.
 - [x] **Tags Under List:** order is List → Project or Checklist (when shown) → Tags → New Tags in Add Task, Edit Task, and Add Link.
 
+### Smart-list caching
+
+- [x] Cache the smart-list dropdown catalog with `@raycast/utils` `withCache` (`maxAge: 10 * 60_000`, `validate`, `clearCache()`) to avoid repeated `list_smart_lists` queries.
+  - No per-smart-list membership query fan-out or membership cache.
+  - Reuse the catalog for ten minutes across command opens; invalidate and refresh after task actions.
+  - Task queries for selected scopes stay fresh, including selected smart lists.
+
 ## Automation Suite reference
 
 Checked against 2Do 2026.4.3, including scratch-task verification in November 2026.
@@ -160,14 +158,14 @@ Keep unrelated cleanup out of feature PRs; apply these patterns to new code wher
 - **Repeats and New Tags** (2026-11-09, [raycast/extensions#33346](https://github.com/raycast/extensions/pull/33346)): Repeat settings/icon, New Tags, and old/missing-2Do errors.
 - **Projects and Checklists** (2026-11-17, [raycast/extensions#33613](https://github.com/raycast/extensions/pull/33613)): Type/destination fields, Show Items, Add Item, parent icons/rings, and confirmation before completing open items.
 - **Add Task Stays Open** (2026-11-23, [raycast/extensions#33807](https://github.com/raycast/extensions/pull/33807)): reset Add Task and Add Link for repeated entry.
+- **Tags Under List** (2026-11-25, [raycast/extensions#33927](https://github.com/raycast/extensions/pull/33927)): Tags and New Tags below List / Project or Checklist in forms.
+- **Smart List Performance** (2026-11-25, [raycast/extensions#33941](https://github.com/raycast/extensions/pull/33941)): ten-minute smart-list catalog cache; selected-scope tasks stay fresh.
 
 ### In progress and order
 
-1. **Tags Under List:** implemented on main; not yet listed as released.
-2. **Smart-list caching:** prepared on `smart-list-performance` as a separate, performance-only PR; catalog caching without caching selected tasks.
-3. **New View Tasks Scopes:** Now, Later Today, Tomorrow, Paused, Deadlines, and dated-scope ordering inside View Tasks.
-4. **View Tasks scope counts:** background-loaded totals in scope labels, implemented as its own commit.
-5. **Cancel Task:** all cancellation features above, including repeating occurrences, reopening, and cancelling remaining parent items.
+1. **New View Tasks Scopes:** Now, Later Today, Tomorrow, Paused, Deadlines, and dated-scope ordering inside View Tasks.
+2. **View Tasks scope counts:** background-loaded totals in scope labels, implemented as its own commit.
+3. **Cancel Task:** all cancellation features above, including repeating occurrences, reopening, and cancelling remaining parent items.
 
 No scoped-command, goal, or journal release is currently planned.
 
