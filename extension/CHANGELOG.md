@@ -1,5 +1,9 @@
 # 2Do Changelog
 
+## [View Tasks Scope Counts] - {PR_MERGE_DATE}
+
+- Scope dropdown shows open-task counts (completed for Done), e.g. Today (2), including lists, smart lists, and Paused: {tag}
+
 ## [New View Tasks Scopes] - {PR_MERGE_DATE}
 
 - View Tasks scopes: Now, Later Today, Tomorrow (start date), and Deadlines (Overdue / Upcoming by due date)

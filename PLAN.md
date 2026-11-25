@@ -9,14 +9,6 @@
 
 ## Next
 
-### View Tasks scope counts — separate commit
-
-- [ ] Show task counts beside View Tasks scope options, including lists and smart lists, e.g. **Today (2)**.
-- [ ] Count open tasks, except **Done**, which counts completed tasks. Use full totals, not the 200-task display limit.
-- [ ] Load counts in the background without delaying View Tasks; refresh after task changes. Avoid unnecessary query fan-out, especially for smart lists.
-- [ ] Test totals, refresh behavior, and loading/error handling; update README and CHANGELOG.
-- [ ] Implement as its own commit, separate from the other scope work.
-
 ### Cancel Task
 
 All cancellation features remain wanted. They exist in `experimental`, **not `main`**.
@@ -105,6 +97,11 @@ All cancellation features remain wanted. They exist in `experimental`, **not `ma
 - [x] Per paused tag as **Paused: {tag}** in the scope dropdown.
 - [x] Dated-scope start-then-due ordering for Today, Now, Later Today, Tomorrow, and Scheduled; Deadlines by due date ascending; Done by completion date descending.
 
+### View Tasks scope counts
+
+- [x] Scope dropdown labels include full totals (not the 200-task display limit), e.g. **Today (2)**; Done counts completed tasks.
+- [x] Counts load in the background after catalogs are ready; refresh after task changes. Simple scopes use `total_count` with `limit: 1`; Now/Later and paused tags paginate once each.
+
 ## Automation Suite reference
 
 Checked against 2Do 2026.4.3, including scratch-task verification in November 2026.
@@ -147,7 +144,7 @@ Keep unrelated cleanup out of feature PRs; apply these patterns to new code wher
 ### In progress and order
 
 1. **New View Tasks Scopes:** implemented on main; not yet listed as released.
-2. **View Tasks scope counts:** background-loaded totals in scope labels, implemented as its own commit.
+2. **View Tasks scope counts:** implemented on main; not yet listed as released.
 3. **Cancel Task:** all cancellation features above, including repeating occurrences, reopening, and cancelling remaining parent items.
 
 No scoped-command, goal, or journal release is currently planned.

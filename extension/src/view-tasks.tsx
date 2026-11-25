@@ -1,6 +1,6 @@
 import { Icon, List } from "@raycast/api";
 import { useCachedPromise } from "@raycast/utils";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import {
   deadlineSections,
   hasStarted,
@@ -12,6 +12,7 @@ import {
   Task,
   twoDo,
 } from "./2do";
+import { loadScopeCounts, titleWithCount } from "./scope-counts";
 import { invalidateSmartLists, loadSmartLists } from "./smart-lists";
 import { TaskItem } from "./task-item";
 
@@ -57,16 +58,33 @@ export default function Command() {
     { execute: !!scope },
   );
 
+  const countScopes = useMemo(() => {
+    if (!lists.data || !smartLists.data || !pausedTags.data) return [];
+    return [
+      ...FOCUSES.map(([id]) => `focus:${id}`),
+      ...pausedTags.data.map((tag) => `paused-tag:${tag.tag_id}`),
+      ...lists.data.map((l) => l.collection_id),
+      ...smartLists.data.map((l) => l.collection_id),
+    ];
+  }, [lists.data, smartLists.data, pausedTags.data]);
+
+  // Counts load after catalogs are ready and never block the task list spinner.
+  const counts = useCachedPromise((scopes: string[]) => loadScopeCounts(scopes), [countScopes], {
+    execute: countScopes.length > 0,
+  });
+
   function reload() {
     void tasks.revalidate();
     invalidateSmartLists();
     void smartLists.revalidate();
     void pausedTags.revalidate();
+    void counts.revalidate();
   }
 
   const shown = scope && tasks.data ? prepareTasks(scope, tasks.data) : undefined;
   const sections: [string, Task[]][] =
     scope === "focus:deadlines" && shown ? deadlineSections(shown) : [["", shown ?? []]];
+  const n = (value: string) => counts.data?.[value];
 
   return (
     <List
@@ -76,7 +94,12 @@ export default function Command() {
         <List.Dropdown tooltip="Scope" storeValue onChange={setScope}>
           <List.Dropdown.Section>
             {FOCUSES.map(([id, title, icon]) => (
-              <List.Dropdown.Item key={id} value={`focus:${id}`} title={title} icon={icon} />
+              <List.Dropdown.Item
+                key={id}
+                value={`focus:${id}`}
+                title={titleWithCount(title, n(`focus:${id}`))}
+                icon={icon}
+              />
             ))}
           </List.Dropdown.Section>
           {pausedTags.data && pausedTags.data.length > 0 && (
@@ -85,7 +108,7 @@ export default function Command() {
                 <List.Dropdown.Item
                   key={tag.tag_id}
                   value={`paused-tag:${tag.tag_id}`}
-                  title={`Paused: ${tag.title}`}
+                  title={titleWithCount(`Paused: ${tag.title}`, n(`paused-tag:${tag.tag_id}`))}
                   icon={Icon.Pause}
                 />
               ))}
@@ -93,12 +116,20 @@ export default function Command() {
           )}
           <List.Dropdown.Section title="Lists">
             {lists.data?.map((l) => (
-              <List.Dropdown.Item key={l.collection_id} value={l.collection_id} title={l.title} />
+              <List.Dropdown.Item
+                key={l.collection_id}
+                value={l.collection_id}
+                title={titleWithCount(l.title, n(l.collection_id))}
+              />
             ))}
           </List.Dropdown.Section>
           <List.Dropdown.Section title="Smart Lists">
             {smartLists.data?.map((l) => (
-              <List.Dropdown.Item key={l.collection_id} value={l.collection_id} title={l.title} />
+              <List.Dropdown.Item
+                key={l.collection_id}
+                value={l.collection_id}
+                title={titleWithCount(l.title, n(l.collection_id))}
+              />
             ))}
           </List.Dropdown.Section>
         </List.Dropdown>
