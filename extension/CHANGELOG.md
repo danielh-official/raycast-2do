@@ -5,6 +5,7 @@
 - View Tasks scopes: Now, Later Today, Tomorrow (start date), and Deadlines (Overdue / Upcoming by due date)
 - One row per paused tag in the scope dropdown, labeled Paused: {tag}
 - Dated scopes sort by start date, falling back to due date; Deadlines by due date; Done by completion date, newest first
+- Task rows show start (clock) and due (flag) dates when set; overdue dues stay red
 
 ## [Smart List Performance] - 2026-11-25
 
