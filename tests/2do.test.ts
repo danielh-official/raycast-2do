@@ -3,6 +3,8 @@ import {
   actionURL,
   actionValueError,
   dateFields,
+  deadlineSections,
+  hasStarted,
   newTaskValues,
   recurrenceArgs,
   repeatRule,
@@ -10,12 +12,15 @@ import {
   repeatValues,
   saveTask,
   scopeArgs,
+  sortByCompletionDateDesc,
+  sortByStartThenDue,
   tagOptions,
   Task,
   taskLinks,
   taskToValues,
   toDate,
   twoDo,
+  ymdTomorrow,
 } from "../extension/src/2do";
 
 const { runAppleScript } = vi.hoisted(() => ({ runAppleScript: vi.fn() }));
@@ -328,12 +333,113 @@ describe("actionValueError", () => {
   });
 });
 
+describe("hasStarted", () => {
+  const at = new Date(2026, 10, 6, 15, 0);
+  it("counts tasks without a start time, or with one that has passed, as started", () => {
+    expect(hasStarted({ ...task, start_date: "2026-11-06", start_time: undefined }, at)).toBe(true);
+    expect(hasStarted({ ...task, start_date: "2026-11-06", start_time: "15:00" }, at)).toBe(true);
+    expect(hasStarted({ ...task, start_date: "2026-11-05", start_time: "20:00" }, at)).toBe(true);
+  });
+
+  it("leaves tasks starting later for Later Today", () => {
+    expect(hasStarted({ ...task, start_date: "2026-11-06", start_time: "17:00" }, at)).toBe(false);
+  });
+});
+
 describe("scopeArgs", () => {
   it("maps dropdown values to query_tasks targets", () => {
     expect(scopeArgs("focus:today")).toEqual({ focus: "today", include_completed: false });
     expect(scopeArgs("focus:done")).toEqual({ focus: "done", include_completed: true });
     expect(scopeArgs("list:abc")).toEqual({ list_id: "abc", include_completed: false });
     expect(scopeArgs("smart-list:xyz")).toEqual({ smart_list_id: "xyz", include_completed: false });
+  });
+
+  it("maps Now and Later Today to Today's focus", () => {
+    expect(scopeArgs("focus:now")).toEqual({ focus: "today", include_completed: false });
+    expect(scopeArgs("focus:later-today")).toEqual({ focus: "today", include_completed: false });
+  });
+
+  it("maps Tomorrow to an all-focus start window for local tomorrow", () => {
+    const day = ymdTomorrow();
+    expect(scopeArgs("focus:tomorrow")).toEqual({
+      focus: "all",
+      include_completed: false,
+      start_on_or_after: day,
+      start_on_or_before: day,
+    });
+  });
+
+  it("maps Deadlines and paused tags", () => {
+    expect(scopeArgs("focus:deadlines")).toEqual({
+      focus: "all",
+      include_completed: false,
+      due_on_or_before: "9999-12-31",
+    });
+    expect(scopeArgs("paused-tag:someday")).toEqual({
+      focus: "all",
+      include_completed: false,
+      paused_filter: "only",
+    });
+  });
+});
+
+describe("sortByStartThenDue", () => {
+  it("sorts by start, falls back to due, times before full-day, undated last", () => {
+    const row = (
+      task_id: string,
+      dates: { start_date?: string; start_time?: string; due_date?: string; due_time?: string },
+    ): Task => ({ ...task, task_id, start_date: undefined, start_time: undefined, due_date: undefined, ...dates });
+    const sorted = sortByStartThenDue([
+      row("undated", {}),
+      row("due-later", { due_date: "2026-11-20" }),
+      row("start-full", { start_date: "2026-11-07" }),
+      row("start-9am", { start_date: "2026-11-07", start_time: "09:00" }),
+      row("due-only", { due_date: "2026-11-06" }),
+    ]);
+    expect(sorted.map((t) => t.task_id)).toEqual(["due-only", "start-9am", "start-full", "due-later", "undated"]);
+  });
+});
+
+describe("deadlineSections", () => {
+  it("puts overdue first; each section by due date, timed before full-day on the same day", () => {
+    const due = (task_id: string, due_date: string, due_time?: string, is_overdue = false): Task => ({
+      ...task,
+      task_id,
+      start_date: undefined,
+      start_time: undefined,
+      due_date,
+      due_time,
+      presentation: { is_overdue },
+    });
+    const sections = deadlineSections([
+      due("later", "2026-11-20"),
+      due("old", "2026-11-01", undefined, true),
+      due("today", "2026-11-07"),
+      due("today 9am", "2026-11-07", "09:00"),
+      due("older", "2026-10-15", "18:00", true),
+    ]);
+    expect(sections.map(([title, tasks]) => [title, tasks.map((t) => t.task_id)])).toEqual([
+      ["Overdue", ["older", "old"]],
+      ["Upcoming", ["today 9am", "today", "later"]],
+    ]);
+  });
+});
+
+describe("sortByCompletionDateDesc", () => {
+  it("sorts newest completions first; missing completion_date last", () => {
+    const done = (task_id: string, completion_date?: string): Task => ({
+      ...task,
+      task_id,
+      completed: true,
+      completion_date,
+    });
+    const sorted = sortByCompletionDateDesc([
+      done("old", "2026-11-01T10:00:00Z"),
+      done("missing"),
+      done("new", "2026-11-20T18:00:00Z"),
+      done("mid", "2026-11-10T12:00:00Z"),
+    ]);
+    expect(sorted.map((t) => t.task_id)).toEqual(["new", "mid", "old", "missing"]);
   });
 });
 

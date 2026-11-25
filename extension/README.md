@@ -39,7 +39,7 @@ Either way, the task form opens with the address as the task's Link action, so 2
 
 ### View Tasks
 
-Browse tasks by scope: All, Today, Starred, Scheduled, Done, any list, or any smart list. Type to filter by title, notes, tag, or link.
+Browse tasks by scope: All, Now, Later Today, Today, Tomorrow, Starred, Scheduled, Deadlines, Done, any list, or any smart list. Paused tags appear as **Paused: {tag}** (for example Paused: Someday). Now and Later Today split Today by start time; Tomorrow is tasks that start tomorrow; Deadlines lists open tasks with a due date, Overdue before Upcoming, each sorted by due date. Other dated scopes sort by start date, falling back to due date. Done sorts by completion date, newest first. Type to filter by title, notes, tag, or link.
 
 Projects show a folder icon, and checklists a checklist icon. Open ones show their items' progress as a ring and "3/6". Completing one with open items (⌘D) asks first, since 2Do completes them too. **Show Items** (⌘I) lists a project's or checklist's items, which 2Do's other views in Raycast don't show, with the usual task actions. **Add Item** (⌘N), on the project or checklist or inside Show Items, adds one. A checklist's child tasks have no dates, though the checklist itself, and a project and its children, can. Repeating tasks show a repeat icon whose tooltip gives the rule, like "Every 3 days" or "Weekly on Mon, Fri".
 

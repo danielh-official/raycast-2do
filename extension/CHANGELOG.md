@@ -1,5 +1,11 @@
 # 2Do Changelog
 
+## [New View Tasks Scopes] - {PR_MERGE_DATE}
+
+- View Tasks scopes: Now, Later Today, Tomorrow (start date), and Deadlines (Overdue / Upcoming by due date)
+- One row per paused tag in the scope dropdown, labeled Paused: {tag}
+- Dated scopes sort by start date, falling back to due date; Deadlines by due date; Done by completion date, newest first
+
 ## [Smart List Performance] - 2026-11-25
 
 - Reuse the smart-list dropdown catalog for ten minutes to reduce 2Do calls when reopening View Tasks

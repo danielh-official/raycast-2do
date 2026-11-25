@@ -9,29 +9,6 @@
 
 ## Next
 
-### New View Tasks Scopes
-
-Add selections **inside the existing View Tasks command**, not new Raycast commands.
-
-- [ ] **Now:** today's tasks that have started: no start time, or a start time that has passed.
-- [ ] **Later Today:** today's tasks whose start time is still ahead.
-  - 2Do has no native Now or Later Today scope. Query Today and split by start time (`hasStarted` in experimental is reference material).
-- [ ] **Tomorrow:** add a tomorrow selection. Verify the Automation Suite's date-filter semantics before choosing its query; this is new work, not an existing experimental feature.
-- [ ] **Dated-scope ordering:** sort dated scopes by start date ascending, falling back to due date ascending for each task with no start date.
-  - Apply to existing dated scopes as well as the new dated scopes.
-  - The fallback is per task, not a separate due-date group.
-  - Settle same-date time ordering, ties, and placement of tasks with neither date when implementing; don't silently inherit experimental's due-date-only ordering.
-- [ ] **Paused:** show tasks hidden by paused tags using `paused_filter: "only"`.
-- [ ] **Paused tag and list filtering together:** retain the ability to narrow paused tasks by a paused tag and a list/smart list.
-  - Experimental uses **Filter by Paused Tag** (⌘T), with the selected tag in the navigation title and only matching list choices.
-  - Adapt the interaction to the existing View Tasks scope selection; don't add a separate command.
-  - Smart-list queries need `paused_filter: "include"` to include paused tasks.
-- [ ] **Deadlines:** open tasks with a due date, with Overdue before Upcoming.
-  - Use the dated-scope start-date/due-date fallback ordering within the sections, rather than experimental's due-date-only sort.
-  - 2Do's `presentation.is_overdue` determines overdue status.
-  - Experimental uses `due_on_or_before: "9999-12-31"` to find tasks with any due date; verify the query when adapting it.
-- [ ] Test scope boundaries, Tomorrow, sorting and fallback behavior, Paused filtering, and Deadlines sections; update README and CHANGELOG as **New View Tasks Scopes**.
-
 ### View Tasks scope counts — separate commit
 
 - [ ] Show task counts beside View Tasks scope options, including lists and smart lists, e.g. **Today (2)**.
@@ -122,6 +99,12 @@ All cancellation features remain wanted. They exist in `experimental`, **not `ma
   - Reuse the catalog for ten minutes across command opens; invalidate and refresh after task actions.
   - Task queries for selected scopes stay fresh, including selected smart lists.
 
+### New View Tasks Scopes
+
+- [x] Now / Later Today (Today + `hasStarted`), Tomorrow (local start-date window), Deadlines (due window + Overdue/Upcoming).
+- [x] Per paused tag as **Paused: {tag}** in the scope dropdown.
+- [x] Dated-scope start-then-due ordering for Today, Now, Later Today, Tomorrow, and Scheduled; Deadlines by due date ascending; Done by completion date descending.
+
 ## Automation Suite reference
 
 Checked against 2Do 2026.4.3, including scratch-task verification in November 2026.
@@ -163,7 +146,7 @@ Keep unrelated cleanup out of feature PRs; apply these patterns to new code wher
 
 ### In progress and order
 
-1. **New View Tasks Scopes:** Now, Later Today, Tomorrow, Paused, Deadlines, and dated-scope ordering inside View Tasks.
+1. **New View Tasks Scopes:** implemented on main; not yet listed as released.
 2. **View Tasks scope counts:** background-loaded totals in scope labels, implemented as its own commit.
 3. **Cancel Task:** all cancellation features above, including repeating occurrences, reopening, and cancelling remaining parent items.
 
