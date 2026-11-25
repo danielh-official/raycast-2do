@@ -39,11 +39,11 @@ Either way, the task form opens with the address as the task's Link action, so 2
 
 ### View Tasks
 
-Browse tasks by scope: All, Now, Later Today, Today, Tomorrow, Starred, Scheduled, Deadlines, Done, any list, or any smart list. Each option shows its task count, such as **Today (2)** (open tasks, or completed tasks for Done). Paused tags appear as **Paused: {tag}** (for example Paused: Someday). Now and Later Today split Today by start time; Tomorrow is tasks that start tomorrow; Deadlines lists open tasks with a due date, Overdue before Upcoming, each sorted by due date. Other dated scopes sort by start date, falling back to due date. Done sorts by completion date, newest first. Each row shows its start date (clock icon) and due date (flag icon) when set; overdue dues are red. Type to filter by title, notes, tag, or link.
+Jump straight to the work that matters: **Now**, **Later Today**, **Today**, **Tomorrow**, **Starred**, **Scheduled**, **Deadlines**, **Done**, any list, or any smart list. Each scope shows how many tasks it has, like **Today (2)**. Paused tags (Someday, Blocked, and the rest) appear as **Paused: {tag}**, so deferred work stays one pick away. Start and due dates show on each row; overdue dues are red. Type to filter by title, notes, tag, or link.
 
-Projects show a folder icon, and checklists a checklist icon. Open ones show their items' progress as a ring and "3/6". Completing one with open items (⌘D) asks first, since 2Do completes them too. **Show Items** (⌘I) lists a project's or checklist's items, which 2Do's other views in Raycast don't show, with the usual task actions. **Add Item** (⌘N), on the project or checklist or inside Show Items, adds one. A checklist's child tasks have no dates, though the checklist itself, and a project and its children, can. Repeating tasks show a repeat icon whose tooltip gives the rule, like "Every 3 days" or "Weekly on Mon, Fri".
+Projects and checklists show progress at a glance. **Show Items** (⌘I) opens what's inside; **Add Item** (⌘N) adds another. Completing a project or checklist with open items asks first. Repeating tasks show their rule on hover.
 
-⌘L runs the task's 2Do action: it opens the link, calls or messages the number (through FaceTime or Messages), starts an email, opens the place in Maps, or searches Google. A task with no action opens the first link in its notes instead. An icon shows which kind of action a task has. Choose Link lists every link, from the action and the notes.
+⌘L runs the task's 2Do action—open a link, call or message, email, Maps, or Google—or the first link in the notes when there is no action. Choose Link lists every link on the task.
 
 | Action                              | Shortcut |
 | ----------------------------------- | -------- |
