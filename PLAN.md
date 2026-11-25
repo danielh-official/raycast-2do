@@ -41,6 +41,14 @@ Add selections **inside the existing View Tasks command**, not new Raycast comma
   - Experimental uses `due_on_or_before: "9999-12-31"` to find tasks with any due date; verify the query when adapting it.
 - [ ] Test scope boundaries, Tomorrow, sorting and fallback behavior, Paused filtering, and Deadlines sections; update README and CHANGELOG as **New View Tasks Scopes**.
 
+### View Tasks scope counts — separate commit
+
+- [ ] Show task counts beside View Tasks scope options, including lists and smart lists, e.g. **Today (2)**.
+- [ ] Count open tasks, except **Done**, which counts completed tasks. Use full totals, not the 200-task display limit.
+- [ ] Load counts in the background without delaying View Tasks; refresh after task changes. Avoid unnecessary query fan-out, especially for smart lists.
+- [ ] Test totals, refresh behavior, and loading/error handling; update README and CHANGELOG.
+- [ ] Implement as its own commit, separate from the current smart-list caching PR and the other scope work.
+
 ### Cancel Task
 
 All cancellation features remain wanted. They exist in `experimental`, **not `main`**.
@@ -158,7 +166,8 @@ Keep unrelated cleanup out of feature PRs; apply these patterns to new code wher
 1. **Tags Under List:** implemented on main; not yet listed as released.
 2. **Smart-list caching:** prepared on `smart-list-performance` as a separate, performance-only PR; catalog caching without caching selected tasks.
 3. **New View Tasks Scopes:** Now, Later Today, Tomorrow, Paused, Deadlines, and dated-scope ordering inside View Tasks.
-4. **Cancel Task:** all cancellation features above, including repeating occurrences, reopening, and cancelling remaining parent items.
+4. **View Tasks scope counts:** background-loaded totals in scope labels, implemented as its own commit.
+5. **Cancel Task:** all cancellation features above, including repeating occurrences, reopening, and cancelling remaining parent items.
 
 No scoped-command, goal, or journal release is currently planned.
 
