@@ -143,9 +143,8 @@ Keep unrelated cleanup out of feature PRs; apply these patterns to new code wher
 
 ### In progress and order
 
-1. **New View Tasks Scopes:** implemented on main; not yet listed as released.
-2. **View Tasks scope counts:** implemented on main; not yet listed as released.
-3. **Cancel Task:** all cancellation features above, including repeating occurrences, reopening, and cancelling remaining parent items.
+1. **New View Tasks Scopes:** implemented on main (scopes, paused-tag rows, counts, start/due on rows); not yet listed as released.
+2. **Cancel Task:** all cancellation features above, including repeating occurrences, reopening, and cancelling remaining parent items.
 
 No scoped-command, goal, or journal release is currently planned.
 
