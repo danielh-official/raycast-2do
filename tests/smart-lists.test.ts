@@ -8,7 +8,11 @@ const { stored, runAppleScript } = vi.hoisted(() => ({
   stored: new Map<string, string>(),
   runAppleScript: vi.fn(),
 }));
-vi.mock("@raycast/utils", () => ({ runAppleScript }));
+vi.mock("@raycast/utils", async () => ({
+  // Use the ESM build so Vitest can mock Raycast's runtime API imports.
+  ...await import("../extension/node_modules/@raycast/utils/dist/module.js"),
+  runAppleScript,
+}));
 vi.mock("@raycast/api", () => ({
   Cache: class {
     get(key: string) {
@@ -17,8 +21,8 @@ vi.mock("@raycast/api", () => ({
     set(key: string, value: string) {
       stored.set(key, value);
     }
-    remove(key: string) {
-      stored.delete(key);
+    clear() {
+      stored.clear();
     }
   },
 }));
@@ -45,9 +49,9 @@ describe("smart-list catalog cache", () => {
     expect(runAppleScript.mock.calls[0][1]).toEqual(["list_smart_lists", "{}"]);
   });
 
-  it("refreshes at ten minutes and replaces the cached catalog", async () => {
+  it("refreshes after ten minutes and replaces the cached catalog", async () => {
     await loadSmartLists();
-    vi.mocked(Date.now).mockReturnValue(now + 10 * 60_000);
+    vi.mocked(Date.now).mockReturnValue(now + 10 * 60_000 + 1);
     runAppleScript.mockResolvedValue(JSON.stringify({ smart_lists: [] }));
     expect(await loadSmartLists()).toEqual([]);
     expect(await loadSmartLists()).toEqual([]);
@@ -65,11 +69,14 @@ describe("smart-list catalog cache", () => {
   it.each([
     "{broken",
     "null",
-    JSON.stringify({ at: now, lists: [{}] }),
-    JSON.stringify({ at: now, lists: null }),
-    JSON.stringify({ at: now + 1, lists }),
+    JSON.stringify({ timestamp: now, data: [{}] }),
+    JSON.stringify({ timestamp: now, data: null }),
+    JSON.stringify({ timestamp: now, data: [{ ...lists[0], title: 1 }] }),
   ])("recovers from invalid cached data: %s", async (value) => {
-    stored.set("smart-list-catalog", value);
+    await loadSmartLists();
+    const key = [...stored.keys()][0];
+    stored.set(key, value);
+    runAppleScript.mockClear();
     expect(await loadSmartLists()).toEqual(lists);
     expect(runAppleScript).toHaveBeenCalledTimes(1);
   });
