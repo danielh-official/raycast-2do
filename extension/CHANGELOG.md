@@ -1,15 +1,11 @@
 # 2Do Changelog
 
-## [View Tasks Scope Counts] - {PR_MERGE_DATE}
-
-- Scope dropdown shows open-task counts (completed for Done), e.g. Today (2), including lists, smart lists, and Paused: {tag}
-
 ## [New View Tasks Scopes] - {PR_MERGE_DATE}
 
-- View Tasks scopes: Now, Later Today, Tomorrow (start date), and Deadlines (Overdue / Upcoming by due date)
-- One row per paused tag in the scope dropdown, labeled Paused: {tag}
-- Dated scopes sort by start date, falling back to due date; Deadlines by due date; Done by completion date, newest first
-- Task rows show start (clock) and due (flag) dates when set; overdue dues stay red
+- New scopes in View Tasks: Now, Later Today, Tomorrow, and Deadlines (Overdue and Upcoming)
+- Paused tags appear as their own scopes, labeled Paused: {tag}
+- Scope options show how many tasks they contain, such as Today (2)
+- Task rows show start and due dates when set; overdue dues stay red
 
 ## [Smart List Performance] - 2026-11-25
 
