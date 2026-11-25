@@ -1,9 +1,12 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import {
+  collectMatchingTasks,
   countNowAndLaterToday,
   countPausedTags,
   countScope,
   loadScopeCounts,
+  loadScopeTasks,
+  mapPool,
   titleWithCount,
 } from "../extension/src/scope-counts";
 import type { Task } from "../extension/src/2do";
@@ -47,6 +50,21 @@ describe("titleWithCount", () => {
   });
 });
 
+describe("mapPool", () => {
+  it("limits how many jobs run at once", async () => {
+    let active = 0;
+    let maxActive = 0;
+    const items = [1, 2, 3, 4, 5];
+    await mapPool(items, 2, async () => {
+      active++;
+      maxActive = Math.max(maxActive, active);
+      await Promise.resolve();
+      active--;
+    });
+    expect(maxActive).toBe(2);
+  });
+});
+
 describe("countScope", () => {
   it("reads total_count with limit 1 so the display cap does not apply", async () => {
     runAppleScript.mockResolvedValue(JSON.stringify({ tasks: [], item_count: 0, total_count: 42 }));
@@ -82,7 +100,11 @@ describe("countNowAndLaterToday", () => {
           total_count: 3,
         }),
       );
-    await expect(countNowAndLaterToday(at)).resolves.toEqual({ now: 2, later: 1 });
+    await expect(countNowAndLaterToday(at)).resolves.toEqual({
+      now: 2,
+      later: 1,
+      nextStart: new Date("2026-11-06T17:00"),
+    });
     expect(sent()).toEqual([
       ["query_tasks", { focus: "today", include_completed: false, limit: 200, offset: 0 }],
       ["query_tasks", { focus: "today", include_completed: false, limit: 200, offset: 2 }],
@@ -113,6 +135,46 @@ describe("countPausedTags", () => {
   });
 });
 
+describe("collectMatchingTasks", () => {
+  it("pages past non-matches until the display limit is filled", async () => {
+    runAppleScript
+      .mockResolvedValueOnce(
+        JSON.stringify({
+          tasks: [
+            task({ task_id: "other", tags: [{ tag_id: "someday", title: "Someday" }] }),
+            task({ task_id: "blocked-1", tags: [{ tag_id: "blocked", title: "Blocked" }] }),
+          ],
+          item_count: 2,
+          total_count: 3,
+        }),
+      )
+      .mockResolvedValueOnce(
+        JSON.stringify({
+          tasks: [task({ task_id: "blocked-2", tags: [{ tag_id: "blocked", title: "Blocked" }] })],
+          item_count: 1,
+          total_count: 3,
+        }),
+      );
+    const matched = await collectMatchingTasks(
+      { focus: "all", include_completed: false, paused_filter: "only" },
+      (t) => t.tags.some((tag) => tag.tag_id === "blocked"),
+      2,
+    );
+    expect(matched.map((t) => t.task_id)).toEqual(["blocked-1", "blocked-2"]);
+    expect(sent()).toHaveLength(2);
+  });
+});
+
+describe("loadScopeTasks", () => {
+  it("loads a direct scope with one capped query", async () => {
+    runAppleScript.mockResolvedValue(
+      JSON.stringify({ tasks: [task({ task_id: "t1" })], item_count: 1, total_count: 1 }),
+    );
+    await expect(loadScopeTasks("focus:starred")).resolves.toEqual([expect.objectContaining({ task_id: "t1" })]);
+    expect(sent()[0][1]).toMatchObject({ focus: "starred", include_completed: false, limit: 200 });
+  });
+});
+
 describe("loadScopeCounts", () => {
   it("loads simple scopes, Today split, and paused tags together", async () => {
     vi.useFakeTimers();
@@ -139,7 +201,7 @@ describe("loadScopeCounts", () => {
       }
       return JSON.stringify({ tasks: [], item_count: 0, total_count: args.focus === "starred" ? 5 : 9 });
     });
-    const counts = await loadScopeCounts([
+    const { counts, nextStart } = await loadScopeCounts([
       "focus:starred",
       "focus:now",
       "focus:later-today",
@@ -151,15 +213,16 @@ describe("loadScopeCounts", () => {
     expect(counts["focus:later-today"]).toBe(1);
     expect(counts["paused-tag:someday"]).toBe(1);
     expect(counts["list:inbox"]).toBe(9);
+    expect(nextStart).toEqual(new Date("2026-11-06T23:00"));
   });
 
   it("keeps other counts when one scope fails", async () => {
-    runAppleScript.mockImplementation(async (_script: string, [command, json]: string[]) => {
+    runAppleScript.mockImplementation(async (_script: string, [, json]: string[]) => {
       const args = JSON.parse(json);
       if (args.focus === "starred") throw new Error("boom");
       return JSON.stringify({ tasks: [], item_count: 0, total_count: 3 });
     });
-    const counts = await loadScopeCounts(["focus:starred", "focus:all"]);
+    const { counts } = await loadScopeCounts(["focus:starred", "focus:all"]);
     expect(counts["focus:starred"]).toBeUndefined();
     expect(counts["focus:all"]).toBe(3);
   });
