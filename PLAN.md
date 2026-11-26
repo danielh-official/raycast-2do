@@ -90,6 +90,7 @@ All cancellation features remain wanted. They exist in `experimental`, **not `ma
   - No per-smart-list membership query fan-out or membership cache.
   - Reuse the catalog for ten minutes across command opens; invalidate and refresh after task actions.
   - Task queries for selected scopes stay fresh, including selected smart lists.
+- [x] **Refresh** (⌘R) in View Tasks clears the catalog cache and reloads tasks, lists, smart lists, paused tags, and counts.
 
 ### New View Tasks Scopes
 
@@ -140,10 +141,11 @@ Keep unrelated cleanup out of feature PRs; apply these patterns to new code wher
 - **Add Task Stays Open** (2026-11-23, [raycast/extensions#33807](https://github.com/raycast/extensions/pull/33807)): reset Add Task and Add Link for repeated entry.
 - **Tags Under List** (2026-11-25, [raycast/extensions#33927](https://github.com/raycast/extensions/pull/33927)): Tags and New Tags below List / Project or Checklist in forms.
 - **Smart List Performance** (2026-11-25, [raycast/extensions#33941](https://github.com/raycast/extensions/pull/33941)): ten-minute smart-list catalog cache; selected-scope tasks stay fresh.
+- **New View Tasks Scopes** (2026-11-26, [raycast/extensions#33981](https://github.com/raycast/extensions/pull/33981)): Now / Later Today / Tomorrow / Deadlines, paused-tag scopes, scope counts, start/due on rows.
 
 ### In progress and order
 
-1. **New View Tasks Scopes:** implemented on main (scopes, paused-tag rows, counts, start/due on rows); not yet listed as released.
+1. **Refresh View Tasks:** ⌘R reloads tasks, lists, and smart lists (including the smart-list catalog cache).
 2. **Cancel Task:** all cancellation features above, including repeating occurrences, reopening, and cancelling remaining parent items.
 
 No scoped-command, goal, or journal release is currently planned.
