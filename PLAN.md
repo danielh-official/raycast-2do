@@ -9,32 +9,33 @@
 
 ## Next
 
+No further feature work is queued ahead of Cancel Task's Store publish. Frozen ideas stay outside the release queue.
+
+## Implemented on main
+
 ### Cancel Task
 
-All cancellation features remain wanted. They exist in `experimental`, **not `main`**.
-
-- [ ] **Cancel Task** action in View Tasks (⇧⌘D), hidden for completed tasks.
-- [ ] Extension preferences:
+- [x] **Cancel Task** action in View Tasks (⇧⌘D), hidden for completed tasks.
+- [x] Extension preferences:
   - **Cancel Task** (`cancelBehavior`): Complete and Tag (`complete-and-tag`, default), Tag Only (`tag`), Move to List and Complete (`move`), or Delete (`delete`).
   - **Cancel Tag** (`cancelTag`): `Cancelled` by default.
   - **Cancel List** (`cancelList`): empty by default, required for Move to List and Complete.
-- [ ] Match tag/list names case-insensitively. Missing tags/lists and an empty required Cancel List produce actionable errors before anything changes; don't create them.
-- [ ] **Complete and Tag:** complete first, then tag only the completed occurrence.
-- [ ] **Tag Only:** append the cancel tag to the open task without completing it.
-- [ ] **Move to List and Complete:** complete first, then move only the completed occurrence.
-- [ ] **Delete:** always confirm destructively. Delete a non-repeating task directly; for a repeating task, complete then delete only the completed occurrence.
-- [ ] **Cancel only this occurrence of a repeating task:** leave the next occurrence's tags, list, and existence untouched.
+- [x] Match tag/list names case-insensitively. Missing tags/lists and an empty required Cancel List produce actionable errors before anything changes; don't create them.
+- [x] **Complete and Tag:** complete first, then tag only the completed occurrence.
+- [x] **Tag Only:** append the cancel tag to the open task without completing it.
+- [x] **Move to List and Complete:** complete first, then move only the completed occurrence.
+- [x] **Delete:** always confirm destructively. Delete a non-repeating task directly; for a repeating task, complete then delete only the completed occurrence.
+- [x] **Cancel only this occurrence of a repeating task:** leave the next occurrence's tags, list, and existence untouched.
   - Completing a repeating task keeps its open task ID and creates a completed copy with another ID.
-  - `complete_task` returns the open task, not the copy. Experimental finds the copy by searching the task's list for its exact title and taking the latest `completion_date`.
+  - `complete_task` returns the open task, not the copy. Finds the copy by searching the task's list for its exact title and taking the latest `completion_date`.
   - If the completed copy cannot be found, report that completion happened but cancellation could not finish.
-- [ ] **Parent safety:** confirm cancellation of a project/checklist with open items when the behavior completes or deletes it. Tag Only does not complete children.
-- [ ] **Cancelled-task appearance:** completed tasks with the cancel tag show a gray ✕; completed tasks in the configured Cancel List also count as cancelled for the move behavior.
-- [ ] **Undo cancellation through Mark as Not Done:** remove the cancel tag when reopening. For a task cancelled into the Cancel List, ask which list to restore it to; the original list is not recorded.
+- [x] **Parent safety:** confirm cancellation of a project/checklist with open items when the behavior completes or deletes it. Tag Only does not complete children.
+- [x] **Cancelled-task appearance:** completed tasks with the cancel tag show a gray ✕; completed tasks in the configured Cancel List also count as cancelled for the move behavior.
+- [x] **Undo cancellation through Mark as Not Done:** remove the cancel tag when reopening. For a task cancelled into the Cancel List, ask which list to restore it to; the original list is not recorded.
   - Tag Only leaves the task open; Delete leaves nothing to reopen.
-- [ ] **Complete Task and Cancel Remaining Items:** parents gain an alternative to completing their open items normally. Apply Cancel Task preferences to the open items, then complete the parent, with confirmation and a way to back out.
-- [ ] Tests for command sequences, missing preferences/targets, repeating occurrences, reopened tasks, and parent completion/cancellation; README and CHANGELOG.
-
-## Implemented on main
+- [x] **Mark as Complete Instead / Mark as Cancelled Instead** (⇧⌘D) on done tasks: switch the cancel mark without reopening; only one action shows. Hidden for Delete (no mark). Cancel List → Complete Instead asks which list.
+- [x] **Complete Task and Cancel Remaining Items:** parents gain an alternative to completing their open items normally. Apply Cancel Task preferences to the open items, then complete the parent, with confirmation and a way to back out.
+- [x] Tests for command sequences, missing preferences/targets, repeating occurrences, reopened tasks, and parent completion/cancellation; README and CHANGELOG.
 
 ### Links and actions
 
@@ -75,7 +76,7 @@ All cancellation features remain wanted. They exist in `experimental`, **not `ma
 - [x] **Show Items** (⌘I) with the usual task actions.
 - [x] **Add Item** (⌘N), with its parent preset and destination fields hidden; checklist children also hide Start and Due.
 - [x] **Complete a parent with open items:** confirm before completing its items, with Not Now to back out.
-  - Cancelling remaining items is **not implemented on main**; see Cancel Task.
+  - Cancelling remaining items: see Cancel Task.
 - [x] Shared task rows/actions in `task-item.tsx`.
 
 ### Form workflow
@@ -145,8 +146,7 @@ Keep unrelated cleanup out of feature PRs; apply these patterns to new code wher
 
 ### In progress and order
 
-1. **Refresh View Tasks:** ⌘R reloads tasks, lists, and smart lists (including the smart-list catalog cache).
-2. **Cancel Task:** all cancellation features above, including repeating occurrences, reopening, and cancelling remaining parent items.
+1. **Cancel Task:** ⇧⌘D with preferences, repeating-occurrence handling, cancelled ✕, Mark as Not Done undo, and cancel remaining parent items.
 
 No scoped-command, goal, or journal release is currently planned.
 

@@ -1,12 +1,20 @@
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import {
   actionURL,
   actionValueError,
+  applyCancelMark,
+  CancelPrefs,
+  cancelTask,
+  clearCancelMark,
+  completeParent,
   dateFields,
   deadlineSections,
   hasStarted,
+  inCancelList,
+  isCancelled,
   newTaskValues,
   recurrenceArgs,
+  reopenTask,
   repeatRule,
   repeatValueError,
   repeatValues,
@@ -343,6 +351,224 @@ describe("hasStarted", () => {
 
   it("leaves tasks starting later for Later Today", () => {
     expect(hasStarted({ ...task, start_date: "2026-11-06", start_time: "17:00" }, at)).toBe(false);
+  });
+});
+
+describe("cancelTask", () => {
+  const prefs: CancelPrefs = { cancelBehavior: "complete-and-tag", cancelTag: "Cancelled", cancelList: "" };
+  const repeating = { ...task, recurrence: { frequency: "daily" } };
+  // A fake 2Do: completing a repeating task leaves it open and adds a completed copy, as 2Do does,
+  // and a search within the task's list finds that copy (plus an older one from a previous day). Like
+  // 2Do, a search with no list finds nothing.
+  beforeEach(() => {
+    runAppleScript.mockImplementation(async (_script: string, [command, json]: string[]) => {
+      const args = JSON.parse(json);
+      if (command === "list_tags") return JSON.stringify({ tags: [{ tag_id: "c1", title: "Cancelled" }] });
+      if (command === "list_lists") return JSON.stringify({ list: [{ list_id: "l9", title: "Graveyard" }] });
+      if (command === "complete_task")
+        return JSON.stringify({ task: { ...task, task_id: args.task_id, completed: !isRepeatingRun } });
+      if (command === "query_tasks")
+        return JSON.stringify({
+          tasks:
+            args.list_id !== task.list_id
+              ? []
+              : [
+                  { ...task, completed: false },
+                  { ...task, task_id: "old", completed: true, completion_date: "2026-11-05T10:00:00Z" },
+                  { ...task, task_id: "copy", completed: true, completion_date: "2026-11-06T10:00:00Z" },
+                ],
+        });
+      return "{}";
+    });
+  });
+  let isRepeatingRun = false;
+  afterEach(() => {
+    isRepeatingRun = false;
+  });
+
+  it("completes the task, then tags it", async () => {
+    await cancelTask(task, prefs);
+    expect(sent()).toEqual([
+      ["list_tags", {}],
+      ["complete_task", { task_id: "t1" }],
+      ["update_task", { task_id: "t1", tag_update: { operation: "append", tag_ids: ["c1"] } }],
+    ]);
+  });
+
+  it("tags only this occurrence's completed copy of a repeating task, leaving the next one clean", async () => {
+    isRepeatingRun = true;
+    await cancelTask(repeating, prefs);
+    expect(sent().map(([command]) => command)).toEqual(["list_tags", "complete_task", "query_tasks", "update_task"]);
+    expect(sent()[3][1]).toEqual({ task_id: "copy", tag_update: { operation: "append", tag_ids: ["c1"] } });
+  });
+
+  it("only tags with Tag Only, matching the tag title case-insensitively", async () => {
+    await cancelTask(task, { ...prefs, cancelBehavior: "tag", cancelTag: " cancelled " });
+    expect(sent().map(([command]) => command)).toEqual(["list_tags", "update_task"]);
+  });
+
+  it("completes, then moves the completed occurrence to the cancel list", async () => {
+    await cancelTask(task, { ...prefs, cancelBehavior: "move", cancelList: "graveyard" });
+    expect(sent()).toEqual([
+      ["list_lists", {}],
+      ["complete_task", { task_id: "t1" }],
+      ["move_task", { task_id: "t1", list_id: "l9" }],
+    ]);
+    runAppleScript.mockClear();
+    isRepeatingRun = true;
+    await cancelTask(repeating, { ...prefs, cancelBehavior: "move", cancelList: "graveyard" });
+    expect(sent().at(-1)).toEqual(["move_task", { task_id: "copy", list_id: "l9" }]);
+  });
+
+  it("deletes with Delete, or for a repeating task deletes only this occurrence", async () => {
+    await cancelTask(task, { ...prefs, cancelBehavior: "delete" });
+    expect(sent()).toEqual([["delete_task", { task_id: "t1" }]]);
+    runAppleScript.mockClear();
+    isRepeatingRun = true;
+    await cancelTask(repeating, { ...prefs, cancelBehavior: "delete" });
+    expect(sent().map(([command]) => command)).toEqual(["complete_task", "query_tasks", "delete_task"]);
+    expect(sent().at(-1)).toEqual(["delete_task", { task_id: "copy" }]);
+  });
+
+  it("names the preference when the list is missing, without changing the task", async () => {
+    await expect(cancelTask(task, { ...prefs, cancelBehavior: "move", cancelList: "Nope" })).rejects.toThrow(
+      'No 2Do list named "Nope"',
+    );
+    await expect(cancelTask(task, { ...prefs, cancelBehavior: "move" })).rejects.toThrow(
+      "Set the Cancel List preference",
+    );
+    expect(sent().map(([command]) => command)).toEqual(["list_lists"]);
+  });
+
+  it("asks for the cancel tag to be added or changed when it's missing, without changing the task", async () => {
+    await expect(cancelTask(task, { ...prefs, cancelTag: "Dropped" })).rejects.toThrow(
+      'No 2Do tag named "Dropped". Add it in 2Do, or set Cancel Tag in the extension\'s settings',
+    );
+    expect(sent().map(([command]) => command)).toEqual(["list_tags"]);
+  });
+});
+
+describe("completeParent", () => {
+  const prefs: CancelPrefs = { cancelBehavior: "complete-and-tag", cancelTag: "Cancelled", cancelList: "" };
+  const project = { ...task, task_id: "p1", task_type: "project" as const };
+  beforeEach(() => {
+    runAppleScript.mockImplementation(async (_script: string, [command, json]: string[]) => {
+      const args = JSON.parse(json);
+      if (command === "list_subtasks")
+        return JSON.stringify({
+          tasks: [
+            { ...task, task_id: "i1", completed: false },
+            { ...task, task_id: "i2", completed: true },
+          ],
+        });
+      if (command === "list_tags") return JSON.stringify({ tags: [{ tag_id: "c1", title: "Cancelled" }] });
+      if (command === "complete_task")
+        return JSON.stringify({ task: { ...task, task_id: args.task_id, completed: true } });
+      return "{}";
+    });
+  });
+
+  it("completes the parent, which completes its items", async () => {
+    await completeParent(project, false, prefs);
+    expect(sent()).toEqual([["complete_task", { task_id: "p1" }]]);
+  });
+
+  it("cancels only the open items first, then completes the parent", async () => {
+    await completeParent(project, true, prefs);
+    expect(sent().map(([command, args]) => `${command}:${args.task_id ?? ""}`)).toEqual([
+      "list_subtasks:p1",
+      "list_tags:",
+      "complete_task:i1",
+      "update_task:i1",
+      "complete_task:p1",
+    ]);
+  });
+});
+
+describe("isCancelled", () => {
+  it("is a completed task carrying the cancel tag", () => {
+    const prefs: CancelPrefs = { cancelBehavior: "complete-and-tag", cancelTag: "cancelled", cancelList: "" };
+    const tagged = { ...task, tags: [{ tag_id: "c1", title: "Cancelled" }] };
+    expect(isCancelled({ ...tagged, completed: true }, prefs)).toBe(true);
+    expect(isCancelled(tagged, prefs)).toBe(false);
+    expect(isCancelled({ ...task, completed: true }, prefs)).toBe(false);
+  });
+
+  it("is a completed task in the Cancel List, when cancelling moves tasks there", () => {
+    const prefs: CancelPrefs = { cancelBehavior: "move", cancelTag: "Cancelled", cancelList: "graveyard" };
+    const moved = { ...task, list_title: "Graveyard", completed: true };
+    expect(isCancelled(moved, prefs)).toBe(true);
+    expect(inCancelList(moved, prefs)).toBe(true);
+    expect(isCancelled({ ...moved, completed: false }, prefs)).toBe(false);
+    expect(inCancelList(moved, { ...prefs, cancelBehavior: "complete-and-tag" })).toBe(false);
+  });
+});
+
+describe("reopenTask", () => {
+  const prefs: CancelPrefs = { cancelBehavior: "complete-and-tag", cancelTag: "cancelled", cancelList: "" };
+
+  it("marks the task not done and removes the cancel tag", async () => {
+    const cancelled = { ...task, completed: true, tags: [...task.tags, { tag_id: "c1", title: "Cancelled" }] };
+    await reopenTask(cancelled, prefs);
+    expect(sent()).toEqual([
+      ["uncomplete_task", { task_id: "t1" }],
+      ["update_task", { task_id: "t1", tag_update: { operation: "remove", tag_ids: ["c1"] } }],
+    ]);
+  });
+
+  it("only marks a task without the cancel tag not done", async () => {
+    await reopenTask({ ...task, completed: true }, prefs);
+    expect(sent()).toEqual([["uncomplete_task", { task_id: "t1" }]]);
+  });
+
+  it("moves it to the chosen list", async () => {
+    await reopenTask({ ...task, completed: true }, prefs, "home");
+    expect(sent()[1]).toEqual(["move_task", { task_id: "t1", list_id: "home" }]);
+  });
+});
+
+describe("applyCancelMark", () => {
+  const prefs: CancelPrefs = { cancelBehavior: "complete-and-tag", cancelTag: "Cancelled", cancelList: "" };
+  const done = { ...task, completed: true };
+
+  it("tags an already-completed task without completing again", async () => {
+    runAppleScript.mockResolvedValue(JSON.stringify({ tags: [{ tag_id: "c1", title: "Cancelled" }] }));
+    await applyCancelMark(done, prefs);
+    expect(sent()).toEqual([
+      ["list_tags", {}],
+      ["update_task", { task_id: "t1", tag_update: { operation: "append", tag_ids: ["c1"] } }],
+    ]);
+  });
+
+  it("moves an already-completed task to the cancel list", async () => {
+    runAppleScript.mockResolvedValue(JSON.stringify({ list: [{ list_id: "l9", title: "Graveyard" }] }));
+    await applyCancelMark(done, { ...prefs, cancelBehavior: "move", cancelList: "graveyard" });
+    expect(sent()).toEqual([
+      ["list_lists", {}],
+      ["move_task", { task_id: "t1", list_id: "l9" }],
+    ]);
+  });
+
+  it("rejects Delete, which has no cancelled mark", async () => {
+    await expect(applyCancelMark(done, { ...prefs, cancelBehavior: "delete" })).rejects.toThrow("Delete");
+    expect(runAppleScript).not.toHaveBeenCalled();
+  });
+});
+
+describe("clearCancelMark", () => {
+  const prefs: CancelPrefs = { cancelBehavior: "complete-and-tag", cancelTag: "cancelled", cancelList: "" };
+
+  it("removes the cancel tag without uncompleting", async () => {
+    const cancelled = { ...task, completed: true, tags: [...task.tags, { tag_id: "c1", title: "Cancelled" }] };
+    await clearCancelMark(cancelled, prefs);
+    expect(sent()).toEqual([
+      ["update_task", { task_id: "t1", tag_update: { operation: "remove", tag_ids: ["c1"] } }],
+    ]);
+  });
+
+  it("moves out of the cancel list when given a destination", async () => {
+    await clearCancelMark({ ...task, completed: true }, prefs, "home");
+    expect(sent()).toEqual([["move_task", { task_id: "t1", list_id: "home" }]]);
   });
 });
 
